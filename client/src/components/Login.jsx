@@ -179,11 +179,37 @@ export function Login() {
           </button>
         </form>
 
-        {/* Footer */}
-        <div style={{ textAlign: "center", marginTop: 24, fontSize: 12, color: "#9ca3af" }}>
-          <p style={{ margin: 0 }}>
-            Contact administrator for User ID and Password
+        {/* Quick Login Hints */}
+        <div style={{ marginTop: 24, borderTop: "1px solid #f3f4f6", paddingTop: 20 }}>
+          <p style={{ fontSize: 11, color: "#9ca3af", textAlign: "center", marginBottom: 10 }}>
+            Quick Login
           </p>
+          <div style={{ display: "flex", gap: 8 }}>
+            {[
+              { label: "Super Admin", id: "ADMIN001", pw: "admin123", color: "#2563eb" },
+              { label: "Sub Admin",   id: "SUB001",   pw: "sub123",   color: "#7c3aed" },
+              { label: "User",        id: "USER001",  pw: "user123",  color: "#059669" },
+            ].map((acc) => (
+              <button
+                key={acc.id}
+                type="button"
+                onClick={() => { setUserId(acc.id); setPassword(acc.pw); setError(""); }}
+                style={{
+                  flex: 1,
+                  padding: "8px 4px",
+                  borderRadius: 8,
+                  border: `1px solid ${acc.color}22`,
+                  background: `${acc.color}0d`,
+                  color: acc.color,
+                  fontSize: 11,
+                  fontWeight: 600,
+                  cursor: "pointer",
+                }}
+              >
+                {acc.label}
+              </button>
+            ))}
+          </div>
         </div>
       </div>
     </div>

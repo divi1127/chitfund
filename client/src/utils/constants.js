@@ -27,7 +27,7 @@ export const COMPANY = {
 
 // Routes map for URL-based navigation
 export const ROUTES = {
-  dashboard: "/",
+  dashboard: "/dashboard",
   members: "/members",
   schemes: "/schemes",
   groups: "/groups",
@@ -43,8 +43,8 @@ export const ROUTES = {
   settings: "/settings",
   profile: "/profile",
   payments: "/payments",
-  "add-members": "/add-members",
-  "user-management": "/user-management",
+  addMembers: "/add-members",
+  userManagement: "/user-management",
 };
 
 // Reverse map: URL path -> id

@@ -5,12 +5,10 @@ import { useToast } from "./hooks/useToast";
 import { PreviewDocument } from "./components/PreviewDocument";
 import { Sidebar } from "./components/Sidebar";
 import { SectionHeader } from "./components/SectionHeader";
-import { Btn } from "./components/Btn";
-import { Input } from "./components/Input";
 import { Login } from "./components/Login";
 import { AuthProvider, useAuth } from "./contexts/AuthContext";
 import { ScrollToTop } from "./components/ScrollToTop";
-import { COMPANY, NAV_ITEMS, ROUTES } from "./utils/constants";
+import { COMPANY, NAV_ITEMS } from "./utils/constants";
 import { Dashboard } from "./pages/Dashboard";
 import { Members } from "./pages/Members";
 import { Schemes } from "./pages/Schemes";
@@ -27,23 +25,6 @@ import { Notifications } from "./pages/Notifications";
 import { Settings } from "./pages/Settings";
 import { UserProfile } from "./pages/UserProfile";
 import { UserPaymentPortal } from "./pages/UserPaymentPortal";
-
-// ─── PAGE WRAPPER ─────────────────────────────────────────────────────────────
-function PageWrapper({ children, title, subtitle, dark, actions }) {
-  return (
-    <>
-      {title && <SectionHeader title={title} subtitle={subtitle} dark={dark} actions={actions} />}
-      {children}
-    </>
-  );
-}
-
-// ─── AUTH LAYOUT ──────────────────────────────────────────────────────────────
-function AuthLayout({ children }) {
-  const { user } = useAuth();
-  if (!user) return <Login />;
-  return children;
-}
 
 // ─── APP LAYOUT ───────────────────────────────────────────────────────────────
 function AppLayout() {
@@ -70,8 +51,6 @@ function AppLayout() {
 
   // Filter navigation items based on user permissions
   const filteredNavItems = NAV_ITEMS.filter(item => hasModuleAccess(item.id));
-
-  const isUserRole = user?.role === "user";
 
   return (
     <div style={{
@@ -168,23 +147,24 @@ function AppLayout() {
           background: dark ? "transparent" : "#f1f5f9",
         }}>
           <Routes>
-            <Route path={ROUTES.dashboard} element={<Dashboard dark={dark} toast={{ add }} />} />
-            <Route path={ROUTES.members} element={<Members dark={dark} toast={{ add }} setPreview={setPreview} />} />
-            <Route path={ROUTES.schemes} element={<Schemes dark={dark} toast={{ add }} />} />
-            <Route path={ROUTES.groups} element={<Groups dark={dark} toast={{ add }} />} />
-            <Route path={ROUTES.collections} element={<Collections dark={dark} toast={{ add }} setPreview={setPreview} />} />
-            <Route path={ROUTES.billing} element={<BillingDashboard dark={dark} toast={{ add }} />} />
-            <Route path={ROUTES.auctions} element={<Auctions dark={dark} toast={{ add }} setPreview={setPreview} />} />
-            <Route path={ROUTES.prizes} element={<Prizes dark={dark} />} />
-            <Route path={ROUTES.accounting} element={<Accounting dark={dark} />} />
-            <Route path={ROUTES.reports} element={<ReportsDashboard dark={dark} toast={{ add }} />} />
-            <Route path={ROUTES.employees} element={<Employees dark={dark} toast={{ add }} />} />
-            <Route path={ROUTES.branches} element={<Branches dark={dark} toast={{ add }} />} />
-            <Route path={ROUTES.notifications} element={<Notifications dark={dark} />} />
-            <Route path={ROUTES.settings} element={<Settings dark={dark} toast={{ add }} />} />
-            <Route path={ROUTES.profile} element={<UserProfile dark={dark} />} />
-            <Route path={ROUTES.payments} element={<UserPaymentPortal dark={dark} toast={{ add }} />} />
-            <Route path="*" element={<Navigate to={ROUTES.dashboard} replace />} />
+            <Route index element={<Navigate to="/dashboard" replace />} />
+            <Route path="/dashboard" element={<Dashboard dark={dark} toast={{ add }} />} />
+            <Route path="/members" element={<Members dark={dark} toast={{ add }} setPreview={setPreview} />} />
+            <Route path="/schemes" element={<Schemes dark={dark} toast={{ add }} />} />
+            <Route path="/groups" element={<Groups dark={dark} toast={{ add }} />} />
+            <Route path="/collections" element={<Collections dark={dark} toast={{ add }} setPreview={setPreview} />} />
+            <Route path="/billing" element={<BillingDashboard dark={dark} toast={{ add }} />} />
+            <Route path="/auctions" element={<Auctions dark={dark} toast={{ add }} setPreview={setPreview} />} />
+            <Route path="/prizes" element={<Prizes dark={dark} />} />
+            <Route path="/accounting" element={<Accounting dark={dark} />} />
+            <Route path="/reports" element={<ReportsDashboard dark={dark} toast={{ add }} />} />
+            <Route path="/employees" element={<Employees dark={dark} toast={{ add }} />} />
+            <Route path="/branches" element={<Branches dark={dark} toast={{ add }} />} />
+            <Route path="/notifications" element={<Notifications dark={dark} />} />
+            <Route path="/settings" element={<Settings dark={dark} toast={{ add }} />} />
+            <Route path="/profile" element={<UserProfile dark={dark} />} />
+            <Route path="/payments" element={<UserPaymentPortal dark={dark} toast={{ add }} />} />
+            <Route path="*" element={<Navigate to="/dashboard" replace />} />
           </Routes>
         </main>
       </div>
