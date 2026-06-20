@@ -1,14 +1,23 @@
 import { useState } from "react";
-import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import {
+  BrowserRouter,
+  Routes,
+  Route,
+  Navigate,
+} from "react-router-dom";
+
 import { Toast } from "./components/Toast";
-import { useToast } from "./hooks/useToast";
 import { PreviewDocument } from "./components/PreviewDocument";
 import { Sidebar } from "./components/Sidebar";
-import { SectionHeader } from "./components/SectionHeader";
-import { Login } from "./components/Login";
-import { AuthProvider, useAuth } from "./contexts/AuthContext";
 import { ScrollToTop } from "./components/ScrollToTop";
+import { Login } from "./components/Login"
+import { useToast } from "./hooks/useToast";
+import { AuthProvider, useAuth } from "./contexts/AuthContext";
+
 import { COMPANY, NAV_ITEMS } from "./utils/constants";
+
+import Landingpage from "./landingpage/Landingpage";
+
 import { Dashboard } from "./pages/Dashboard";
 import { Members } from "./pages/Members";
 import { Schemes } from "./pages/Schemes";
@@ -26,98 +35,158 @@ import { Settings } from "./pages/Settings";
 import { UserProfile } from "./pages/UserProfile";
 import { UserPaymentPortal } from "./pages/UserPaymentPortal";
 
-// ─── APP LAYOUT ───────────────────────────────────────────────────────────────
 function AppLayout() {
   const [dark, setDark] = useState(false);
   const [collapsed, setCollapsed] = useState(false);
   const [preview, setPreview] = useState(null);
+
   const { toasts, add, remove } = useToast();
-  const { user, loading: authLoading, logout, hasModuleAccess } = useAuth();
+
+  const {
+    user,
+    loading: authLoading,
+    logout,
+    hasModuleAccess,
+  } = useAuth();
 
   if (authLoading) {
     return (
-      <div style={{
-        display: "flex", justifyContent: "center", alignItems: "center",
-        minHeight: "100vh", background: "#0f172a", color: "#fff"
-      }}>
+      <div
+        style={{
+          display: "flex",
+          justifyContent: "center",
+          alignItems: "center",
+          minHeight: "100vh",
+          background: "#0f172a",
+          color: "#fff",
+        }}
+      >
         Loading...
       </div>
     );
   }
 
+  // Public Routes
   if (!user) {
-    return <Login />;
+    return (
+      <Routes>
+          <Route
+              path="/login"
+              element={
+                <Login
+                />
+              }
+            />
+        <Route path="/" element={<Landingpage />} />
+        <Route path="*" element={<Navigate to="/" replace />} />
+      </Routes>
+    );
   }
 
-  // Filter navigation items based on user permissions
-  const filteredNavItems = NAV_ITEMS.filter(item => hasModuleAccess(item.id));
+  const filteredNavItems = NAV_ITEMS.filter((item) =>
+    hasModuleAccess(item.id)
+  );
 
   return (
-    <div style={{
-      display: "flex",
-      height: "100vh",
-      background: dark ? "#0f172a" : "#f1f5f9",
-    }}>
-      {/* Sidebar - Fixed */}
+    <div
+      style={{
+        display: "flex",
+        height: "100vh",
+        background: dark ? "#0f172a" : "#f1f5f9",
+      }}
+    >
+      {/* Sidebar */}
       <Sidebar
+        dark={dark}
         collapsed={collapsed}
         setCollapsed={setCollapsed}
         navItems={filteredNavItems}
       />
 
-      {/* Main Content Area - Offset by sidebar width */}
-      <div style={{
-        flex: 1,
-        marginLeft: collapsed ? 64 : 240,
-        display: "flex",
-        flexDirection: "column",
-        minHeight: 0,
-        transition: "margin-left .25s ease",
-      }}>
-        {/* Header */}
-        <header style={{
-          background: dark ? "rgba(255,255,255,.04)" : "#fff",
-          borderBottom: dark ? "1px solid rgba(255,255,255,.08)" : "1px solid #e2e8f0",
-          padding: "14px 28px",
+      {/* Main Content */}
+      <div
+        style={{
+          flex: 1,
+          marginLeft: collapsed ? 64 : 240,
           display: "flex",
-          justifyContent: "space-between",
-          alignItems: "center",
-          position: "sticky",
-          top: 0,
-          zIndex: 50,
-          backdropFilter: "blur(12px)",
-          boxShadow: dark ? "none" : "0 1px 3px rgba(0,0,0,.04)",
-        }}>
-          <div style={{ fontSize: 18, fontWeight: 700, color: dark ? "#f1f5f9" : "#0f172a" }}>
+          flexDirection: "column",
+          minHeight: 0,
+          transition: "margin-left .25s ease",
+        }}
+      >
+        {/* Header */}
+        <header
+          style={{
+            background: dark
+              ? "rgba(255,255,255,.04)"
+              : "#fff",
+            borderBottom: dark
+              ? "1px solid rgba(255,255,255,.08)"
+              : "1px solid #e2e8f0",
+            padding: "14px 28px",
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "center",
+            position: "sticky",
+            top: 0,
+            zIndex: 50,
+            backdropFilter: "blur(12px)",
+          }}
+        >
+          <div
+            style={{
+              fontSize: 18,
+              fontWeight: 700,
+              color: dark ? "#f1f5f9" : "#0f172a",
+            }}
+          >
             {COMPANY.name}
           </div>
-          <div style={{ display: "flex", gap: 12, alignItems: "center" }}>
-            <div style={{
-              fontSize: 13,
-              color: dark ? "rgba(255,255,255,.5)" : "#64748b",
-              fontWeight: 500,
-            }}>
-              {user.name}
-              <span style={{ opacity: 0.5, marginLeft: 8 }}>
-                ({user.role === "super_admin" ? "Super Admin" : user.role === "sub_admin" ? "Sub Admin" : "User"})
+
+          <div
+            style={{
+              display: "flex",
+              gap: 12,
+              alignItems: "center",
+            }}
+          >
+            <div
+              style={{
+                fontSize: 13,
+                color: dark
+                  ? "rgba(255,255,255,.5)"
+                  : "#64748b",
+              }}
+            >
+              {user?.name}
+
+              <span
+                style={{
+                  opacity: 0.5,
+                  marginLeft: 8,
+                }}
+              >
+                (
+                {user?.role === "super_admin"
+                  ? "Super Admin"
+                  : user?.role === "sub_admin"
+                  ? "Sub Admin"
+                  : "User"}
+                )
               </span>
             </div>
+
             <button
               onClick={() => setDark(!dark)}
               style={{
                 padding: "8px 14px",
                 borderRadius: 8,
-                border: dark ? "1px solid rgba(255,255,255,.12)" : "1px solid #e2e8f0",
-                background: dark ? "rgba(255,255,255,.06)" : "#fff",
-                color: dark ? "#f1f5f9" : "#0f172a",
                 cursor: "pointer",
-                fontSize: 13,
-                fontWeight: 500,
-                transition: "all .15s ease",
               }}
             >
               {dark ? "☀️ Light" : "🌙 Dark"}
             </button>
+
             <button
               onClick={logout}
               style={{
@@ -127,58 +196,191 @@ function AppLayout() {
                 background: "transparent",
                 color: "#ef4444",
                 cursor: "pointer",
-                fontSize: 13,
-                fontWeight: 600,
-                transition: "all .15s ease",
               }}
-              onMouseEnter={(e) => { e.currentTarget.style.background = "#ef4444"; e.currentTarget.style.color = "#fff"; }}
-              onMouseLeave={(e) => { e.currentTarget.style.background = "transparent"; e.currentTarget.style.color = "#ef4444"; }}
             >
               Logout
             </button>
           </div>
         </header>
 
-        {/* Main Content - Scrollable */}
-        <main style={{
-          flex: 1,
-          overflowY: "auto",
-          padding: "28px",
-          background: dark ? "transparent" : "#f1f5f9",
-        }}>
+        {/* Pages */}
+        <main
+          style={{
+            flex: 1,
+            overflowY: "auto",
+            padding: 28,
+          }}
+        >
           <Routes>
-            <Route index element={<Navigate to="/dashboard" replace />} />
-            <Route path="/dashboard" element={<Dashboard dark={dark} toast={{ add }} />} />
-            <Route path="/members" element={<Members dark={dark} toast={{ add }} setPreview={setPreview} />} />
-            <Route path="/schemes" element={<Schemes dark={dark} toast={{ add }} />} />
-            <Route path="/groups" element={<Groups dark={dark} toast={{ add }} />} />
-            <Route path="/collections" element={<Collections dark={dark} toast={{ add }} setPreview={setPreview} />} />
-            <Route path="/billing" element={<BillingDashboard dark={dark} toast={{ add }} />} />
-            <Route path="/auctions" element={<Auctions dark={dark} toast={{ add }} setPreview={setPreview} />} />
-            <Route path="/prizes" element={<Prizes dark={dark} />} />
-            <Route path="/accounting" element={<Accounting dark={dark} />} />
-            <Route path="/reports" element={<ReportsDashboard dark={dark} toast={{ add }} />} />
-            <Route path="/employees" element={<Employees dark={dark} toast={{ add }} />} />
-            <Route path="/branches" element={<Branches dark={dark} toast={{ add }} />} />
-            <Route path="/notifications" element={<Notifications dark={dark} />} />
-            <Route path="/settings" element={<Settings dark={dark} toast={{ add }} />} />
-            <Route path="/profile" element={<UserProfile dark={dark} />} />
-            <Route path="/payments" element={<UserPaymentPortal dark={dark} toast={{ add }} />} />
-            <Route path="*" element={<Navigate to="/dashboard" replace />} />
+            <Route
+              path="/dashboard"
+              element={
+                <Dashboard
+                  dark={dark}
+                  toast={{ add }}
+                />
+              }
+            />
+          
+
+            <Route
+              path="/members"
+              element={
+                <Members
+                  dark={dark}
+                  toast={{ add }}
+                  setPreview={setPreview}
+                />
+              }
+            />
+
+            <Route
+              path="/schemes"
+              element={
+                <Schemes
+                  dark={dark}
+                  toast={{ add }}
+                />
+              }
+            />
+
+            <Route
+              path="/groups"
+              element={
+                <Groups
+                  dark={dark}
+                  toast={{ add }}
+                />
+              }
+            />
+
+            <Route
+              path="/collections"
+              element={
+                <Collections
+                  dark={dark}
+                  toast={{ add }}
+                  setPreview={setPreview}
+                />
+              }
+            />
+
+            <Route
+              path="/billing"
+              element={
+                <BillingDashboard
+                  dark={dark}
+                  toast={{ add }}
+                />
+              }
+            />
+
+            <Route
+              path="/auctions"
+              element={
+                <Auctions
+                  dark={dark}
+                  toast={{ add }}
+                  setPreview={setPreview}
+                />
+              }
+            />
+
+            <Route
+              path="/prizes"
+              element={<Prizes dark={dark} />}
+            />
+
+            <Route
+              path="/accounting"
+              element={<Accounting dark={dark} />}
+            />
+
+            <Route
+              path="/reports"
+              element={
+                <ReportsDashboard
+                  dark={dark}
+                  toast={{ add }}
+                />
+              }
+            />
+
+            <Route
+              path="/employees"
+              element={
+                <Employees
+                  dark={dark}
+                  toast={{ add }}
+                />
+              }
+            />
+
+            <Route
+              path="/branches"
+              element={
+                <Branches
+                  dark={dark}
+                  toast={{ add }}
+                />
+              }
+            />
+
+            <Route
+              path="/notifications"
+              element={<Notifications dark={dark} />}
+            />
+
+            <Route
+              path="/settings"
+              element={
+                <Settings
+                  dark={dark}
+                  toast={{ add }}
+                />
+              }
+            />
+
+            <Route
+              path="/profile"
+              element={<UserProfile dark={dark} />}
+            />
+
+            <Route
+              path="/payments"
+              element={
+                <UserPaymentPortal
+                  dark={dark}
+                  toast={{ add }}
+                />
+              }
+            />
+
+            <Route
+              path="*"
+              element={
+                <Navigate
+                  to="/dashboard"
+                  replace
+                />
+              }
+            />
           </Routes>
         </main>
       </div>
 
-      {/* Toast Notifications */}
       <Toast toasts={toasts} remove={remove} />
 
-      {/* Preview Modal */}
-      {preview && <PreviewDocument doc={preview} onClose={() => setPreview(null)} />}
+      {preview && (
+        <PreviewDocument
+          doc={preview}
+          onClose={() => setPreview(null)}
+        />
+      )}
     </div>
   );
 }
 
-// ─── ROOT APP ─────────────────────────────────────────────────────────────────
 function App() {
   return (
     <BrowserRouter>
