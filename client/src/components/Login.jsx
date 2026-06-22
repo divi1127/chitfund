@@ -1,7 +1,7 @@
-// Login component for user authentication
 import { useState } from "react";
 import { useAuth } from "../contexts/AuthContext";
 import { COMPANY } from "../utils/constants";
+import { loginUser } from "../utils/api";
 
 export function Login() {
   const [userId, setUserId] = useState("");
@@ -16,18 +16,7 @@ export function Login() {
     setLoading(true);
 
     try {
-      const response = await fetch("/api/auth/login", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ userId: userId.trim(), password: password.trim() })
-      });
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.message || "Login failed");
-      }
-
+      const data = await loginUser(userId.trim(), password.trim());
       login(data.user);
     } catch (err) {
       setError(err.message);
@@ -53,7 +42,6 @@ export function Login() {
         maxWidth: 420,
         boxShadow: "0 20px 60px rgba(0,0,0,0.3)"
       }}>
-        {/* Logo */}
         <div style={{ textAlign: "center", marginBottom: 32 }}>
           <div style={{
             width: 64,
@@ -79,16 +67,9 @@ export function Login() {
           </p>
         </div>
 
-        {/* Login Form */}
         <form onSubmit={handleSubmit}>
           <div style={{ marginBottom: 20 }}>
-            <label style={{
-              display: "block",
-              fontSize: 13,
-              fontWeight: 600,
-              color: "#374151",
-              marginBottom: 8
-            }}>
+            <label style={{ display: "block", fontSize: 13, fontWeight: 600, color: "#374151", marginBottom: 8 }}>
               User ID
             </label>
             <input
@@ -104,7 +85,6 @@ export function Login() {
                 borderRadius: 10,
                 fontSize: 14,
                 boxSizing: "border-box",
-                transition: "border-color 0.2s",
                 outline: "none"
               }}
               onFocus={(e) => e.target.style.borderColor = "#2563eb"}
@@ -113,13 +93,7 @@ export function Login() {
           </div>
 
           <div style={{ marginBottom: 24 }}>
-            <label style={{
-              display: "block",
-              fontSize: 13,
-              fontWeight: 600,
-              color: "#374151",
-              marginBottom: 8
-            }}>
+            <label style={{ display: "block", fontSize: 13, fontWeight: 600, color: "#374151", marginBottom: 8 }}>
               Password
             </label>
             <input
@@ -135,7 +109,6 @@ export function Login() {
                 borderRadius: 10,
                 fontSize: 14,
                 boxSizing: "border-box",
-                transition: "border-color 0.2s",
                 outline: "none"
               }}
               onFocus={(e) => e.target.style.borderColor = "#2563eb"}
@@ -179,12 +152,11 @@ export function Login() {
           </button>
         </form>
 
-        {/* Quick Login Hints */}
         <div style={{ marginTop: 24, borderTop: "1px solid #f3f4f6", paddingTop: 20 }}>
           <p style={{ fontSize: 11, color: "#9ca3af", textAlign: "center", marginBottom: 10 }}>
-            Quick Login
+            Quick Login (Development)
           </p>
-          <div style={{ display: "flex", gap: 8 }}>
+          <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
             {[
               { label: "Super Admin", id: "ADMIN001", pw: "admin123", color: "#2563eb" },
               { label: "Sub Admin",   id: "SUB001",   pw: "sub123",   color: "#7c3aed" },
@@ -204,6 +176,7 @@ export function Login() {
                   fontSize: 11,
                   fontWeight: 600,
                   cursor: "pointer",
+                  minWidth: 0,
                 }}
               >
                 {acc.label}

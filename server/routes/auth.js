@@ -1,14 +1,14 @@
 import express from 'express';
+import bcrypt from 'bcryptjs';
 import User from '../models/User.js';
+import { generateToken } from '../middleware/auth.js';
+import { logAudit } from '../utils/audit.js';
 
 const router = express.Router();
 
-// Login endpoint
 router.post('/login', async (req, res) => {
   try {
     const { userId, password } = req.body;
-
-    console.log('Login attempt:', { userId, password: '***' });
 
     if (!userId || !password) {
       return res.status(400).json({ message: 'User ID and password are required' });
@@ -16,19 +16,17 @@ router.post('/login', async (req, res) => {
 
     const user = await User.findOne({ userId, status: 'active' });
 
-    console.log('User found:', user ? { userId: user.userId, name: user.name, role: user.role } : 'No user found');
-
     if (!user) {
       return res.status(401).json({ message: 'Invalid credentials' });
     }
 
-    // For now, simple password comparison (in production, use bcrypt)
-    if (user.password !== password) {
-      console.log('Password mismatch');
+    const isPasswordValid = await bcrypt.compare(password, user.password);
+    if (!isPasswordValid) {
       return res.status(401).json({ message: 'Invalid credentials' });
     }
 
-    // Return user data without password
+    const token = generateToken(user);
+
     const userData = {
       id: user._id,
       userId: user.userId,
@@ -36,10 +34,13 @@ router.post('/login', async (req, res) => {
       email: user.email,
       role: user.role,
       modules: user.modules,
-      permissions: user.permissions
+      permissions: user.permissions,
+      branch: user.branch,
+      token
     };
 
-    console.log('Login successful:', { userId: userData.userId, role: userData.role });
+    await logAudit({ userId: user.userId, userName: user.name, userRole: user.role, action: 'LOGIN', resource: 'Auth', status: 'success', ipAddress: req.ip });
+
     res.json({ user: userData });
   } catch (error) {
     console.error('Login error:', error);
@@ -47,9 +48,25 @@ router.post('/login', async (req, res) => {
   }
 });
 
-// Logout endpoint (optional, can be handled client-side)
 router.post('/logout', (req, res) => {
   res.json({ message: 'Logged out successfully' });
+});
+
+router.get('/me', async (req, res) => {
+  const authHeader = req.headers['authorization'];
+  const token = authHeader && authHeader.split(' ')[1];
+  if (!token) return res.status(401).json({ message: 'No token provided' });
+
+  try {
+    const jwt = (await import('jsonwebtoken')).default;
+    const JWT_SECRET = process.env.JWT_SECRET || 'your_jwt_secret_key_here';
+    const decoded = jwt.verify(token, JWT_SECRET);
+    const user = await User.findById(decoded.id, '-password');
+    if (!user) return res.status(404).json({ message: 'User not found' });
+    res.json({ user: { id: user._id, userId: user.userId, name: user.name, email: user.email, role: user.role, modules: user.modules, permissions: user.permissions, branch: user.branch } });
+  } catch (error) {
+    res.status(403).json({ message: 'Invalid or expired token' });
+  }
 });
 
 export default router;

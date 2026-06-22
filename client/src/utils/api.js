@@ -1,10 +1,17 @@
-// API helper functions for backend communication
-
 const API_BASE = "/api";
+
+function getHeaders() {
+  const headers = { 'Content-Type': 'application/json' };
+  const user = JSON.parse(localStorage.getItem('user') || 'null');
+  if (user?.token) {
+    headers['Authorization'] = `Bearer ${user.token}`;
+  }
+  return headers;
+}
 
 export async function fetchData(endpoint) {
   try {
-    const response = await fetch(`${API_BASE}${endpoint}`);
+    const response = await fetch(`${API_BASE}${endpoint}`, { headers: getHeaders() });
     if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
     return await response.json();
   } catch (error) {
@@ -17,7 +24,7 @@ export async function createData(endpoint, data) {
   try {
     const response = await fetch(`${API_BASE}${endpoint}`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: getHeaders(),
       body: JSON.stringify(data)
     });
     if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
@@ -32,7 +39,7 @@ export async function updateData(endpoint, id, data) {
   try {
     const response = await fetch(`${API_BASE}${endpoint}/${id}`, {
       method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
+      headers: getHeaders(),
       body: JSON.stringify(data)
     });
     if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
@@ -46,7 +53,8 @@ export async function updateData(endpoint, id, data) {
 export async function deleteData(endpoint, id) {
   try {
     const response = await fetch(`${API_BASE}${endpoint}/${id}`, {
-      method: 'DELETE'
+      method: 'DELETE',
+      headers: getHeaders()
     });
     if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
     return await response.json();
@@ -54,4 +62,15 @@ export async function deleteData(endpoint, id) {
     console.error(`Error deleting ${endpoint}:`, error);
     throw error;
   }
+}
+
+export async function loginUser(userId, password) {
+  const response = await fetch(`${API_BASE}/auth/login`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ userId, password })
+  });
+  const data = await response.json();
+  if (!response.ok) throw new Error(data.message || 'Login failed');
+  return data;
 }

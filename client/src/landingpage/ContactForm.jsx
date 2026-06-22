@@ -6,13 +6,32 @@ export const ContactForm = () => {
   const [form, setForm] = useState({ name: '', email: '', phone: '', plan: 'gold', message: '' });
   const [loading, setLoading] = useState(false);
   const [done, setDone] = useState(false);
+  const [error, setError] = useState('');
 
   const set = (key) => (e) => setForm({ ...form, [key]: e.target.value });
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
-    setTimeout(() => { setLoading(false); setDone(true); setForm({ name: '', email: '', phone: '', plan: 'gold', message: '' }); }, 1500);
+    setError('');
+    try {
+      const res = await fetch('/api/enquiries', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(form),
+      });
+      if (res.ok) {
+        setDone(true);
+        setForm({ name: '', email: '', phone: '', plan: 'gold', message: '' });
+      } else {
+        const data = await res.json().catch(() => ({}));
+        setError(data.message || 'Submission failed. Please try again.');
+      }
+    } catch {
+      setError('Network error. Please check your connection and try again.');
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -126,6 +145,9 @@ export const ContactForm = () => {
                     : <><span>Request Callback</span><Send className="w-4 h-4" /></>
                   }
                 </button>
+                {error && (
+                  <p className="text-sm text-red-500 text-center font-medium">{error}</p>
+                )}
               </form>
             )}
           </motion.div>

@@ -9,7 +9,7 @@ import { Table } from "../components/Table";
 import { Badge } from "../components/Badge";
 import { Btn } from "../components/Btn";
 import { fmt, today } from "../utils/helpers";
-import { FiDollarSign, FiUsers, FiFolder, FiFileText, FiBarChart2, FiTag, FiClock, FiTrendingUp } from "react-icons/fi";
+import { FiDollarSign, FiUsers, FiFolder, FiFileText, FiBarChart2, FiTag, FiClock, FiTrendingUp, FiMessageSquare } from "react-icons/fi";
 import { useAuth } from "../contexts/AuthContext";
 import { COMPANY, ROUTES } from "../utils/constants";
 import { InvoiceModal } from "../components/InvoiceModal";
@@ -23,6 +23,7 @@ export function Dashboard({ dark, toast }) {
   const { data: auctions } = useData('/auctions');
   const { data: schemes } = useData('/schemes');
   const { data: invoices, loading: invoicesLoading } = useData('/invoices');
+  const { data: enquiries } = useData('/enquiries');
   const [showInvoicePopup, setShowInvoicePopup] = useState(false);
   const [selectedInvoice, setSelectedInvoice] = useState(null);
 
@@ -258,6 +259,7 @@ export function Dashboard({ dark, toast }) {
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(180px,1fr))", gap: 16, marginBottom: 28 }}>
         <StatCard label="Monthly Collections" value={`₹${monthlyCollectionsAmount.toLocaleString()}`} sub={`Current month (${new Date().toLocaleString('default', { month: 'long' })})`} color="#10b981" dark={dark} icon={<FiDollarSign size={22} />} />
         <StatCard label="Total Members" value={members.length} sub="Active members" color="#d97706" dark={dark} icon={<FiUsers size={22} />} />
+        <StatCard label="Total Enquiries" value={enquiries?.length || 0} sub="Website leads" color="#0ea5e9" dark={dark} icon={<FiMessageSquare size={22} />} />
         <StatCard label="Total Groups" value={groups.length} sub="Running groups" color="#16a34a" dark={dark} icon={<FiFolder size={22} />} />
         <StatCard label="Total Schemes" value={schemes.length} sub="Available schemes" color="#2563eb" dark={dark} icon={<FiFileText size={22} />} />
         <StatCard label="Total Collections" value={collections.length} sub="All collections" color="#8b5cf6" dark={dark} icon={<FiBarChart2 size={22} />} />

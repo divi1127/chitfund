@@ -1,8 +1,6 @@
-// Company and application constants
-
 export const COMPANY = {
   name: "HR Chits Enterprises",
-  address: "12, Anna Salai, T. Nagar, Chennai – 600 017, Tamil Nadu",
+  address: "12, Anna Salai, T. Nagar, Chennai  600 017, Tamil Nadu",
   phone: "+91 44 2815 6789",
   email: "info@hrchits.com",
   gstin: "33AABCS1234A1ZQ",
@@ -25,7 +23,6 @@ export const COMPANY = {
   cashInstructions: "Please visit our office at 12, Anna Salai, T. Nagar, Chennai. Contact: +91 44 2815 6789. Office hours: 9 AM - 6 PM, Monday - Saturday."
 };
 
-// Routes map for URL-based navigation
 export const ROUTES = {
   dashboard: "/dashboard",
   members: "/members",
@@ -45,9 +42,11 @@ export const ROUTES = {
   payments: "/payments",
   addMembers: "/add-members",
   userManagement: "/user-management",
+  enquiries: "/enquiries",
+  auditLogs: "/audit-logs",
+  kyc: "/kyc-verification",
 };
 
-// Reverse map: URL path -> id
 export const ROUTE_TO_ID = Object.fromEntries(
   Object.entries(ROUTES).map(([id, path]) => [path, id])
 );
@@ -69,4 +68,8 @@ export const NAV_ITEMS = [
   { id: "settings", label: "Settings", icon: "settings" },
   { id: "profile", label: "My Profile", icon: "profile" },
   { id: "payments", label: "My Payments", icon: "payments" },
+  { id: "enquiries", label: "Enquiries", icon: "enquiries" },
+  { id: "user-management", label: "User Management", icon: "members" },
+  { id: "audit-logs", label: "Audit Logs", icon: "reports" },
+  { id: "kyc", label: "KYC Verification", icon: "profile" },
 ];

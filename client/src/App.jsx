@@ -18,7 +18,9 @@ import { COMPANY, NAV_ITEMS } from "./utils/constants";
 
 import Landingpage from "./landingpage/Landingpage";
 
-import { Dashboard } from "./pages/Dashboard";
+import { SuperAdminDashboard } from "./pages/SuperAdminDashboard";
+import { SubAdminDashboard } from "./pages/SubAdminDashboard";
+import { UserDashboard } from "./pages/UserDashboard";
 import { Members } from "./pages/Members";
 import { Schemes } from "./pages/Schemes";
 import { Groups } from "./pages/Groups";
@@ -32,8 +34,32 @@ import { Employees } from "./pages/Employees";
 import { Branches } from "./pages/Branches";
 import { Notifications } from "./pages/Notifications";
 import { Settings } from "./pages/Settings";
+import { PlatformSettings } from "./pages/PlatformSettings";
 import { UserProfile } from "./pages/UserProfile";
 import { UserPaymentPortal } from "./pages/UserPaymentPortal";
+import { Enquiries } from "./pages/Enquiries";
+import { UserManagement } from "./pages/UserManagement";
+import { AuditLogs } from "./pages/AuditLogs";
+import { KycVerification } from "./pages/KycVerification";
+
+function ProtectedRoute({ children, requiredRole, requiredModule }) {
+  const { user, hasModuleAccess } = useAuth();
+  if (!user) return <Navigate to="/login" replace />;
+  if (requiredRole && !requiredRole.includes(user.role)) {
+    return <Navigate to="/dashboard" replace />;
+  }
+  if (requiredModule && !hasModuleAccess(requiredModule)) {
+    return <Navigate to="/dashboard" replace />;
+  }
+  return children;
+}
+
+function RoleBasedDashboard({ dark, toast }) {
+  const { user } = useAuth();
+  if (user?.role === "super_admin") return <SuperAdminDashboard dark={dark} toast={toast} />;
+  if (user?.role === "sub_admin") return <SubAdminDashboard dark={dark} toast={toast} />;
+  return <UserDashboard dark={dark} toast={toast} />;
+}
 
 function AppLayout() {
   const [dark, setDark] = useState(false);
@@ -66,17 +92,10 @@ function AppLayout() {
     );
   }
 
-  // Public Routes
   if (!user) {
     return (
       <Routes>
-          <Route
-              path="/login"
-              element={
-                <Login
-                />
-              }
-            />
+        <Route path="/login" element={<Login />} />
         <Route path="/" element={<Landingpage />} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
@@ -95,7 +114,6 @@ function AppLayout() {
         background: dark ? "#0f172a" : "#f1f5f9",
       }}
     >
-      {/* Sidebar */}
       <Sidebar
         dark={dark}
         collapsed={collapsed}
@@ -103,7 +121,6 @@ function AppLayout() {
         navItems={filteredNavItems}
       />
 
-      {/* Main Content */}
       <div
         style={{
           flex: 1,
@@ -114,15 +131,10 @@ function AppLayout() {
           transition: "margin-left .25s ease",
         }}
       >
-        {/* Header */}
         <header
           style={{
-            background: dark
-              ? "rgba(255,255,255,.04)"
-              : "#fff",
-            borderBottom: dark
-              ? "1px solid rgba(255,255,255,.08)"
-              : "1px solid #e2e8f0",
+            background: dark ? "rgba(255,255,255,.04)" : "#fff",
+            borderBottom: dark ? "1px solid rgba(255,255,255,.08)" : "1px solid #e2e8f0",
             padding: "14px 28px",
             display: "flex",
             justifyContent: "space-between",
@@ -143,36 +155,11 @@ function AppLayout() {
             {COMPANY.name}
           </div>
 
-          <div
-            style={{
-              display: "flex",
-              gap: 12,
-              alignItems: "center",
-            }}
-          >
-            <div
-              style={{
-                fontSize: 13,
-                color: dark
-                  ? "rgba(255,255,255,.5)"
-                  : "#64748b",
-              }}
-            >
+          <div style={{ display: "flex", gap: 12, alignItems: "center" }}>
+            <div style={{ fontSize: 13, color: dark ? "rgba(255,255,255,.5)" : "#64748b" }}>
               {user?.name}
-
-              <span
-                style={{
-                  opacity: 0.5,
-                  marginLeft: 8,
-                }}
-              >
-                (
-                {user?.role === "super_admin"
-                  ? "Super Admin"
-                  : user?.role === "sub_admin"
-                  ? "Sub Admin"
-                  : "User"}
-                )
+              <span style={{ opacity: 0.5, marginLeft: 8 }}>
+                ({user?.role === "super_admin" ? "Super Admin" : user?.role === "sub_admin" ? "Sub Admin" : "User"})
               </span>
             </div>
 
@@ -182,9 +169,13 @@ function AppLayout() {
                 padding: "8px 14px",
                 borderRadius: 8,
                 cursor: "pointer",
+                border: "1px solid " + (dark ? "rgba(255,255,255,.15)" : "#d1d5db"),
+                background: dark ? "rgba(255,255,255,.05)" : "#fff",
+                color: dark ? "#f3f4f6" : "#111",
+                fontSize: 12,
               }}
             >
-              {dark ? "☀️ Light" : "🌙 Dark"}
+              {dark ? " Light" : " Dark"}
             </button>
 
             <button
@@ -196,6 +187,8 @@ function AppLayout() {
                 background: "transparent",
                 color: "#ef4444",
                 cursor: "pointer",
+                fontSize: 12,
+                fontWeight: 600,
               }}
             >
               Logout
@@ -203,168 +196,131 @@ function AppLayout() {
           </div>
         </header>
 
-        {/* Pages */}
-        <main
-          style={{
-            flex: 1,
-            overflowY: "auto",
-            padding: 28,
-          }}
-        >
+        <main style={{ flex: 1, overflowY: "auto", padding: 28 }}>
           <Routes>
-            <Route
-              path="/dashboard"
-              element={
-                <Dashboard
-                  dark={dark}
-                  toast={{ add }}
-                />
-              }
-            />
-          
+            <Route path="/dashboard" element={<RoleBasedDashboard dark={dark} toast={{ add }} />} />
 
-            <Route
-              path="/members"
-              element={
-                <Members
-                  dark={dark}
-                  toast={{ add }}
-                  setPreview={setPreview}
-                />
-              }
-            />
+            <Route path="/members" element={
+              <ProtectedRoute requiredModule="members">
+                <Members dark={dark} toast={{ add }} setPreview={setPreview} />
+              </ProtectedRoute>
+            } />
 
-            <Route
-              path="/schemes"
-              element={
-                <Schemes
-                  dark={dark}
-                  toast={{ add }}
-                />
-              }
-            />
+            <Route path="/schemes" element={
+              <ProtectedRoute requiredModule="schemes">
+                <Schemes dark={dark} toast={{ add }} />
+              </ProtectedRoute>
+            } />
 
-            <Route
-              path="/groups"
-              element={
-                <Groups
-                  dark={dark}
-                  toast={{ add }}
-                />
-              }
-            />
+            <Route path="/groups" element={
+              <ProtectedRoute requiredModule="groups">
+                <Groups dark={dark} toast={{ add }} />
+              </ProtectedRoute>
+            } />
 
-            <Route
-              path="/collections"
-              element={
-                <Collections
-                  dark={dark}
-                  toast={{ add }}
-                  setPreview={setPreview}
-                />
-              }
-            />
+            <Route path="/collections" element={
+              <ProtectedRoute requiredModule="collections">
+                <Collections dark={dark} toast={{ add }} setPreview={setPreview} />
+              </ProtectedRoute>
+            } />
 
-            <Route
-              path="/billing"
-              element={
-                <BillingDashboard
-                  dark={dark}
-                  toast={{ add }}
-                />
-              }
-            />
+            <Route path="/billing" element={
+              <ProtectedRoute requiredModule="billing">
+                <BillingDashboard dark={dark} toast={{ add }} />
+              </ProtectedRoute>
+            } />
 
-            <Route
-              path="/auctions"
-              element={
-                <Auctions
-                  dark={dark}
-                  toast={{ add }}
-                  setPreview={setPreview}
-                />
-              }
-            />
+            <Route path="/auctions" element={
+              <ProtectedRoute requiredModule="auctions">
+                <Auctions dark={dark} toast={{ add }} setPreview={setPreview} />
+              </ProtectedRoute>
+            } />
 
-            <Route
-              path="/prizes"
-              element={<Prizes dark={dark} />}
-            />
+            <Route path="/prizes" element={
+              <ProtectedRoute requiredModule="prizes">
+                <Prizes dark={dark} />
+              </ProtectedRoute>
+            } />
 
-            <Route
-              path="/accounting"
-              element={<Accounting dark={dark} />}
-            />
+            <Route path="/accounting" element={
+              <ProtectedRoute requiredModule="accounting">
+                <Accounting dark={dark} />
+              </ProtectedRoute>
+            } />
 
-            <Route
-              path="/reports"
-              element={
-                <ReportsDashboard
-                  dark={dark}
-                  toast={{ add }}
-                />
-              }
-            />
+            <Route path="/reports" element={
+              <ProtectedRoute requiredModule="reports">
+                <ReportsDashboard dark={dark} toast={{ add }} />
+              </ProtectedRoute>
+            } />
 
-            <Route
-              path="/employees"
-              element={
-                <Employees
-                  dark={dark}
-                  toast={{ add }}
-                />
-              }
-            />
+            <Route path="/employees" element={
+              <ProtectedRoute requiredModule="employees">
+                <Employees dark={dark} toast={{ add }} />
+              </ProtectedRoute>
+            } />
 
-            <Route
-              path="/branches"
-              element={
-                <Branches
-                  dark={dark}
-                  toast={{ add }}
-                />
-              }
-            />
+            <Route path="/branches" element={
+              <ProtectedRoute requiredModule="branches">
+                <Branches dark={dark} toast={{ add }} />
+              </ProtectedRoute>
+            } />
 
-            <Route
-              path="/notifications"
-              element={<Notifications dark={dark} />}
-            />
+            <Route path="/notifications" element={
+              <ProtectedRoute requiredModule="notifications">
+                <Notifications dark={dark} toast={{ add }} />
+              </ProtectedRoute>
+            } />
 
-            <Route
-              path="/settings"
-              element={
-                <Settings
-                  dark={dark}
-                  toast={{ add }}
-                />
-              }
-            />
+            <Route path="/settings" element={
+              <ProtectedRoute requiredModule="settings">
+                <Settings dark={dark} toast={{ add }} />
+              </ProtectedRoute>
+            } />
 
-            <Route
-              path="/profile"
-              element={<UserProfile dark={dark} />}
-            />
+            <Route path="/platform-settings" element={
+              <ProtectedRoute requiredRole={["super_admin"]}>
+                <PlatformSettings dark={dark} toast={{ add }} />
+              </ProtectedRoute>
+            } />
 
-            <Route
-              path="/payments"
-              element={
-                <UserPaymentPortal
-                  dark={dark}
-                  toast={{ add }}
-                />
-              }
-            />
+            <Route path="/profile" element={
+              <ProtectedRoute requiredModule="profile">
+                <UserProfile dark={dark} />
+              </ProtectedRoute>
+            } />
 
-            <Route
-              path="*"
-              element={
-                <Navigate
-                  to="/dashboard"
-                  replace
-                />
-              }
-            />
+            <Route path="/payments" element={
+              <ProtectedRoute requiredModule="payments">
+                <UserPaymentPortal dark={dark} toast={{ add }} />
+              </ProtectedRoute>
+            } />
+
+            <Route path="/enquiries" element={
+              <ProtectedRoute requiredModule="enquiries">
+                <Enquiries dark={dark} toast={{ add }} />
+              </ProtectedRoute>
+            } />
+
+            <Route path="/user-management" element={
+              <ProtectedRoute requiredRole={["super_admin", "sub_admin"]}>
+                <UserManagement dark={dark} toast={{ add }} />
+              </ProtectedRoute>
+            } />
+
+            <Route path="/audit-logs" element={
+              <ProtectedRoute requiredRole={["super_admin"]}>
+                <AuditLogs dark={dark} toast={{ add }} />
+              </ProtectedRoute>
+            } />
+
+            <Route path="/kyc-verification" element={
+              <ProtectedRoute requiredModule="kyc">
+                <KycVerification dark={dark} toast={{ add }} />
+              </ProtectedRoute>
+            } />
+
+            <Route path="*" element={<Navigate to="/dashboard" replace />} />
           </Routes>
         </main>
       </div>
