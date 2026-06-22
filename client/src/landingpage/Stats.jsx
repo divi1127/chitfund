@@ -1,83 +1,63 @@
 import { useEffect, useState, useRef } from 'react';
 import { motion, useInView } from 'framer-motion';
-import { Users, Award, ShieldCheck, HeartHandshake } from 'lucide-react';
+import { Users, Landmark, ShieldCheck, Smile } from 'lucide-react';
 
-const StatCounter = ({ icon, value, suffix, label, description, index }) => {
+const stats = [
+  { icon: <Users className="w-5 h-5" />, value: 10000, suffix: '+', label: 'Active Members', sub: 'Across India' },
+  { icon: <Landmark className="w-5 h-5" />, value: 100, suffix: ' Cr+', label: 'Funds Managed', sub: 'Securely Rotating' },
+  { icon: <ShieldCheck className="w-5 h-5" />, value: 500, suffix: '+', label: 'Active Groups', sub: 'Fully Regulated' },
+  { icon: <Smile className="w-5 h-5" />, value: 98, suffix: '%', label: 'Satisfaction Rate', sub: 'Verified Reviews' },
+];
+
+const Counter = ({ value, suffix }) => {
   const [count, setCount] = useState(0);
   const ref = useRef(null);
-  const isInView = useInView(ref, { once: true, amount: 0.5 });
+  const isInView = useInView(ref, { once: true });
 
   useEffect(() => {
     if (!isInView) return;
     let start = 0;
-    const end = value;
-    const duration = 2000;
-    const incrementTime = Math.max(Math.floor(duration / end), 20);
+    const duration = 1800;
+    const step = Math.ceil(value / (duration / 16));
     const timer = setInterval(() => {
-      start += Math.ceil(end / (duration / incrementTime));
-      if (start >= end) {
-        setCount(end);
-        clearInterval(timer);
-      } else {
-        setCount(start);
-      }
-    }, incrementTime);
+      start += step;
+      if (start >= value) { setCount(value); clearInterval(timer); }
+      else setCount(start);
+    }, 16);
     return () => clearInterval(timer);
   }, [isInView, value]);
 
-  const formatNumber = (num) => num.toLocaleString('en-IN');
-
   return (
-    <motion.div
-      ref={ref}
-      initial={{ opacity: 0, y: 24 }}
-      whileInView={{ opacity: 1, y: 0 }}
-      viewport={{ once: true }}
-      transition={{ duration: 0.5, delay: index * 0.12 }}
-      whileHover={{ y: -6 }}
-      className="bg-white border border-border-light rounded-2xl p-7 sm:p-8 md:p-10 relative group cursor-default shadow-sm hover:shadow-xl hover:shadow-primary-blue/5 hover:border-premium-gold/40 transition-all duration-300"
-    >
-      <div className="relative z-10">
-        <div className="flex items-center justify-between mb-4 md:mb-5">
-          <div className="w-12 h-12 md:w-14 md:h-14 rounded-xl bg-primary-blue/5 border border-primary-blue/10 flex items-center justify-center text-premium-gold group-hover:bg-gradient-to-br group-hover:from-premium-gold group-hover:to-gold-600 group-hover:text-white group-hover:border-premium-gold/30 group-hover:scale-110 transition-all duration-300">
-            {icon}
-          </div>
-          <span className="text-xs md:text-sm text-text-secondary uppercase tracking-wider font-semibold">Live</span>
-        </div>
-        <h3 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-extrabold mb-2 flex items-baseline">
-          <span className="text-primary-blue">
-            {formatNumber(count)}
-          </span>
-          <span className="text-premium-gold ml-1.5 text-xl md:text-2xl lg:text-3xl">{suffix}</span>
-        </h3>
-        <h4 className="text-base md:text-lg font-bold text-text-primary mb-1.5">{label}</h4>
-        <p className="text-sm md:text-base text-text-secondary leading-relaxed">{description}</p>
-      </div>
-    </motion.div>
+    <span ref={ref} className="tabular-nums">
+      {count.toLocaleString('en-IN')}{suffix}
+    </span>
   );
 };
 
-export const Stats = () => {
-  const statsData = [
-    { icon: <Users size={26} />, value: 10000, suffix: '+', label: 'Active Members', description: 'Trusted by verified savers & borrowers nationwide.' },
-    { icon: <Award size={26} />, value: 100, suffix: ' Cr+', label: 'Managed Funds', description: 'Capital securely rotating through Chit auctions.' },
-    { icon: <ShieldCheck size={26} />, value: 500, suffix: '+', label: 'Active Chit Groups', description: 'Fully regulated groups running concurrently.' },
-    { icon: <HeartHandshake size={26} />, value: 98, suffix: '%', label: 'Satisfaction Rate', description: 'Customers praising our transparency & payout speed.' },
-  ];
-
-  return (
-    <section className="section-padding bg-section-alt">
-      <div className="section-container relative z-10">
-        <div className="section-header">
-          <div className="section-badge"><span>Platform Highlights</span></div>
-          <h2 className="section-title">Trusted by <span className="text-gradient-blue">10,000+ Members</span></h2>
-        </div>
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-6 md:gap-8">
-          {statsData.map((stat, index) => (
-            <StatCounter key={index} {...stat} index={index} />
-          ))}
-        </div>
+export const Stats = () => (
+  <section className="py-10 bg-white border-y border-border-light">
+    <div className="section-container">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-px bg-border-light rounded-2xl overflow-hidden border border-border-light">
+        {stats.map((stat, i) => (
+          <motion.div
+            key={i}
+            initial={{ opacity: 0, y: 16 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.4, delay: i * 0.08 }}
+            className="bg-white px-8 py-8 flex flex-col items-center text-center group hover:bg-primary-blue/2 transition-colors"
+          >
+            <div className="w-10 h-10 rounded-xl bg-primary-blue/8 text-primary-blue flex items-center justify-center mb-4 group-hover:bg-premium-gold/12 group-hover:text-premium-gold transition-colors">
+              {stat.icon}
+            </div>
+            <p className="text-3xl sm:text-4xl font-extrabold text-text-primary mb-1">
+              <Counter value={stat.value} suffix={stat.suffix} />
+            </p>
+            <p className="text-sm font-bold text-text-primary">{stat.label}</p>
+            <p className="text-xs text-text-secondary mt-0.5">{stat.sub}</p>
+          </motion.div>
+        ))}
       </div>
-    </section>
-  );
-};
+    </div>
+  </section>
+);

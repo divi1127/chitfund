@@ -1,42 +1,38 @@
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ChevronDown, HelpCircle } from 'lucide-react';
+import { ChevronDown } from 'lucide-react';
 
 const faqs = [
   {
-    question: 'What is a Chit Fund and how does it operate?',
-    answer: 'A chit fund is a traditional savings and credit instrument regulated by law. A group of members contributes a fixed amount monthly. Each month, a digital auction is held, and the member willing to accept the highest discount wins the lump sum pool. The discount bid is distributed back to all remaining members as monthly dividends, lowering their effective contribution.',
+    q: 'What is a Chit Fund and how does it work?',
+    a: 'A chit fund is a regulated savings and credit instrument where a group of members each contribute a fixed monthly amount. Each month, a transparent auction determines who receives the full lump-sum pool. The discount bid is distributed back to all members as monthly dividends.',
   },
   {
-    question: 'How do I pay my monthly installments?',
-    answer: 'JOD Chits supports completely automated digital payments. You can set up UPI AutoPay, e-mandates (NACH), or pay manually using credit/debit cards, UPI, or net banking from your member dashboard. Instant receipts and ledger updates are generated immediately.',
+    q: 'How do I pay my monthly installments?',
+    a: 'JOD Chits supports UPI AutoPay, NACH e-mandates, credit/debit cards, and net banking. Payments are fully automated with instant receipts and ledger updates after every transaction.',
   },
   {
-    question: 'How are the monthly auctions conducted?',
-    answer: 'Auctions occur online on specific dates listed in your group itinerary. Members can bid in real-time from the dashboard, or set automated parameters using our Smart Bidding tool. The bidding begins at the maximum pool value and drops by increments until the final bidder accepts.',
+    q: 'How are the monthly auctions conducted?',
+    a: 'Auctions are held online on the scheduled date. Members bid in real-time from the dashboard or set automated bid parameters using our Smart Bidding tool. The bidding starts at the full pool value and decreases until a member accepts.',
   },
   {
-    question: 'Are my funds secure and legally registered?',
-    answer: 'Absolutely. JOD Chits is fully registered under the Chit Funds Act, 1982, and operates under strict guidelines supervised by the State Registrar of Chits. Before starting any group, we deposit a 100% bank guarantee collateral with the government to ensure full member protection.',
+    q: 'Are my funds safe and legally protected?',
+    a: 'Yes. JOD Chits is registered under the Chit Funds Act 1982, supervised by the State Registrar of Chits. We deposit a 100% bank guarantee collateral with the government before starting any group.',
   },
   {
-    question: 'What is the process for receiving the winning bid amount?',
-    answer: 'If you win the auction, you must upload basic documentation (address proof or co-signer guarantees, depending on the scheme tier). Once verified, the prize money is disbursed directly to your registered bank account within 24 working hours.',
+    q: 'When and how do I receive the winning bid payout?',
+    a: 'After winning an auction and submitting basic documentation (address proof or guarantor details), the prize amount is deposited directly to your registered bank account within 24 working hours.',
   },
 ];
 
 export const FAQ = () => {
-  const [openIndex, setOpenIndex] = useState(-1);
-
-  const toggleFaq = (index) => {
-    setOpenIndex(openIndex === index ? -1 : index);
-  };
+  const [open, setOpen] = useState(-1);
 
   return (
-    <section id="faq" className="section-padding relative bg-section-alt">
-      <div className="section-container relative z-10 max-w-4xl">
+    <section id="faq" className="section-padding bg-section-alt">
+      <div className="section-container max-w-3xl">
         <div className="section-header">
-          <div className="section-badge"><span>Common Enquiries</span></div>
+          <div className="section-badge"><span>FAQ</span></div>
           <h2 className="section-title">Frequently Asked <span className="text-gradient-gold">Questions</span></h2>
         </div>
 
@@ -44,31 +40,20 @@ export const FAQ = () => {
           initial={{ opacity: 0, y: 16 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
-          transition={{ duration: 0.5 }}
-          className="bg-white border border-border-light rounded-2xl p-8 sm:p-10 divide-y divide-border-light shadow-sm"
+          transition={{ duration: 0.4 }}
+          className="bg-white border border-border-light rounded-2xl divide-y divide-border-light shadow-sm"
         >
-          {faqs.map((faq, index) => {
-            const isOpen = openIndex === index;
+          {faqs.map((faq, i) => {
+            const isOpen = open === i;
             return (
-              <div key={index}>
+              <div key={i}>
                 <button
-                  onClick={() => toggleFaq(index)}
-                  className={`w-full flex items-center justify-between text-left py-5 sm:py-6 font-semibold transition-colors cursor-pointer gap-4 group ${
-                    isOpen ? 'text-primary-blue' : 'text-text-primary hover:text-primary-blue'
-                  }`}
+                  onClick={() => setOpen(isOpen ? -1 : i)}
+                  className={`w-full flex items-center justify-between text-left px-7 py-5 gap-4 cursor-pointer transition-colors ${isOpen ? 'text-primary-blue' : 'text-text-primary hover:text-primary-blue'}`}
                   aria-expanded={isOpen}
                 >
-                  <span className="text-base sm:text-lg flex items-center">
-                    <HelpCircle className={`w-5 h-5 sm:w-6 sm:h-6 mr-4 shrink-0 transition-colors ${
-                      isOpen ? 'text-premium-gold' : 'text-premium-gold/60 group-hover:text-premium-gold'
-                    }`} />
-                    {faq.question}
-                  </span>
-                  <ChevronDown
-                    className={`w-5 h-5 sm:w-6 sm:h-6 shrink-0 transition-all duration-300 ${
-                      isOpen ? 'rotate-180 text-premium-gold' : 'text-text-secondary'
-                    }`}
-                  />
+                  <span className="text-sm sm:text-base font-semibold">{faq.q}</span>
+                  <ChevronDown className={`w-5 h-5 shrink-0 transition-transform duration-300 ${isOpen ? 'rotate-180 text-premium-gold' : 'text-text-secondary'}`} />
                 </button>
                 <AnimatePresence initial={false}>
                   {isOpen && (
@@ -76,12 +61,10 @@ export const FAQ = () => {
                       initial={{ height: 0, opacity: 0 }}
                       animate={{ height: 'auto', opacity: 1 }}
                       exit={{ height: 0, opacity: 0 }}
-                      transition={{ duration: 0.3, ease: 'easeInOut' }}
+                      transition={{ duration: 0.25, ease: 'easeInOut' }}
                       className="overflow-hidden"
                     >
-                      <p className="text-base text-text-secondary leading-relaxed pb-6 sm:pb-7 pl-14">
-                        {faq.answer}
-                      </p>
+                      <p className="text-sm text-text-secondary leading-relaxed px-7 pb-6">{faq.a}</p>
                     </motion.div>
                   )}
                 </AnimatePresence>

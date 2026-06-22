@@ -1,147 +1,74 @@
-import { useState, useEffect } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
-import { Star, ChevronLeft, ChevronRight, Quote, ShieldCheck } from 'lucide-react';
+import { motion } from 'framer-motion';
+import { Star, Quote, ShieldCheck } from 'lucide-react';
 
 const testimonials = [
   {
     name: 'Amit Sharma',
-    role: 'Founding Director',
-    company: 'Vibrant Textiles Ltd.',
+    role: 'Founding Director, Vibrant Textiles Ltd.',
     avatar: 'AS',
-    avatarBg: 'from-primary-blue to-dark-blue',
-    text: 'I needed ₹5,00,000 urgently to restock raw material inventory before the festival season. By participating in our Gold Chit group auction, I obtained the entire fund pool within 24 hours at a rate far below personal bank loans. Highly recommended!',
+    bg: 'from-primary-blue to-dark-blue',
+    text: 'I needed ₹5 lakh urgently before the festival season. Through the Gold Chit auction, I obtained the full pool within 24 hours — far cheaper than any personal loan. Highly recommended!',
     rating: 5,
     badge: 'Business Member',
   },
   {
     name: 'Priya Nair',
-    role: 'Principal Engineer',
-    company: 'TechNovus Solutions',
+    role: 'Principal Engineer, TechNovus Solutions',
     avatar: 'PN',
-    avatarBg: 'from-premium-gold to-gold-600',
-    text: 'JOD Chits has helped me establish a disciplined savings schedule. Since I don\'t need immediate liquidity, my monthly dividends keep rolling over, effectively boosting my overall yield to 11% annually. It outperforms traditional fixed deposits.',
+    bg: 'from-premium-gold to-gold-600',
+    text: 'JOD Chits helped me build real savings discipline. Since I don\'t need immediate liquidity, my dividends roll over and effectively boost my yield to 11% annually — well above any FD.',
     rating: 5,
     badge: 'Savings Member',
   },
   {
     name: 'Vikram Seth',
-    role: 'Co-Founder & CEO',
-    company: 'Seth Realty Partners',
+    role: 'Co-Founder & CEO, Seth Realty Partners',
     avatar: 'VS',
-    avatarBg: 'from-secondary-blue to-dark-blue',
-    text: 'Absolutely seamless operations. Onboarding and KYC verification were completed digitally in 10 minutes. The automated dashboard makes monitoring auctions, dividend distribution, and monthly deadlines extremely simple. Outstanding execution.',
+    bg: 'from-secondary-blue to-dark-blue',
+    text: 'Absolutely seamless. KYC was done in 10 minutes digitally. The dashboard makes tracking auctions, dividends, and deadlines incredibly simple. Outstanding execution by the JOD team.',
     rating: 5,
-    badge: 'Platinum Corporate',
+    badge: 'Platinum Member',
   },
 ];
 
-export const Testimonials = () => {
-  const [activeIndex, setActiveIndex] = useState(0);
-  const [progress, setProgress] = useState(0);
-
-  const handlePrev = () => {
-    setActiveIndex((prev) => (prev === 0 ? testimonials.length - 1 : prev - 1));
-    setProgress(0);
-  };
-  const handleNext = () => {
-    setActiveIndex((prev) => (prev === testimonials.length - 1 ? 0 : prev + 1));
-    setProgress(0);
-  };
-
-  useEffect(() => {
-    setProgress(0);
-    const interval = setInterval(() => {
-      setProgress((p) => {
-        if (p >= 100) {
-          handleNext();
-          return 0;
-        }
-        return p + 2;
-      });
-    }, 100);
-    return () => clearInterval(interval);
-  }, [activeIndex]);
-
-  const t = testimonials[activeIndex];
-
-  return (
-    <section className="section-padding relative bg-section-alt">
-      <div className="section-container relative z-10 max-w-5xl">
-        <div className="section-header">
-          <div className="section-badge"><span>Client Reviews</span></div>
-          <h2 className="section-title">Trusted by Thousands of <span className="text-gradient-gold">Savers & Businesses</span></h2>
-        </div>
-
-        <div className="relative min-h-[400px] flex items-center justify-center">
-          <AnimatePresence mode="wait">
-            <motion.div
-              key={activeIndex}
-              initial={{ opacity: 0, x: 40 }}
-              animate={{ opacity: 1, x: 0 }}
-              exit={{ opacity: 0, x: -40 }}
-              transition={{ duration: 0.35 }}
-              className="w-full bg-white border border-border-light rounded-2xl p-8 sm:p-10 shadow-xl relative"
-            >
-              <Quote className="absolute right-8 top-8 w-20 h-20 text-primary-blue/5 pointer-events-none" />
-              <div className="flex flex-col sm:flex-row items-center sm:items-start gap-8">
-                <div className={`w-20 h-20 sm:w-24 sm:h-24 rounded-full bg-gradient-to-tr ${t.avatarBg} flex items-center justify-center text-white font-extrabold text-2xl sm:text-3xl shadow-xl shrink-0`}>
-                  {t.avatar}
-                </div>
-                <div className="flex-1 text-center sm:text-left">
-                  <div className="flex items-center justify-center sm:justify-start gap-1.5 mb-4">
-                    {[...Array(t.rating)].map((_, i) => (
-                      <Star key={i} className="w-5 h-5 text-premium-gold fill-current" />
-                    ))}
-                  </div>
-                  <p className="text-base sm:text-lg text-text-secondary italic leading-relaxed mb-6">
-                    &ldquo;{t.text}&rdquo;
-                  </p>
-                  <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-                    <div>
-                      <h4 className="text-lg font-bold text-text-primary">{t.name}</h4>
-                      <p className="text-sm text-text-secondary mt-0.5">{t.role} &mdash; <span className="text-text-secondary/70">{t.company}</span></p>
-                    </div>
-                    <span className="inline-flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider text-success bg-success/5 border border-success/15 px-4 py-2 rounded-full w-fit mx-auto sm:mx-0">
-                      <ShieldCheck className="w-3.5 h-3.5" />
-                      {t.badge}
-                    </span>
-                  </div>
-                </div>
-              </div>
-            </motion.div>
-          </AnimatePresence>
-        </div>
-
-        <div className="flex items-center justify-between mt-10">
-          <div className="flex gap-3">
-            {testimonials.map((_, i) => (
-              <button
-                key={i}
-                onClick={() => { setActiveIndex(i); setProgress(0); }}
-                className={`relative h-2.5 rounded-full transition-all duration-300 cursor-pointer overflow-hidden ${
-                  i === activeIndex ? 'w-10 bg-border-light' : 'w-2.5 bg-border-light hover:bg-premium-gold/30'
-                }`}
-                aria-label={`Go to testimonial ${i + 1}`}
-              >
-                {i === activeIndex && (
-                  <motion.div
-                    className="absolute inset-0 bg-gradient-gold rounded-full"
-                    style={{ width: `${progress}%` }}
-                  />
-                )}
-              </button>
-            ))}
-          </div>
-          <div className="flex gap-3">
-            <button onClick={handlePrev} className="p-3 rounded-xl bg-white border border-border-light text-text-secondary hover:text-primary-blue hover:border-premium-gold/30 transition-all cursor-pointer" aria-label="Previous testimonial">
-              <ChevronLeft className="w-5 h-5" />
-            </button>
-            <button onClick={handleNext} className="p-3 rounded-xl bg-white border border-border-light text-text-secondary hover:text-primary-blue hover:border-premium-gold/30 transition-all cursor-pointer" aria-label="Next testimonial">
-              <ChevronRight className="w-5 h-5" />
-            </button>
-          </div>
-        </div>
+export const Testimonials = () => (
+  <section className="section-padding bg-white">
+    <div className="section-container">
+      <div className="section-header">
+        <div className="section-badge"><span>Client Reviews</span></div>
+        <h2 className="section-title">Trusted by Thousands of <span className="text-gradient-gold">Savers & Businesses</span></h2>
       </div>
-    </section>
-  );
-};
+
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        {testimonials.map((t, i) => (
+          <motion.div
+            key={i}
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.4, delay: i * 0.1 }}
+            className="bg-white border border-border-light rounded-2xl p-7 flex flex-col hover:border-premium-gold/30 hover:shadow-xl hover:shadow-primary-blue/4 hover:-translate-y-1 transition-all"
+          >
+            <Quote className="w-8 h-8 text-primary-blue/10 mb-4" />
+            <div className="flex gap-0.5 mb-4">
+              {[...Array(t.rating)].map((_, i) => <Star key={i} className="w-4 h-4 text-premium-gold fill-current" />)}
+            </div>
+            <p className="text-sm text-text-secondary italic leading-relaxed flex-1 mb-6">"{t.text}"</p>
+            <div className="flex items-center gap-3 pt-5 border-t border-border-light">
+              <div className={`w-10 h-10 rounded-full bg-gradient-to-br ${t.bg} flex items-center justify-center text-white text-sm font-bold shrink-0`}>
+                {t.avatar}
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-bold text-text-primary truncate">{t.name}</p>
+                <p className="text-xs text-text-secondary truncate">{t.role}</p>
+              </div>
+              <span className="inline-flex items-center gap-1 text-[10px] font-bold text-success bg-success/5 border border-success/15 px-2.5 py-1 rounded-full whitespace-nowrap shrink-0">
+                <ShieldCheck className="w-3 h-3" /> {t.badge}
+              </span>
+            </div>
+          </motion.div>
+        ))}
+      </div>
+    </div>
+  </section>
+);

@@ -17,12 +17,10 @@ function Landingpage() {
   const handleNavigate = (sectionId) => {
     const element = document.getElementById(sectionId);
     if (element) {
-      const offset = 80;
-      const bodyRect = document.body.getBoundingClientRect().top;
-      const elementRect = element.getBoundingClientRect().top;
-      const elementPosition = elementRect - bodyRect;
-      const offsetPosition = elementPosition - offset;
-      window.scrollTo({ top: offsetPosition, behavior: 'smooth' });
+      const navbar = document.querySelector('nav');
+      const offset = navbar ? navbar.getBoundingClientRect().height + 8 : 88;
+      const top = element.getBoundingClientRect().top + window.scrollY - offset;
+      window.scrollTo({ top, behavior: 'smooth' });
     }
   };
 

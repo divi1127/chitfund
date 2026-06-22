@@ -1,5 +1,5 @@
 @import "tailwindcss";
-
+@source "./src";
 @custom-variant dark (&:where(.dark, .dark *));
 
 @theme {
@@ -28,8 +28,6 @@
   --color-gold-800: #8A6314;
   --color-gold-900: #6B4D0F;
 }
-
-* { box-sizing: border-box; margin: 0; padding: 0; }
 
 body {
   margin: 0;
@@ -76,6 +74,11 @@ body {
 ::-webkit-scrollbar-thumb:hover { background: #94A3B8; }
 
 /* ─── Animations ─── */
+@keyframes ticker {
+  0% { transform: translateX(0); }
+  100% { transform: translateX(-50%); }
+}
+
 @keyframes float {
   0%, 100% { transform: translateY(0); }
   50% { transform: translateY(-10px); }

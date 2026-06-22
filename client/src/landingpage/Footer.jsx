@@ -1,145 +1,120 @@
 import { useState } from 'react';
-import { Mail, Phone, MapPin, ChevronRight, ArrowRight, CheckCircle2 } from 'lucide-react';
+import { Mail, Phone, MapPin, ArrowRight, CheckCircle2, ChevronRight } from 'lucide-react';
 import logo from '../assets/jod.png';
 
 export const Footer = ({ onNavigate }) => {
-  const currentYear = new Date().getFullYear();
+  const year = new Date().getFullYear();
   const [email, setEmail] = useState('');
   const [subscribed, setSubscribed] = useState(false);
 
   const handleSubscribe = (e) => {
     e.preventDefault();
-    if (email) {
-      setSubscribed(true);
-      setTimeout(() => { setSubscribed(false); setEmail(''); }, 3000);
-    }
+    if (email) { setSubscribed(true); setTimeout(() => { setSubscribed(false); setEmail(''); }, 3000); }
   };
 
-  const socials = [
-    { path: 'M18 2h-3a5 5 0 0 0-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 0 1 1-1h3z', label: 'Facebook', viewBox: '0 0 24 24' },
-    { path: 'M22 4s-.7 2.1-2 3.4c1.6 10-9.4 17.3-18 11.6 2.2.1 4.4-.6 6-2C3 15.5.5 9.6 3 5c2.2 2.6 5.6 4.1 9 4-.9-4.2 4-6.6 7-3.8 1.1 0 3-1.2 3-1.2z', label: 'Twitter', viewBox: '0 0 24 24' },
-    { path: 'M16 8a6 6 0 0 1 6 6v7h-4v-7a2 2 0 0 0-2-2 2 2 0 0 0-2 2v7h-4v-7a6 6 0 0 1 6-6z M2 9h4v12H2z M4 4a2 2 0 1 0 0-4 2 2 0 0 0 0 4', label: 'LinkedIn', viewBox: '0 0 24 24' },
-    { path: 'M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z', label: 'Instagram', viewBox: '0 0 24 24' },
-  ];
+  const links = {
+    'Quick Links': [
+      { label: 'Home', id: 'home' },
+      { label: 'Plans', id: 'plans' },
+      { label: 'Features', id: 'features' },
+      { label: 'About', id: 'about' },
+      { label: 'FAQ', id: 'faq' },
+      { label: 'Contact', id: 'contact' },
+    ],
+    'Schemes': [
+      { label: 'Silver — ₹2.5L', id: 'plans' },
+      { label: 'Gold — ₹10L', id: 'plans' },
+      { label: 'Platinum — ₹25L', id: 'plans' },
+    ],
+  };
 
   return (
-    <footer className="bg-dark-blue pt-16 sm:pt-20 lg:pt-24 pb-10 sm:pb-12 relative overflow-hidden">
-      <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full max-w-7xl h-px bg-gradient-to-r from-transparent via-premium-gold/30 to-transparent" />
+    <footer className="bg-dark-blue pt-16 pb-8 relative overflow-hidden">
+      <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-premium-gold/25 to-transparent" />
+      <div className="absolute bottom-0 left-0 w-96 h-96 bg-premium-gold/4 rounded-full blur-[120px] pointer-events-none" />
+
       <div className="section-container relative z-10">
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-12 gap-10 lg:gap-12 mb-16">
-          <div className="sm:col-span-2 lg:col-span-4 space-y-6">
-            <button onClick={() => onNavigate('home')} className="flex items-center gap-3 cursor-pointer group">
-              <div className="flex items-center justify-center w-10 h-10 sm:w-12 sm:h-12 rounded-xl bg-white/15 backdrop-blur-sm shadow-lg group-hover:shadow-premium-gold/20 transition-shadow">
-                <img src={logo} alt="JOD Chits" className="w-6 h-6 sm:w-7 sm:h-7 object-contain brightness-0 invert" />
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-12 gap-10 mb-14">
+          {/* Brand */}
+          <div className="sm:col-span-2 lg:col-span-4 space-y-5">
+            <button onClick={() => onNavigate('home')} className="flex items-center gap-3 cursor-pointer">
+              <div className="w-10 h-10 rounded-xl bg-white/12 flex items-center justify-center">
+                <img src={logo} alt="JOD Chits" className="w-6 h-6 object-contain brightness-0 invert" />
               </div>
               <span className="flex flex-col leading-none">
-                <span className="text-lg sm:text-xl font-bold tracking-wider text-white">JOD</span>
-                <span className="text-[10px] font-semibold tracking-[0.3em] text-white/60 uppercase">CHITS</span>
+                <span className="text-lg font-extrabold tracking-widest text-white">JOD</span>
+                <span className="text-[9px] font-bold tracking-[0.35em] text-white/50 uppercase">CHITS</span>
               </span>
             </button>
-            <p className="text-sm sm:text-base text-white/60 leading-relaxed max-w-sm">
-              Next-generation financial platform introducing transparency and security to mutual credit chit investments. Registered under the central Chit Funds Act, 1982.
+            <p className="text-sm text-white/55 leading-relaxed max-w-xs">
+              Next-generation digital chit fund platform. Transparent, regulated savings and credit under the Chit Funds Act, 1982.
             </p>
-            <div className="flex gap-3">
-              {socials.map((social, idx) => (
-                <a key={idx} href="#" aria-label={social.label} className="w-10 h-10 sm:w-11 sm:h-11 rounded-xl bg-white/10 border border-white/10 hover:border-premium-gold/40 hover:bg-premium-gold/10 hover:shadow-lg hover:shadow-premium-gold/10 flex items-center justify-center text-white/50 hover:text-premium-gold transition-all">
-                  <svg className="w-5 h-5" viewBox={social.viewBox} fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-                    <path d={social.path} />
-                  </svg>
-                </a>
-              ))}
+            {/* Newsletter */}
+            <div>
+              <p className="text-xs font-bold uppercase tracking-wider text-white/50 mb-2.5">Newsletter</p>
+              <form onSubmit={handleSubscribe} className="flex gap-2">
+                <input
+                  type="email" value={email} onChange={(e) => setEmail(e.target.value)}
+                  placeholder="your@email.com" required
+                  className="flex-1 bg-white/10 border border-white/15 rounded-xl px-3.5 py-2.5 text-sm text-white placeholder-white/35 outline-none focus:border-premium-gold/40 transition-colors"
+                />
+                <button type="submit" disabled={subscribed} className="w-10 h-10 rounded-xl bg-gradient-gold flex items-center justify-center text-white shrink-0 hover:shadow-lg hover:shadow-premium-gold/20 transition-all disabled:opacity-70">
+                  {subscribed ? <CheckCircle2 className="w-4 h-4" /> : <ArrowRight className="w-4 h-4" />}
+                </button>
+              </form>
             </div>
           </div>
 
-          <div className="lg:col-span-2 space-y-4">
-            <h4 className="text-base font-bold text-white uppercase tracking-wider">Quick Links</h4>
-            <ul className="space-y-3">
-              {['Home', 'Plans', 'Features', 'About', 'FAQ', 'Contact'].map((item) => (
-                <li key={item}>
-                  <button onClick={() => onNavigate(item.toLowerCase())} className="text-sm text-white/50 hover:text-premium-gold flex items-center transition-colors cursor-pointer group">
-                    <ChevronRight className="w-4 h-4 text-premium-gold/50 opacity-0 -ml-4 group-hover:opacity-100 group-hover:ml-0 transition-all duration-200 mr-1.5" />
-                    {item}
-                  </button>
-                </li>
-              ))}
-            </ul>
-          </div>
+          {/* Nav links */}
+          {Object.entries(links).map(([title, items]) => (
+            <div key={title} className="lg:col-span-2 space-y-4">
+              <h4 className="text-xs font-bold text-white uppercase tracking-wider">{title}</h4>
+              <ul className="space-y-2.5">
+                {items.map((item) => (
+                  <li key={item.label}>
+                    <button
+                      onClick={() => onNavigate(item.id)}
+                      className="text-sm text-white/50 hover:text-premium-gold flex items-center gap-1 group cursor-pointer transition-colors"
+                    >
+                      <ChevronRight className="w-3.5 h-3.5 opacity-0 -ml-3.5 group-hover:opacity-100 group-hover:ml-0 transition-all duration-200" />
+                      {item.label}
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          ))}
 
-          <div className="lg:col-span-2 space-y-4">
-            <h4 className="text-base font-bold text-white uppercase tracking-wider">Newsletter</h4>
-            <p className="text-sm text-white/50 leading-relaxed">Get weekly chit fund insights and dividend tips delivered to your inbox.</p>
-            <form onSubmit={handleSubscribe} className="flex gap-3">
-              <input
-                type="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                placeholder="your@email.com"
-                required
-                className="w-full bg-white/10 border border-white/20 rounded-xl px-4 py-3 text-sm text-white placeholder-white/40 outline-none focus:border-premium-gold/50 focus:bg-white/15 transition-all"
-                aria-label="Email for newsletter"
-              />
-              <button
-                type="submit"
-                disabled={subscribed}
-                className="w-11 h-11 rounded-xl bg-gradient-gold flex items-center justify-center text-white shrink-0 hover:shadow-xl hover:shadow-premium-gold/20 transition-all disabled:opacity-70"
-              >
-                {subscribed ? (
-                  <CheckCircle2 className="w-5 h-5" />
-                ) : (
-                  <ArrowRight className="w-5 h-5" />
-                )}
-              </button>
-            </form>
-          </div>
-
-          <div className="lg:col-span-2 space-y-4">
-            <h4 className="text-base font-bold text-white uppercase tracking-wider">Chit Schemes</h4>
-            <ul className="space-y-3">
-              {[
-                { name: 'Silver Standard (₹2.5L)', id: 'plans' },
-                { name: 'Gold Wealth Booster (₹10L)', id: 'plans' },
-                { name: 'Platinum Corporate Elite (₹25L)', id: 'plans' },
-              ].map((plan, idx) => (
-                <li key={idx}>
-                  <button onClick={() => onNavigate(plan.id)} className="text-sm text-white/50 hover:text-premium-gold transition-colors cursor-pointer text-left">
-                    {plan.name}
-                  </button>
-                </li>
-              ))}
-            </ul>
-          </div>
-
-          <div className="lg:col-span-2 space-y-4">
-            <h4 className="text-base font-bold text-white uppercase tracking-wider">Get In Touch</h4>
-            <ul className="space-y-4">
-              <li className="flex items-start gap-3 text-sm text-white/60">
-                <MapPin className="w-5 h-5 text-premium-gold shrink-0 mt-0.5" />
-                <span>JOD Fintech Chambers, Plot 142, Sector 5, HSR Layout, Bengaluru, KA - 560102</span>
+          {/* Contact */}
+          <div className="lg:col-span-4 space-y-4">
+            <h4 className="text-xs font-bold text-white uppercase tracking-wider">Get In Touch</h4>
+            <ul className="space-y-3.5">
+              <li className="flex items-start gap-3 text-sm text-white/55">
+                <MapPin className="w-4 h-4 text-premium-gold shrink-0 mt-0.5" />
+                <span>JOD Fintech Chambers, Plot 142, Sector 5, HSR Layout, Bengaluru, KA – 560102</span>
               </li>
-              <li className="flex items-center gap-3 text-sm text-white/60">
-                <Phone className="w-5 h-5 text-premium-gold shrink-0" />
+              <li className="flex items-center gap-3 text-sm text-white/55">
+                <Phone className="w-4 h-4 text-premium-gold shrink-0" />
                 <span>+91 80 4952 8200</span>
               </li>
-              <li className="flex items-center gap-3 text-sm text-white/60">
-                <Mail className="w-5 h-5 text-premium-gold shrink-0" />
+              <li className="flex items-center gap-3 text-sm text-white/55">
+                <Mail className="w-4 h-4 text-premium-gold shrink-0" />
                 <span>support@jodchits.com</span>
               </li>
             </ul>
           </div>
         </div>
 
-        <div className="h-px bg-white/10 my-10" />
-        <div className="flex flex-col md:flex-row md:items-center md:justify-between text-sm text-white/40 gap-4">
+        <div className="h-px bg-white/8 mb-8" />
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 text-xs text-white/35">
           <div className="space-y-1">
-            <p>&copy; {currentYear} JOD Chit Funds Private Limited. All rights reserved.</p>
-            <p className="text-white/30">Disclaimer: Chit Funds are financial saving-cum-borrowing systems. Member bidding choices determine dividend outcomes.</p>
+            <p>© {year} JOD Chit Funds Pvt. Ltd. All rights reserved.</p>
+            <p className="text-white/25">Disclaimer: Dividend outcomes depend on member bidding choices.</p>
           </div>
-          <div className="flex gap-4 shrink-0">
-            <a href="#" className="hover:text-premium-gold transition-colors">Privacy Policy</a>
-            <span className="text-white/30">&bull;</span>
-            <a href="#" className="hover:text-premium-gold transition-colors">Terms of Service</a>
-            <span className="text-white/30">&bull;</span>
-            <a href="#" className="hover:text-premium-gold transition-colors">Regulatory Filings</a>
+          <div className="flex gap-4">
+            {['Privacy Policy', 'Terms of Service', 'Regulatory Filings'].map((label) => (
+              <a key={label} href="#" className="hover:text-premium-gold transition-colors">{label}</a>
+            ))}
           </div>
         </div>
       </div>
