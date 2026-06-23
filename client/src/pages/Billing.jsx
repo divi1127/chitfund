@@ -6,15 +6,17 @@ import { Btn } from "../components/Btn";
 import { Input } from "../components/Input";
 import { COMPANY } from "../utils/constants";
 import { fmt, numberToWords, genId } from "../utils/helpers";
+import { HiXMark, HiPlus, HiEye, HiArrowDownTray } from "react-icons/hi2";
+import { IconBtn } from "../components/IconBtn";
 
-export function Billing({ dark, toast, setPreview }) {
+export function Billing({ toast, setPreview }) {
   const { data: members } = useData('/members');
   const { data: groups } = useData('/groups');
   const { data: schemes } = useData('/schemes');
   const [memberId, setMemberId] = useState("");
   const [groupId, setGroupId] = useState("");
   const [paymentMode, setPaymentMode] = useState("");
-  const [items, setItems] = useState([{ desc: "Monthly Chit Installment", qty: 1, rate: "" }]);
+  const [items, setItems] = useState([{ desc: "", qty: 1, rate: "" }]);
   const [note, setNote] = useState("");
 
   const memberById = (id) => members.find((m) => m.id === id);
@@ -119,33 +121,33 @@ Thank you for your business!
 
   return (
     <div>
-      <SectionHeader title="Billing & Invoicing" subtitle="Generate GST invoices and bills" dark={dark} />
-      <div style={{ background: dark ? "rgba(255,255,255,.05)" : "#fff", border: dark ? "1px solid rgba(255,255,255,.1)" : "1px solid #e5e7eb", borderRadius: 12, padding: 24 }}>
+      <SectionHeader title="Billing & Invoicing" subtitle="Generate GST invoices and bills" />
+      <div style={{ background: "var(--bg-card)", border: "1px solid var(--border-color)", borderRadius: 12, padding: 24 }}>
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(220px,1fr))", gap: "0 20px" }}>
-          <Input label="Member" value={memberId} onChange={setMemberId} dark={dark} options={members.map(m => ({ value: m.id, label: m.name }))} />
-          <Input label="Group" value={groupId} onChange={setGroupId} dark={dark} options={groups.map(g => ({ value: g.id, label: g.name }))} />
-          <Input label="Payment Mode" value={paymentMode} onChange={setPaymentMode} dark={dark} options={["Cash", "Online", "Cheque", "DD", "UPI"].map(v => ({ value: v, label: v }))} />
+          <Input label="Member" value={memberId} onChange={setMemberId} options={members.map(m => ({ value: m.id, label: m.name }))} />
+          <Input label="Group" value={groupId} onChange={setGroupId} options={groups.map(g => ({ value: g.id, label: g.name }))} />
+          <Input label="Payment Mode" value={paymentMode} onChange={setPaymentMode} options={["Cash", "Online", "Cheque", "DD", "UPI"].map(v => ({ value: v, label: v }))} />
         </div>
 
         {/* Line items */}
-        <div style={{ fontSize: 12, fontWeight: 600, color: dark ? "rgba(255,255,255,.6)" : "#374151", marginBottom: 8 }}>Line Items</div>
+        <div style={{ fontSize: 12, fontWeight: 600, color: "var(--text-secondary)", marginBottom: 8 }}>Line Items</div>
         {items.map((item, i) => (
           <div key={i} style={{ display: "grid", gridTemplateColumns: "3fr 1fr 1fr auto", gap: 10, marginBottom: 8 }}>
-            <input value={item.desc} onChange={e => setItems(items.map((it, j) => j === i ? { ...it, desc: e.target.value } : it))} placeholder="Description" style={{ padding: "8px 12px", border: "1px solid " + (dark ? "rgba(255,255,255,.15)" : "#d1d5db"), borderRadius: 8, fontSize: 13, background: dark ? "rgba(255,255,255,.05)" : "#fff", color: dark ? "#f3f4f6" : "#111" }} />
-            <input value={item.qty} onChange={e => setItems(items.map((it, j) => j === i ? { ...it, qty: e.target.value } : it))} placeholder="Qty" type="number" style={{ padding: "8px 12px", border: "1px solid " + (dark ? "rgba(255,255,255,.15)" : "#d1d5db"), borderRadius: 8, fontSize: 13, background: dark ? "rgba(255,255,255,.05)" : "#fff", color: dark ? "#f3f4f6" : "#111" }} />
-            <input value={item.rate} onChange={e => setItems(items.map((it, j) => j === i ? { ...it, rate: e.target.value } : it))} placeholder="Rate" type="number" style={{ padding: "8px 12px", border: "1px solid " + (dark ? "rgba(255,255,255,.15)" : "#d1d5db"), borderRadius: 8, fontSize: 13, background: dark ? "rgba(255,255,255,.05)" : "#fff", color: dark ? "#f3f4f6" : "#111" }} />
-            <button onClick={() => setItems(items.filter((_, j) => j !== i))} style={{ padding: "8px 12px", border: "1px solid #dc2626", borderRadius: 8, color: "#dc2626", background: "transparent", cursor: "pointer", fontSize: 13 }}>Remove</button>
+            <input value={item.desc} onChange={e => setItems(items.map((it, j) => j === i ? { ...it, desc: e.target.value } : it))} placeholder="Description" style={{ padding: "8px 12px", border: "1px solid " + ("var(--border-color)"), borderRadius: 8, fontSize: 13, background: "var(--bg-card)", color: "var(--text-primary)" }} />
+            <input value={item.qty} onChange={e => setItems(items.map((it, j) => j === i ? { ...it, qty: e.target.value } : it))} placeholder="Qty" type="number" style={{ padding: "8px 12px", border: "1px solid " + ("var(--border-color)"), borderRadius: 8, fontSize: 13, background: "var(--bg-card)", color: "var(--text-primary)" }} />
+            <input value={item.rate} onChange={e => setItems(items.map((it, j) => j === i ? { ...it, rate: e.target.value } : it))} placeholder="Rate" type="number" style={{ padding: "8px 12px", border: "1px solid " + ("var(--border-color)"), borderRadius: 8, fontSize: 13, background: "var(--bg-card)", color: "var(--text-primary)" }} />
+<IconBtn icon={<HiXMark size={14} />} onClick={() => setItems(items.filter((_, j) => j !== i))} color="#dc2626" title="Remove" />
           </div>
         ))}
-        <Btn label="+ Add Line" onClick={() => setItems([...items, { desc: "", qty: 1, rate: "" }])} />
+        <IconBtn icon={<HiPlus size={14} />} onClick={() => setItems([...items, { desc: "", qty: 1, rate: "" }])} color="#2563eb" title="Add Line" />
 
-        <div style={{ marginTop: 16, fontSize: 16, fontWeight: 700, color: dark ? "#f3f4f6" : "#111" }}>Total (incl. GST): {fmt(Math.round(total * 1.05))}</div>
+        <div style={{ marginTop: 16, fontSize: 16, fontWeight: 700, color: "var(--text-primary)" }}>Total (incl. GST): {fmt(Math.round(total * 1.05))}</div>
         <div style={{ marginTop: 12 }}>
-          <Input label="Notes" value={note} onChange={setNote} dark={dark} />
+          <Input label="Notes" value={note} onChange={setNote} />
         </div>
         <div style={{ marginTop: 4, display: "flex", gap: 10 }}>
-          <Btn label="Preview Invoice →" onClick={genInvoice} primary />
-          <Btn label="Download Invoice" onClick={downloadInvoice} />
+          <IconBtn icon={<HiEye size={14} />} onClick={genInvoice} color="#2563eb" title="Preview Invoice" />
+          <IconBtn icon={<HiArrowDownTray size={14} />} onClick={downloadInvoice} color="#10b981" title="Download Invoice" />
         </div>
       </div>
     </div>

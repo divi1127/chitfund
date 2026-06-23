@@ -4,10 +4,11 @@ import { useData } from "../hooks/useData";
 import { SectionHeader } from "../components/SectionHeader";
 import { Table } from "../components/Table";
 import { Badge } from "../components/Badge";
-import { Btn } from "../components/Btn";
+import { IconBtn } from "../components/IconBtn";
 import { Input } from "../components/Input";
+import { HiArrowDownTray, HiPrinter } from "react-icons/hi2";
 
-export function ReportsDashboard({ dark, toast }) {
+export function ReportsDashboard({ toast }) {
   const { data: invoices, loading } = useData('/invoices');
   const [selectedReport, setSelectedReport] = useState('daily');
   const [dateRange, setDateRange] = useState({ start: '', end: '' });
@@ -119,19 +120,19 @@ export function ReportsDashboard({ dark, toast }) {
 
   return (
     <div>
-      <SectionHeader title="Reports Dashboard" subtitle="View and generate various reports" dark={dark} />
+      <SectionHeader title="Reports Dashboard" subtitle="View and generate various reports" />
 
       <div style={{ display: "grid", gap: 24 }}>
         {/* Report Type Selection */}
-        <div style={{ background: dark ? "rgba(255,255,255,.05)" : "#fff", border: dark ? "1px solid rgba(255,255,255,.1)" : "1px solid #e5e7eb", borderRadius: 12, padding: 24 }}>
-          <div style={{ fontSize: 16, fontWeight: 600, color: dark ? "#f3f4f6" : "#111", marginBottom: 16 }}>Select Report Type</div>
+        <div style={{ background: "var(--bg-card)", border: "1px solid var(--border-color)", borderRadius: 12, padding: 24 }}>
+          <div style={{ fontSize: 16, fontWeight: 600, color: "var(--text-primary)", marginBottom: 16 }}>Select Report Type</div>
           <div style={{ display: "flex", gap: 12, flexWrap: "wrap" }}>
             {[
-              { id: 'daily', label: 'Daily Collection' },
-              { id: 'monthly', label: 'Monthly Collection' },
-              { id: 'outstanding', label: 'Outstanding Due' },
-              { id: 'fine', label: 'Fine Report' },
-              { id: 'cashbook', label: 'Cash Book' }
+              { id: 'daily', label: '📅 Daily Collection' },
+              { id: 'monthly', label: '📆 Monthly Collection' },
+              { id: 'outstanding', label: '⚠️ Outstanding Due' },
+              { id: 'fine', label: '💰 Fine Report' },
+              { id: 'cashbook', label: '💵 Cash Book' }
             ].map(report => (
               <button
                 key={report.id}
@@ -140,8 +141,8 @@ export function ReportsDashboard({ dark, toast }) {
                   padding: "12px 24px",
                   borderRadius: 8,
                   border: selectedReport === report.id ? "2px solid #2563eb" : "1px solid #d1d5db",
-                  background: selectedReport === report.id ? "rgba(37, 99, 235, 0.1)" : dark ? "rgba(255,255,255,.05)" : "#fff",
-                  color: dark ? "#f3f4f6" : "#111",
+                  background: selectedReport === report.id ? "rgba(37, 99, 235, 0.1)" : "var(--bg-card)",
+                  color: "var(--text-primary)",
                   cursor: "pointer",
                   fontSize: 14,
                   fontWeight: selectedReport === report.id ? 600 : 400,
@@ -156,37 +157,37 @@ export function ReportsDashboard({ dark, toast }) {
 
         {/* Report Summary Cards */}
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(200px,1fr))", gap: 16 }}>
-          <div style={{ background: dark ? "rgba(255,255,255,.05)" : "#fff", border: dark ? "1px solid rgba(255,255,255,.1)" : "1px solid #e5e7eb", borderRadius: 12, padding: 20 }}>
-            <div style={{ fontSize: 12, color: dark ? "rgba(255,255,255,.5)" : "#6b7280", marginBottom: 8 }}>Total Invoices</div>
-            <div style={{ fontSize: 28, fontWeight: 700, color: dark ? "#f3f4f6" : "#111" }}>{currentReport.totalInvoices}</div>
+          <div style={{ background: "var(--bg-card)", border: "1px solid var(--border-color)", borderRadius: 12, padding: 20 }}>
+            <div style={{ fontSize: 12, color: "var(--text-muted)", marginBottom: 8 }}>Total Invoices</div>
+            <div style={{ fontSize: 28, fontWeight: 700, color: "var(--text-primary)" }}>{currentReport.totalInvoices}</div>
           </div>
-          <div style={{ background: dark ? "rgba(255,255,255,.05)" : "#fff", border: dark ? "1px solid rgba(255,255,255,.1)" : "1px solid #e5e7eb", borderRadius: 12, padding: 20 }}>
-            <div style={{ fontSize: 12, color: dark ? "rgba(255,255,255,.5)" : "#6b7280", marginBottom: 8 }}>Total Amount</div>
+          <div style={{ background: "var(--bg-card)", border: "1px solid var(--border-color)", borderRadius: 12, padding: 20 }}>
+            <div style={{ fontSize: 12, color: "var(--text-muted)", marginBottom: 8 }}>Total Amount</div>
             <div style={{ fontSize: 28, fontWeight: 700, color: "#10b981" }}>₹{(currentReport.totalAmount || currentReport.totalOutstanding || currentReport.totalFine || currentReport.totalCash || 0).toLocaleString()}</div>
           </div>
           {selectedReport === 'daily' && (
             <>
-              <div style={{ background: dark ? "rgba(255,255,255,.05)" : "#fff", border: dark ? "1px solid rgba(255,255,255,.1)" : "1px solid #e5e7eb", borderRadius: 12, padding: 20 }}>
-                <div style={{ fontSize: 12, color: dark ? "rgba(255,255,255,.5)" : "#6b7280", marginBottom: 8 }}>Cash</div>
-                <div style={{ fontSize: 24, fontWeight: 700, color: dark ? "#f3f4f6" : "#111" }}>₹{currentReport.paymentMethods?.cash?.toLocaleString() || 0}</div>
+              <div style={{ background: "var(--bg-card)", border: "1px solid var(--border-color)", borderRadius: 12, padding: 20 }}>
+                <div style={{ fontSize: 12, color: "var(--text-muted)", marginBottom: 8 }}>Cash</div>
+                <div style={{ fontSize: 24, fontWeight: 700, color: "var(--text-primary)" }}>₹{currentReport.paymentMethods?.cash?.toLocaleString() || 0}</div>
               </div>
-              <div style={{ background: dark ? "rgba(255,255,255,.05)" : "#fff", border: dark ? "1px solid rgba(255,255,255,.1)" : "1px solid #e5e7eb", borderRadius: 12, padding: 20 }}>
-                <div style={{ fontSize: 12, color: dark ? "rgba(255,255,255,.5)" : "#6b7280", marginBottom: 8 }}>UPI</div>
-                <div style={{ fontSize: 24, fontWeight: 700, color: dark ? "#f3f4f6" : "#111" }}>₹{currentReport.paymentMethods?.upi?.toLocaleString() || 0}</div>
+              <div style={{ background: "var(--bg-card)", border: "1px solid var(--border-color)", borderRadius: 12, padding: 20 }}>
+                <div style={{ fontSize: 12, color: "var(--text-muted)", marginBottom: 8 }}>UPI</div>
+                <div style={{ fontSize: 24, fontWeight: 700, color: "var(--text-primary)" }}>₹{currentReport.paymentMethods?.upi?.toLocaleString() || 0}</div>
               </div>
             </>
           )}
           {selectedReport === 'monthly' && (
-            <div style={{ background: dark ? "rgba(255,255,255,.05)" : "#fff", border: dark ? "1px solid rgba(255,255,255,.1)" : "1px solid #e5e7eb", borderRadius: 12, padding: 20 }}>
-              <div style={{ fontSize: 12, color: dark ? "rgba(255,255,255,.5)" : "#6b7280", marginBottom: 8 }}>Total Fine</div>
+            <div style={{ background: "var(--bg-card)", border: "1px solid var(--border-color)", borderRadius: 12, padding: 20 }}>
+              <div style={{ fontSize: 12, color: "var(--text-muted)", marginBottom: 8 }}>Total Fine</div>
               <div style={{ fontSize: 24, fontWeight: 700, color: "#ef4444" }}>₹{currentReport.totalFine?.toLocaleString() || 0}</div>
             </div>
           )}
         </div>
 
         {/* Report Details */}
-        <div style={{ background: dark ? "rgba(255,255,255,.05)" : "#fff", border: dark ? "1px solid rgba(255,255,255,.1)" : "1px solid #e5e7eb", borderRadius: 12, padding: 24 }}>
-          <div style={{ fontSize: 16, fontWeight: 600, color: dark ? "#f3f4f6" : "#111", marginBottom: 16 }}>
+        <div style={{ background: "var(--bg-card)", border: "1px solid var(--border-color)", borderRadius: 12, padding: 24 }}>
+          <div style={{ fontSize: 16, fontWeight: 600, color: "var(--text-primary)", marginBottom: 16 }}>
             {selectedReport === 'daily' && `Daily Collection Report - ${dailyReport.date}`}
             {selectedReport === 'monthly' && `Monthly Collection Report - ${monthlyReport.month} ${monthlyReport.year}`}
             {selectedReport === 'outstanding' && 'Outstanding Due Report'}
@@ -194,7 +195,7 @@ export function ReportsDashboard({ dark, toast }) {
             {selectedReport === 'cashbook' && 'Cash Book Report'}
           </div>
 
-          <Table dark={dark} cols={["Invoice No", "Member", "Amount", "Payment Mode", "Status", "Date"]}
+          <Table cols={["Invoice No", "Member", "Amount", "Payment Mode", "Status", "Date"]}
             rows={currentReport.invoices?.map(inv => [
               inv.invoiceNumber,
               inv.memberName,
@@ -208,9 +209,9 @@ export function ReportsDashboard({ dark, toast }) {
 
         {/* Export Options */}
         <div style={{ display: "flex", gap: 12, justifyContent: "flex-end" }}>
-          <Btn label="Export Excel" onClick={() => toast.add("Exporting to Excel...")} />
-          <Btn label="Export PDF" onClick={() => toast.add("Exporting to PDF...")} />
-          <Btn label="Print Report" onClick={() => window.print()} primary />
+          <IconBtn icon={<HiArrowDownTray size={14} />} onClick={() => toast.add("Exporting to Excel...")} color="#10b981" title="Export Excel" />
+          <IconBtn icon={<HiArrowDownTray size={14} />} onClick={() => toast.add("Exporting to PDF...")} color="#2563eb" title="Export PDF" />
+          <IconBtn icon={<HiPrinter size={14} />} onClick={() => window.print()} color="#d97706" title="Print Report" />
         </div>
       </div>
     </div>

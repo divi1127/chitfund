@@ -7,8 +7,10 @@ import { Table } from "../components/Table";
 import { Badge } from "../components/Badge";
 import { Btn } from "../components/Btn";
 import { Input } from "../components/Input";
+import { IconBtn } from "../components/IconBtn";
+import { HiPencil, HiTrash, HiUserGroup } from "react-icons/hi2";
 
-export function Groups({ dark, toast }) {
+export function Groups({ toast }) {
   const { data: groups, loading } = useData('/groups');
   const [refresh, setRefresh] = useState(0);
   const { data: schemes } = useData('/schemes');
@@ -148,23 +150,23 @@ export function Groups({ dark, toast }) {
 
   return (
     <div>
-      <SectionHeader title="Group Management" subtitle="Track all active chit groups" dark={dark}
+      <SectionHeader title="Group Management" subtitle="Track all active chit groups"
         actions={[<Btn key="a" label="+ New Group" onClick={() => { setEditingGroup(null); setForm({ name: "", schemeId: "", startDate: "", agentId: "" }); setShowForm(true); }} primary />]} />
 
       {showForm && (
-        <div style={{ background: dark ? "rgba(255,255,255,.05)" : "#f9fafb", border: dark ? "1px solid rgba(255,255,255,.1)" : "1px solid #e5e7eb", borderRadius: 12, padding: 24, marginBottom: 24 }}>
-          <div style={{ fontSize: 15, fontWeight: 600, color: dark ? "#f3f4f6" : "#111", marginBottom: 16 }}>{editingGroup ? "Edit Group" : "New Group"}</div>
+        <div style={{ background: "var(--bg-card-alt)", border: "1px solid var(--border-color)", borderRadius: 12, padding: 24, marginBottom: 24 }}>
+          <div style={{ fontSize: 15, fontWeight: 600, color: "var(--text-primary)", marginBottom: 16 }}>{editingGroup ? "Edit Group" : "New Group"}</div>
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(220px,1fr))", gap: "0 20px" }}>
             <div>
-              <Input label="Group Name *" value={form.name} onChange={v => setForm({ ...form, name: v })} dark={dark} />
+              <Input label="Group Name *" value={form.name} onChange={v => setForm({ ...form, name: v })} />
               {errors.name && <div style={{ color: "#dc2626", fontSize: 11, marginTop: 4 }}>{errors.name}</div>}
             </div>
             <div>
-              <Input label="Scheme *" value={form.schemeId} onChange={v => setForm({ ...form, schemeId: v })} dark={dark} options={schemes.map(s => ({ value: s.id, label: s.name }))} />
+              <Input label="Scheme *" value={form.schemeId} onChange={v => setForm({ ...form, schemeId: v })} options={schemes.map(s => ({ value: s.id, label: s.name }))} />
               {errors.schemeId && <div style={{ color: "#dc2626", fontSize: 11, marginTop: 4 }}>{errors.schemeId}</div>}
             </div>
             <div>
-              <Input label="Start Date *" value={form.startDate} onChange={v => setForm({ ...form, startDate: v })} type="date" dark={dark} />
+              <Input label="Start Date *" value={form.startDate} onChange={v => setForm({ ...form, startDate: v })} type="date" />
               {errors.startDate && <div style={{ color: "#dc2626", fontSize: 11, marginTop: 4 }}>{errors.startDate}</div>}
             </div>
           </div>
@@ -178,12 +180,12 @@ export function Groups({ dark, toast }) {
       {/* Member Management Modal */}
       {showMemberModal && editingGroup && (
         <div style={{ position: "fixed", top: 0, left: 0, right: 0, bottom: 0, background: "rgba(0,0,0,0.5)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 1000 }}>
-          <div style={{ background: dark ? "#1f2937" : "#fff", borderRadius: 12, padding: 24, maxWidth: 600, width: "90%", maxHeight: "80vh", overflow: "auto" }}>
-            <div style={{ fontSize: 15, fontWeight: 600, color: dark ? "#f3f4f6" : "#111", marginBottom: 16 }}>Manage Members - {editingGroup.name}</div>
-            <div style={{ marginBottom: 16, fontSize: 12, color: dark ? "rgba(255,255,255,.5)" : "#6b7280" }}>Select members to add to this group:</div>
+          <div style={{ background: "var(--bg-card)", borderRadius: 12, padding: 24, maxWidth: 600, width: "90%", maxHeight: "80vh", overflow: "auto" }}>
+            <div style={{ fontSize: 15, fontWeight: 600, color: "var(--text-primary)", marginBottom: 16 }}>Manage Members - {editingGroup.name}</div>
+            <div style={{ marginBottom: 16, fontSize: 12, color: "var(--text-muted)" }}>Select members to add to this group:</div>
             <div style={{ display: "grid", gap: 8, maxHeight: "400px", overflow: "auto" }}>
               {members.map(m => (
-                <div key={m.id} style={{ display: "flex", alignItems: "center", gap: 12, padding: 12, background: dark ? "rgba(255,255,255,.05)" : "#f9fafb", borderRadius: 8, border: selectedMembers.includes(m.id) ? "2px solid #2563eb" : "1px solid " + (dark ? "rgba(255,255,255,.1)" : "#e5e7eb") }}>
+                <div key={m.id} style={{ display: "flex", alignItems: "center", gap: 12, padding: 12, background: "var(--bg-card-alt)", borderRadius: 8, border: selectedMembers.includes(m.id) ? "2px solid #2563eb" : "1px solid var(--border-color)" }}>
                   <input 
                     type="checkbox" 
                     checked={selectedMembers.includes(m.id)}
@@ -191,8 +193,8 @@ export function Groups({ dark, toast }) {
                     style={{ width: 18, height: 18, cursor: "pointer" }}
                   />
                   <div style={{ flex: 1 }}>
-                    <div style={{ fontWeight: 600, fontSize: 13, color: dark ? "#f3f4f6" : "#111" }}>{m.name}</div>
-                    <div style={{ fontSize: 11, color: dark ? "rgba(255,255,255,.5)" : "#6b7280" }}>{m.phone} · {m.address}</div>
+                    <div style={{ fontWeight: 600, fontSize: 13, color: "var(--text-primary)" }}>{m.name}</div>
+                    <div style={{ fontSize: 11, color: "var(--text-muted)" }}>ID: {m.userId} · {m.phone} · {m.address}</div>
                   </div>
                 </div>
               ))}
@@ -205,17 +207,17 @@ export function Groups({ dark, toast }) {
         </div>
       )}
 
-      <Table dark={dark} cols={["Group", "Scheme", "Start Date", "Installment", "Members (Limit)", "Status", "Actions"]}
+      <Table cols={["Group", "Scheme", "Start Date", "Installment", "Members (Limit)", "Status", "Actions"]}
         rows={groups.map(g => {
           const s = schemeById(g.schemeId);
           const memberCount = g.members ? g.members.length : 0;
           const memberLimit = s?.members || 20;
-          return [g.name, s?.name, g.startDate?.split('T')[0], "#" + g.currentInstallment, `${memberCount}/${memberLimit}`,
+          return [g.name, s?.name, g.startDate?.split('T')[0], s?.duration ? s.duration + " months" : "-", `${memberCount}/${memberLimit}`,
             <Badge key={g.id} text={g.status} color="green" />,
-            <div key={g.id} style={{ display: "flex", gap: 6 }}>
-              <button onClick={() => handleManageMembers(g)} style={{ fontSize: 11, padding: "4px 10px", borderRadius: 6, border: "1px solid #d97706", background: "transparent", color: "#d97706", cursor: "pointer" }}>Members</button>
-              <button onClick={() => handleEdit(g)} style={{ fontSize: 11, padding: "4px 10px", borderRadius: 6, border: "1px solid #2563eb", background: "transparent", color: "#2563eb", cursor: "pointer" }}>Edit</button>
-              <button onClick={() => handleDelete(g.id)} style={{ fontSize: 11, padding: "4px 10px", borderRadius: 6, border: "1px solid #dc2626", background: "transparent", color: "#dc2626", cursor: "pointer" }}>Delete</button>
+            <div key={g.id} style={{ display: "inline-flex", gap: 6 }}>
+              <IconBtn icon={<HiUserGroup size={14} />} onClick={() => handleManageMembers(g)} color="#d97706" title="Members" />
+              <IconBtn icon={<HiPencil size={14} />} onClick={() => handleEdit(g)} color="#2563eb" title="Edit" />
+              <IconBtn icon={<HiTrash size={14} />} onClick={() => handleDelete(g.id)} color="#dc2626" title="Delete" />
             </div>
           ];
         })} />

@@ -1,5 +1,7 @@
 // Preview document component
 import { Btn } from "./Btn";
+import { IconBtn } from "./IconBtn";
+import { HiPrinter, HiShare, HiEnvelope, HiDevicePhoneMobile, HiArrowDownTray, HiXMark } from "react-icons/hi2";
 
 function ActionBtn({ icon, label, onClick, color }) {
   return (
@@ -19,7 +21,7 @@ function ActionBtn({ icon, label, onClick, color }) {
         gap: 6
       }}
     >
-      <span>{icon}</span> {label}
+      {icon} {label}
     </button>
   );
 }
@@ -35,15 +37,15 @@ export function PreviewDocument({ doc, onClose }) {
       {/* Action Bar */}
       <div style={{ width: "100%", maxWidth: 860, display: "flex", flexWrap: "wrap", gap: 10, marginBottom: 20, justifyContent: "space-between", alignItems: "center" }}>
         <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-          <ActionBtn icon="🖨" label="Print" onClick={handlePrint} color="#2563eb" />
-          <ActionBtn icon="📤" label="Share" onClick={handleShare} color="#7c3aed" />
-          <ActionBtn icon="📧" label="Email" onClick={handleEmail} color="#0891b2" />
-          <ActionBtn icon="💬" label="WhatsApp" onClick={handleWhatsApp} color="#16a34a" />
-          <ActionBtn icon="⬇" label="Download PDF" onClick={() => alert("PDF export requires backend integration.")} color="#d97706" />
+          <ActionBtn icon={<HiPrinter size={14} />} label="Print" onClick={handlePrint} color="#2563eb" />
+          <ActionBtn icon={<HiShare size={14} />} label="Share" onClick={handleShare} color="#7c3aed" />
+          <ActionBtn icon={<HiEnvelope size={14} />} label="Email" onClick={handleEmail} color="#0891b2" />
+          <ActionBtn icon={<HiDevicePhoneMobile size={14} />} label="WhatsApp" onClick={handleWhatsApp} color="#16a34a" />
+          <ActionBtn icon={<HiArrowDownTray size={14} />} label="Download PDF" onClick={() => alert("PDF export requires backend integration.")} color="#d97706" />
         </div>
         <div style={{ display: "flex", gap: 8 }}>
           <button onClick={onClose} style={{ padding: "8px 18px", borderRadius: 8, border: "1px solid #555", background: "transparent", color: "#fff", cursor: "pointer", fontSize: 13 }}>← Back to Edit</button>
-          <button onClick={onClose} style={{ padding: "8px 18px", borderRadius: 8, border: "none", background: "#ef4444", color: "#fff", cursor: "pointer", fontSize: 13 }}>✕ Close</button>
+          <IconBtn icon={<HiXMark size={16} />} onClick={onClose} color="#ef4444" title="Close" />
         </div>
       </div>
 

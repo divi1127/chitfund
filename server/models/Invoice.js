@@ -33,9 +33,11 @@ const invoiceSchema = new mongoose.Schema({
   totalPayable: { type: Number, required: true },
   amountPaid: { type: Number, required: true },
   balance: { type: Number, default: 0 },
-  paymentMethod: { type: String, enum: ['Cash', 'UPI', 'Bank', 'Cheque', 'Pending'], required: true },
+  paymentMethod: { type: String, enum: ['Cash', 'UPI', 'Bank', 'Cheque', 'Online', 'Pending'], required: true },
   referenceNumber: { type: String },
-  
+  paymentProof: { type: String, default: '' },
+  paymentNote: { type: String, default: '' },
+
   // Account Status
   paidInstallments: { type: Number, required: true },
   remainingInstallments: { type: Number, required: true },
@@ -43,7 +45,7 @@ const invoiceSchema = new mongoose.Schema({
   remainingAmount: { type: Number, required: true },
   
   // Invoice Status
-  status: { type: String, enum: ['Paid', 'Partially Paid', 'Due', 'Cancelled', 'Pending'], default: 'Paid' },
+  status: { type: String, enum: ['Paid', 'Partially Paid', 'Due', 'Cancelled', 'Pending', 'Proof Submitted', 'Rejected'], default: 'Paid' },
   remarks: { type: String },
   
   // Verification

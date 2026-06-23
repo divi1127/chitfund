@@ -5,7 +5,7 @@ import { Table } from "../components/Table";
 import { Badge } from "../components/Badge";
 import { fmt } from "../utils/helpers";
 
-export function Prizes({ dark }) {
+export function Prizes() {
   const { data: auctions, loading } = useData('/auctions');
   
   const completedAuctions = auctions.filter(a => a.status === "Completed");
@@ -14,9 +14,9 @@ export function Prizes({ dark }) {
 
   return (
     <div>
-      <SectionHeader title="Prize Payments" subtitle="Track auction prize payouts" dark={dark} />
+      <SectionHeader title="Prize Payments" subtitle="Track auction prize payouts" />
       
-      <Table dark={dark} cols={["Auction ID", "Winning Bid", "Prize Amount", "Status"]}
+      <Table cols={["Auction ID", "Winning Bid", "Prize Amount", "Status"]}
         rows={completedAuctions.map(a => [
           a.id,
           fmt(a.winningBid || 0),

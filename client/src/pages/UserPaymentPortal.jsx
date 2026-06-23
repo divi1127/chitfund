@@ -10,8 +10,10 @@ import { Input } from "../components/Input";
 import { useAuth } from "../contexts/AuthContext";
 import { COMPANY } from "../utils/constants";
 import { QRCodeCanvas } from "qrcode.react";
+import { IconBtn } from "../components/IconBtn";
+import { HiCreditCard } from "react-icons/hi2";
 
-export function UserPaymentPortal({ dark, toast }) {
+export function UserPaymentPortal({ toast }) {
   const { user } = useAuth();
   const { data: invoices, loading: invoicesLoading, refresh: refreshInvoices } = useData('/invoices');
   const { data: members, loading: membersLoading } = useData('/members');
@@ -47,7 +49,7 @@ export function UserPaymentPortal({ dark, toast }) {
 
   // Build payment schedule from installments
   const duration = userScheme?.duration || 50;
-  const monthlyAmount = userScheme?.monthlyInstallment || 0;
+  const monthlyAmount = userScheme?.monthlyAmounts?.[(userGroup?.currentInstallment || 1) - 1]?.amount || userScheme?.monthlyInstallment || 0;
   const currentInstallment = userGroup?.currentInstallment || 1;
   const paidInstallmentNumbers = userInvoices
     .filter(inv => inv.status === 'Paid')
@@ -82,11 +84,9 @@ export function UserPaymentPortal({ dark, toast }) {
         ...selectedInvoice,
         amountPaid: parseFloat(form.amount),
         paymentMethod: form.paymentMethod,
-        referenceNumber: form.referenceNumber,
+        referenceNumber: form.referenceNumber || '',
         balance: selectedInvoice.balance - parseFloat(form.amount),
         status: parseFloat(form.amount) >= selectedInvoice.balance ? 'Paid' : 'Partially Paid',
-        paymentMethod: form.paymentMethod,
-        referenceNumber: form.referenceNumber || '',
         remarks: `Online payment via user portal - ${form.paymentMethod}`
       };
 
@@ -125,44 +125,44 @@ export function UserPaymentPortal({ dark, toast }) {
 
   return (
     <div>
-      <SectionHeader title="My Payments" subtitle="View and pay your chit installments online" dark={dark} />
+      <SectionHeader title="My Payments" subtitle="View and pay your chit installments online" />
 
       <div style={{ display: "grid", gap: 24 }}>
         {/* User Summary Card */}
         {userMember && (
-          <div style={{ background: dark ? "rgba(255,255,255,.05)" : "#fff", border: dark ? "1px solid rgba(255,255,255,.1)" : "1px solid #e5e7eb", borderRadius: 12, padding: 24 }}>
-            <div style={{ fontSize: 16, fontWeight: 600, color: dark ? "#f3f4f6" : "#111", marginBottom: 16 }}>My Account Summary</div>
+          <div style={{ background: "var(--bg-card)", border: "1px solid var(--border-color)", borderRadius: 12, padding: 24 }}>
+            <div style={{ fontSize: 16, fontWeight: 600, color: "var(--text-primary)", marginBottom: 16 }}>My Account Summary</div>
             <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(200px,1fr))", gap: 16 }}>
               <div>
-                <div style={{ fontSize: 12, color: dark ? "rgba(255,255,255,.5)" : "#6b7280", marginBottom: 4 }}>Member Name</div>
-                <div style={{ fontSize: 15, fontWeight: 600, color: dark ? "#f3f4f6" : "#111" }}>{userMember.name}</div>
+                <div style={{ fontSize: 12, color: "var(--text-muted)", marginBottom: 4 }}>Member Name</div>
+                <div style={{ fontSize: 15, fontWeight: 600, color: "var(--text-primary)" }}>{userMember.name}</div>
               </div>
               <div>
-                <div style={{ fontSize: 12, color: dark ? "rgba(255,255,255,.5)" : "#6b7280", marginBottom: 4 }}>Member ID</div>
-                <div style={{ fontSize: 15, fontWeight: 600, color: dark ? "#f3f4f6" : "#111" }}>{userMember.memberId}</div>
+                <div style={{ fontSize: 12, color: "var(--text-muted)", marginBottom: 4 }}>Member ID</div>
+                <div style={{ fontSize: 15, fontWeight: 600, color: "var(--text-primary)" }}>{userMember.memberId}</div>
               </div>
               <div>
-                <div style={{ fontSize: 12, color: dark ? "rgba(255,255,255,.5)" : "#6b7280", marginBottom: 4 }}>Group</div>
-                <div style={{ fontSize: 15, fontWeight: 600, color: dark ? "#f3f4f6" : "#111" }}>{userGroup?.name || "Not Assigned"}</div>
+                <div style={{ fontSize: 12, color: "var(--text-muted)", marginBottom: 4 }}>Group</div>
+                <div style={{ fontSize: 15, fontWeight: 600, color: "var(--text-primary)" }}>{userGroup?.name || "Not Assigned"}</div>
               </div>
               <div>
-                <div style={{ fontSize: 12, color: dark ? "rgba(255,255,255,.5)" : "#6b7280", marginBottom: 4 }}>Scheme</div>
-                <div style={{ fontSize: 15, fontWeight: 600, color: dark ? "#f3f4f6" : "#111" }}>{userScheme?.name || "Not Assigned"}</div>
+                <div style={{ fontSize: 12, color: "var(--text-muted)", marginBottom: 4 }}>Scheme</div>
+                <div style={{ fontSize: 15, fontWeight: 600, color: "var(--text-primary)" }}>{userScheme?.name || "Not Assigned"}</div>
               </div>
               <div>
-                <div style={{ fontSize: 12, color: dark ? "rgba(255,255,255,.5)" : "#6b7280", marginBottom: 4 }}>Monthly Installment</div>
-                <div style={{ fontSize: 15, fontWeight: 600, color: dark ? "#f3f4f6" : "#111" }}>₹{userScheme?.monthlyInstallment?.toLocaleString() || "0"}</div>
+                <div style={{ fontSize: 12, color: "var(--text-muted)", marginBottom: 4 }}>Monthly Installment</div>
+                <div style={{ fontSize: 15, fontWeight: 600, color: "var(--text-primary)" }}>₹{(userScheme?.monthlyAmounts?.[(userGroup?.currentInstallment || 1) - 1]?.amount || userScheme?.monthlyInstallment)?.toLocaleString() || "0"}</div>
               </div>
               <div>
-                <div style={{ fontSize: 12, color: dark ? "rgba(255,255,255,.5)" : "#6b7280", marginBottom: 4 }}>Current Due</div>
+                <div style={{ fontSize: 12, color: "var(--text-muted)", marginBottom: 4 }}>Current Due</div>
                 <div style={{ fontSize: 15, fontWeight: 600, color: "#ef4444" }}>₹{totalOutstanding.toLocaleString()}</div>
               </div>
               <div>
-                <div style={{ fontSize: 12, color: dark ? "rgba(255,255,255,.5)" : "#6b7280", marginBottom: 4 }}>Next Due Date</div>
-                <div style={{ fontSize: 15, fontWeight: 600, color: dark ? "#f3f4f6" : "#111" }}>{outstandingInvoices.length > 0 ? new Date(outstandingInvoices[0].dueDate).toLocaleDateString() : "No pending dues"}</div>
+                <div style={{ fontSize: 12, color: "var(--text-muted)", marginBottom: 4 }}>Next Due Date</div>
+                <div style={{ fontSize: 15, fontWeight: 600, color: "var(--text-primary)" }}>{outstandingInvoices.length > 0 ? new Date(outstandingInvoices[0].dueDate).toLocaleDateString() : "No pending dues"}</div>
               </div>
               <div>
-                <div style={{ fontSize: 12, color: dark ? "rgba(255,255,255,.5)" : "#6b7280", marginBottom: 4 }}>Status</div>
+                <div style={{ fontSize: 12, color: "var(--text-muted)", marginBottom: 4 }}>Status</div>
                 <Badge text={totalOutstanding > 0 ? "Pending" : "Up to Date"} color={totalOutstanding > 0 ? "red" : "green"} />
               </div>
             </div>
@@ -170,47 +170,41 @@ export function UserPaymentPortal({ dark, toast }) {
         )}
 
         {/* Outstanding Payments */}
-        <div style={{ background: dark ? "rgba(255,255,255,.05)" : "#fff", border: dark ? "1px solid rgba(255,255,255,.1)" : "1px solid #e5e7eb", borderRadius: 12, padding: 24 }}>
-          <div style={{ fontSize: 16, fontWeight: 600, color: dark ? "#f3f4f6" : "#111", marginBottom: 16 }}>Outstanding Payments</div>
+        <div style={{ background: "var(--bg-card)", border: "1px solid var(--border-color)", borderRadius: 12, padding: 24 }}>
+          <div style={{ fontSize: 16, fontWeight: 600, color: "var(--text-primary)", marginBottom: 16 }}>Outstanding Payments</div>
           {outstandingInvoices.length === 0 ? (
-            <div style={{ textAlign: "center", padding: 40, color: dark ? "rgba(255,255,255,.6)" : "#6b7280" }}>
+            <div style={{ textAlign: "center", padding: 40, color: "var(--text-muted)" }}>
               No outstanding payments. All payments are up to date!
             </div>
           ) : (
-            <Table dark={dark} cols={["Invoice No", "Due Date", "Amount", "Balance", "Status", "Action"]}
+            <Table cols={["Invoice No", "Due Date", "Amount", "Balance", "Status", "Action"]}
               rows={outstandingInvoices.map(inv => [
                 inv.invoiceNumber,
                 new Date(inv.dueDate).toLocaleDateString(),
                 `₹${inv.totalPayable.toLocaleString()}`,
                 `₹${inv.balance.toLocaleString()}`,
                 <Badge key={inv.id} text={inv.status} color={inv.status === 'Due' ? 'red' : 'yellow'} />,
-                <button
-                  key={inv.id}
-                  onClick={() => { setSelectedInvoice(inv); setForm({ ...form, amount: inv.balance }); setShowPaymentForm(true); }}
-                  style={{ fontSize: 11, padding: "6px 12px", borderRadius: 6, border: "1px solid #2563eb", background: "#2563eb", color: "#fff", cursor: "pointer", fontWeight: 600 }}
-                >
-                  Pay Now
-                </button>
+                <IconBtn key={inv.id} icon={<HiCreditCard size={14} />} onClick={() => { setSelectedInvoice(inv); setForm({ ...form, amount: inv.balance }); setShowPaymentForm(true); }} color="#2563eb" title="Pay Now" />
               ])} />
           )}
         </div>
 
         {/* Payment Schedule Tracker */}
         {userScheme && (
-          <div style={{ background: dark ? "rgba(255,255,255,.05)" : "#fff", border: dark ? "1px solid rgba(255,255,255,.1)" : "1px solid #e5e7eb", borderRadius: 12, padding: 24 }}>
-            <div style={{ fontSize: 16, fontWeight: 600, color: dark ? "#f3f4f6" : "#111", marginBottom: 16 }}>
+          <div style={{ background: "var(--bg-card)", border: "1px solid var(--border-color)", borderRadius: 12, padding: 24 }}>
+            <div style={{ fontSize: 16, fontWeight: 600, color: "var(--text-primary)", marginBottom: 16 }}>
               Payment Schedule
-              <span style={{ fontSize: 12, fontWeight: 400, marginLeft: 12, color: dark ? "rgba(255,255,255,.4)" : "#9ca3af" }}>
+              <span style={{ fontSize: 12, fontWeight: 400, marginLeft: 12, color: "var(--text-muted-2)" }}>
                 Installment {currentInstallment} of {duration}
               </span>
             </div>
             
             {/* Progress Bar */}
-            <div style={{ background: dark ? "rgba(255,255,255,.08)" : "#e5e7eb", borderRadius: 8, height: 8, marginBottom: 20, position: "relative", overflow: "hidden" }}>
+            <div style={{ background: "var(--border-color)", borderRadius: 8, height: 8, marginBottom: 20, position: "relative", overflow: "hidden" }}>
               <div style={{ width: `${(currentInstallment / duration) * 100}%`, height: "100%", background: "linear-gradient(90deg, #2563eb, #10b981)", borderRadius: 8, transition: "width 0.5s ease" }} />
             </div>
             
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20, fontSize: 13, color: dark ? "rgba(255,255,255,.5)" : "#6b7280" }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20, fontSize: 13, color: "var(--text-muted)" }}>
               <span>Paid: {paidInstallmentNumbers.length} / {duration}</span>
               <span>₹{monthlyAmount.toLocaleString()}/month</span>
               <span>Total: ₹{(monthlyAmount * duration).toLocaleString()}</span>
@@ -226,21 +220,21 @@ export function UserPaymentPortal({ dark, toast }) {
                 
                 let bg, border, textColor;
                 if (isPaid) {
-                  bg = dark ? "rgba(16, 185, 129, 0.15)" : "#ecfdf5";
+                  bg = "#ecfdf5";
                   border = "1px solid #10b981";
                   textColor = "#10b981";
                 } else if (isDueNow) {
-                  bg = dark ? "rgba(37, 99, 235, 0.15)" : "#eff6ff";
+                  bg = "#eff6ff";
                   border = "2px solid #2563eb";
                   textColor = "#2563eb";
                 } else if (isOverdue) {
-                  bg = dark ? "rgba(239, 68, 68, 0.15)" : "#fef2f2";
+                  bg = "#fef2f2";
                   border = "1px solid #ef4444";
                   textColor = "#ef4444";
                 } else {
-                  bg = dark ? "rgba(255,255,255,0.03)" : "#f9fafb";
-                  border = dark ? "1px solid rgba(255,255,255,0.08)" : "1px solid #e5e7eb";
-                  textColor = dark ? "rgba(255,255,255,.5)" : "#9ca3af";
+                  bg = "var(--bg-card-alt)";
+                  border = "1px solid var(--border-color)";
+                  textColor = "var(--text-muted-2)";
                 }
 
                 return (
@@ -256,7 +250,7 @@ export function UserPaymentPortal({ dark, toast }) {
                     <div style={{ fontSize: 11, color: textColor, fontWeight: isDueNow || isPaid ? 700 : 500, marginBottom: 4 }}>
                       #{item.installment}
                     </div>
-                    <div style={{ fontSize: 13, fontWeight: 700, color: dark ? "#f3f4f6" : "#111", marginBottom: 2 }}>
+                    <div style={{ fontSize: 13, fontWeight: 700, color: "var(--text-primary)", marginBottom: 2 }}>
                       ₹{item.amount.toLocaleString()}
                     </div>
                     <div style={{ fontSize: 10, color: textColor, marginTop: 4 }}>
@@ -268,7 +262,7 @@ export function UserPaymentPortal({ dark, toast }) {
             </div>
             
             {/* Legend */}
-            <div style={{ display: "flex", gap: 20, marginTop: 16, fontSize: 11, color: dark ? "rgba(255,255,255,.5)" : "#6b7280", justifyContent: "center" }}>
+            <div style={{ display: "flex", gap: 20, marginTop: 16, fontSize: 11, color: "var(--text-muted)", justifyContent: "center" }}>
               <span><span style={{ color: "#10b981" }}>●</span> Paid</span>
               <span><span style={{ color: "#2563eb" }}>●</span> Due Now</span>
               <span><span style={{ color: "#ef4444" }}>●</span> Overdue</span>
@@ -278,14 +272,14 @@ export function UserPaymentPortal({ dark, toast }) {
         )}
 
         {/* Payment History */}
-        <div style={{ background: dark ? "rgba(255,255,255,.05)" : "#fff", border: dark ? "1px solid rgba(255,255,255,.1)" : "1px solid #e5e7eb", borderRadius: 12, padding: 24 }}>
-          <div style={{ fontSize: 16, fontWeight: 600, color: dark ? "#f3f4f6" : "#111", marginBottom: 16 }}>Payment History</div>
+        <div style={{ background: "var(--bg-card)", border: "1px solid var(--border-color)", borderRadius: 12, padding: 24 }}>
+          <div style={{ fontSize: 16, fontWeight: 600, color: "var(--text-primary)", marginBottom: 16 }}>Payment History</div>
           {userInvoices.length === 0 ? (
-            <div style={{ textAlign: "center", padding: 40, color: dark ? "rgba(255,255,255,.6)" : "#6b7280" }}>
+            <div style={{ textAlign: "center", padding: 40, color: "var(--text-muted)" }}>
               No payment history available.
             </div>
           ) : (
-            <Table dark={dark} cols={["Invoice No", "Date", "Amount Paid", "Payment Mode", "Status"]}
+            <Table cols={["Invoice No", "Date", "Amount Paid", "Payment Mode", "Status"]}
               rows={userInvoices.map(inv => [
                 inv.invoiceNumber,
                 new Date(inv.date).toLocaleDateString(),
@@ -299,25 +293,25 @@ export function UserPaymentPortal({ dark, toast }) {
         {/* Payment Form Modal */}
         {showPaymentForm && selectedInvoice && (
           <div style={{ position: "fixed", top: 0, left: 0, right: 0, bottom: 0, background: "rgba(0,0,0,0.5)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 1000 }}>
-            <div style={{ background: dark ? "#1e1b4b" : "#fff", borderRadius: 12, maxWidth: 500, width: "90%", maxHeight: "90vh", overflow: "auto", padding: 24 }}>
+            <div style={{ background: "var(--bg-card)", borderRadius: 12, maxWidth: 500, width: "90%", maxHeight: "90vh", overflow: "auto", padding: 24 }}>
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20 }}>
-                <div style={{ fontSize: 18, fontWeight: 700, color: dark ? "#f3f4f6" : "#111" }}>Make Payment</div>
-                <button onClick={() => setShowPaymentForm(false)} style={{ fontSize: 24, background: "none", border: "none", cursor: "pointer", color: dark ? "#f3f4f6" : "#111" }}>×</button>
+                <div style={{ fontSize: 18, fontWeight: 700, color: "var(--text-primary)" }}>Make Payment</div>
+                <button onClick={() => setShowPaymentForm(false)} style={{ fontSize: 24, background: "none", border: "none", cursor: "pointer", color: "var(--text-primary)" }}>×</button>
               </div>
 
-              <div style={{ marginBottom: 20, padding: 16, background: dark ? "rgba(255,255,255,.05)" : "#f9fafb", borderRadius: 8 }}>
-                <div style={{ fontSize: 14, color: dark ? "rgba(255,255,255,.6)" : "#6b7280", marginBottom: 4 }}>Invoice Number</div>
-                <div style={{ fontSize: 16, fontWeight: 600, color: dark ? "#f3f4f6" : "#111", marginBottom: 8 }}>{selectedInvoice.invoiceNumber}</div>
-                <div style={{ fontSize: 14, color: dark ? "rgba(255,255,255,.6)" : "#6b7280", marginBottom: 4 }}>Amount Due</div>
+              <div style={{ marginBottom: 20, padding: 16, background: "var(--bg-card)", borderRadius: 8 }}>
+                <div style={{ fontSize: 14, color: "var(--text-muted)", marginBottom: 4 }}>Invoice Number</div>
+                <div style={{ fontSize: 16, fontWeight: 600, color: "var(--text-primary)", marginBottom: 8 }}>{selectedInvoice.invoiceNumber}</div>
+                <div style={{ fontSize: 14, color: "var(--text-muted)", marginBottom: 4 }}>Amount Due</div>
                 <div style={{ fontSize: 20, fontWeight: 700, color: "#ef4444" }}>₹{selectedInvoice.balance.toLocaleString()}</div>
               </div>
 
               <div style={{ marginBottom: 20 }}>
-                <Input label="Payment Amount" value={form.amount} onChange={v => setForm({ ...form, amount: v })} dark={dark} type="number" />
+                <Input label="Payment Amount" value={form.amount} onChange={v => setForm({ ...form, amount: v })} type="number" />
               </div>
 
               <div style={{ marginBottom: 20 }}>
-                <div style={{ fontSize: 14, fontWeight: 600, color: dark ? "rgba(255,255,255,.6)" : "#374151", marginBottom: 12 }}>Payment Method</div>
+                <div style={{ fontSize: 14, fontWeight: 600, color: "var(--text-secondary)", marginBottom: 12 }}>Payment Method</div>
                 <div style={{ display: "flex", gap: 12, flexWrap: "wrap" }}>
                   {['Cash', 'Bank Transfer', 'UPI', 'Card', 'Net Banking'].map(method => (
                     <button
@@ -327,8 +321,8 @@ export function UserPaymentPortal({ dark, toast }) {
                         padding: "10px 20px",
                         borderRadius: 8,
                         border: form.paymentMethod === method ? "2px solid #2563eb" : "1px solid #d1d5db",
-                        background: form.paymentMethod === method ? "rgba(37, 99, 235, 0.1)" : dark ? "rgba(255,255,255,.05)" : "#fff",
-                        color: dark ? "#f3f4f6" : "#111",
+                        background: form.paymentMethod === method ? "rgba(37, 99, 235, 0.1)" : "var(--bg-card)",
+                        color: "var(--text-primary)",
                         cursor: "pointer",
                         fontSize: 14,
                         fontWeight: form.paymentMethod === method ? 600 : 400
@@ -341,75 +335,75 @@ export function UserPaymentPortal({ dark, toast }) {
               </div>
 
               {form.paymentMethod === 'Cash' && (
-                <div style={{ marginBottom: 20, padding: 16, background: dark ? "rgba(255,255,255,.05)" : "#f9fafb", borderRadius: 8 }}>
-                  <div style={{ fontSize: 14, fontWeight: 600, color: dark ? "#f3f4f6" : "#111", marginBottom: 12 }}>Cash Payment Instructions</div>
-                  <div style={{ fontSize: 13, color: dark ? "rgba(255,255,255,.6)" : "#6b7280", marginBottom: 12, whiteSpace: "pre-line" }}>
+                <div style={{ marginBottom: 20, padding: 16, background: "var(--bg-card)", borderRadius: 8 }}>
+                  <div style={{ fontSize: 14, fontWeight: 600, color: "var(--text-primary)", marginBottom: 12 }}>Cash Payment Instructions</div>
+                  <div style={{ fontSize: 13, color: "var(--text-muted)", marginBottom: 12, whiteSpace: "pre-line" }}>
                     {COMPANY.cashInstructions || "Please visit our office to make cash payment."}
                   </div>
-                  <Input label="Reference Number (Optional)" value={form.referenceNumber} onChange={v => setForm({ ...form, referenceNumber: v })} dark={dark} placeholder="Receipt number" />
+                  <Input label="Reference Number (Optional)" value={form.referenceNumber} onChange={v => setForm({ ...form, referenceNumber: v })} placeholder="Receipt number" />
                 </div>
               )}
 
               {form.paymentMethod === 'Bank Transfer' && (
-                <div style={{ marginBottom: 20, padding: 16, background: dark ? "rgba(255,255,255,.05)" : "#f9fafb", borderRadius: 8 }}>
-                  <div style={{ fontSize: 14, fontWeight: 600, color: dark ? "#f3f4f6" : "#111", marginBottom: 12 }}>Bank Transfer Details</div>
-                  <div style={{ fontSize: 13, color: dark ? "rgba(255,255,255,.6)" : "#6b7280", marginBottom: 4 }}>Bank Name: {COMPANY.bankName || "State Bank of India"}</div>
-                  <div style={{ fontSize: 13, color: dark ? "rgba(255,255,255,.6)" : "#6b7280", marginBottom: 4 }}>Account Name: {COMPANY.accountName || "Chit Fund Management"}</div>
-                  <div style={{ fontSize: 13, color: dark ? "rgba(255,255,255,.6)" : "#6b7280", marginBottom: 4 }}>Account Number: {COMPANY.accountNumber || "1234567890"}</div>
-                  <div style={{ fontSize: 13, color: dark ? "rgba(255,255,255,.6)" : "#6b7280", marginBottom: 4 }}>IFSC Code: {COMPANY.ifscCode || "SBIN0001234"}</div>
+                <div style={{ marginBottom: 20, padding: 16, background: "var(--bg-card)", borderRadius: 8 }}>
+                  <div style={{ fontSize: 14, fontWeight: 600, color: "var(--text-primary)", marginBottom: 12 }}>Bank Transfer Details</div>
+                  {COMPANY.bankName && <div style={{ fontSize: 13, color: "var(--text-muted)", marginBottom: 4 }}>Bank Name: {COMPANY.bankName}</div>}
+                  {COMPANY.accountName && <div style={{ fontSize: 13, color: "var(--text-muted)", marginBottom: 4 }}>Account Name: {COMPANY.accountName}</div>}
+                  {COMPANY.accountNumber && <div style={{ fontSize: 13, color: "var(--text-muted)", marginBottom: 4 }}>Account Number: {COMPANY.accountNumber}</div>}
+                  {COMPANY.ifscCode && <div style={{ fontSize: 13, color: "var(--text-muted)", marginBottom: 4 }}>IFSC Code: {COMPANY.ifscCode}</div>}
                   <div style={{ marginTop: 16 }}>
-                    <Input label="Transaction Reference Number" value={form.referenceNumber} onChange={v => setForm({ ...form, referenceNumber: v })} dark={dark} placeholder="Enter transaction ID" />
+                    <Input label="Transaction Reference Number" value={form.referenceNumber} onChange={v => setForm({ ...form, referenceNumber: v })} placeholder="Enter transaction ID" />
                   </div>
                 </div>
               )}
 
               {form.paymentMethod === 'UPI' && (
                 <div style={{ marginBottom: 20 }}>
-                  <div style={{ marginBottom: 16, padding: 16, background: dark ? "rgba(255,255,255,.05)" : "#f9fafb", borderRadius: 8 }}>
-                    <div style={{ fontSize: 14, fontWeight: 600, color: dark ? "#f3f4f6" : "#111", marginBottom: 12 }}>UPI Payment Options</div>
-                    <div style={{ fontSize: 13, color: dark ? "rgba(255,255,255,.6)" : "#6b7280", marginBottom: 4 }}>UPI ID: {COMPANY.upiId || "company@upi"}</div>
-                    <div style={{ fontSize: 13, color: dark ? "rgba(255,255,255,.6)" : "#6b7280", marginBottom: 4 }}>Google Pay: {COMPANY.googlePay || "company@okhdfcbank"}</div>
-                    <div style={{ fontSize: 13, color: dark ? "rgba(255,255,255,.6)" : "#6b7280", marginBottom: 4 }}>PhonePe: {COMPANY.phonePe || "company@ybl"}</div>
-                    <div style={{ fontSize: 13, color: dark ? "rgba(255,255,255,.6)" : "#6b7280", marginBottom: 4 }}>Paytm: {COMPANY.paytm || "company@paytm"}</div>
+                  <div style={{ marginBottom: 16, padding: 16, background: "var(--bg-card)", borderRadius: 8 }}>
+                    <div style={{ fontSize: 14, fontWeight: 600, color: "var(--text-primary)", marginBottom: 12 }}>UPI Payment Options</div>
+                    {COMPANY.upiId && <div style={{ fontSize: 13, color: "var(--text-muted)", marginBottom: 4 }}>UPI ID: {COMPANY.upiId}</div>}
+                    {COMPANY.googlePay && <div style={{ fontSize: 13, color: "var(--text-muted)", marginBottom: 4 }}>Google Pay: {COMPANY.googlePay}</div>}
+                    {COMPANY.phonePe && <div style={{ fontSize: 13, color: "var(--text-muted)", marginBottom: 4 }}>PhonePe: {COMPANY.phonePe}</div>}
+                    {COMPANY.paytm && <div style={{ fontSize: 13, color: "var(--text-muted)", marginBottom: 4 }}>Paytm: {COMPANY.paytm}</div>}
                   </div>
-                  <Input label="Select UPI App" value={form.upiId} onChange={v => setForm({ ...form, upiId: v })} dark={dark} placeholder="Enter UPI ID from above" />
+                  <Input label="Select UPI App" value={form.upiId} onChange={v => setForm({ ...form, upiId: v })} placeholder="Enter UPI ID from above" />
                   <div style={{ marginTop: 16, textAlign: "center" }}>
                     <QRCodeCanvas value={`upi://pay?pa=${form.upiId || COMPANY.upiId}&pn=${COMPANY.name}&am=${form.amount}&cu=INR`} size={150} level="H" />
-                    <div style={{ fontSize: 12, color: dark ? "rgba(255,255,255,.6)" : "#6b7280", marginTop: 8 }}>Scan to pay via UPI</div>
+                    <div style={{ fontSize: 12, color: "var(--text-muted)", marginTop: 8 }}>Scan to pay via UPI</div>
                   </div>
                 </div>
               )}
 
               {form.paymentMethod === 'Card' && (
                 <>
-                  <div style={{ marginBottom: 16, padding: 16, background: dark ? "rgba(255,255,255,.05)" : "#f9fafb", borderRadius: 8 }}>
-                    <div style={{ fontSize: 14, fontWeight: 600, color: dark ? "#f3f4f6" : "#111", marginBottom: 12 }}>Card Payment Gateway</div>
-                    <div style={{ fontSize: 13, color: dark ? "rgba(255,255,255,.6)" : "#6b7280", marginBottom: 4 }}>Payment Gateway: {COMPANY.cardGateway || "Razorpay"}</div>
-                    <div style={{ fontSize: 12, color: dark ? "rgba(255,255,255,.5)" : "#9ca3af" }}>
-                      Secure payment processing via {COMPANY.cardGateway || "Razorpay"}
+                  <div style={{ marginBottom: 16, padding: 16, background: "var(--bg-card)", borderRadius: 8 }}>
+                    <div style={{ fontSize: 14, fontWeight: 600, color: "var(--text-primary)", marginBottom: 12 }}>Card Payment Gateway</div>
+                    <div style={{ fontSize: 13, color: "var(--text-muted)", marginBottom: 4 }}>Payment Gateway: {COMPANY.cardGateway || "—"}</div>
+                    <div style={{ fontSize: 11, color: "var(--text-muted-2)" }}>
+                      {COMPANY.cardGateway ? `Secure payment processing via ${COMPANY.cardGateway}` : ""}
                     </div>
                   </div>
                   <div style={{ marginBottom: 16 }}>
-                    <Input label="Card Number" value={form.cardNumber} onChange={v => setForm({ ...form, cardNumber: v })} dark={dark} placeholder="1234 5678 9012 3456" />
+                    <Input label="Card Number" value={form.cardNumber} onChange={v => setForm({ ...form, cardNumber: v })} placeholder="1234 5678 9012 3456" />
                   </div>
                   <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16, marginBottom: 16 }}>
-                    <Input label="Expiry Date" value={form.expiryDate} onChange={v => setForm({ ...form, expiryDate: v })} dark={dark} placeholder="MM/YY" />
-                    <Input label="CVV" value={form.cvv} onChange={v => setForm({ ...form, cvv: v })} dark={dark} placeholder="123" type="password" />
+                    <Input label="Expiry Date" value={form.expiryDate} onChange={v => setForm({ ...form, expiryDate: v })} placeholder="MM/YY" />
+                    <Input label="CVV" value={form.cvv} onChange={v => setForm({ ...form, cvv: v })} placeholder="123" type="password" />
                   </div>
                 </>
               )}
 
               {form.paymentMethod === 'Net Banking' && (
-                <div style={{ marginBottom: 20, padding: 16, background: dark ? "rgba(255,255,255,.05)" : "#f9fafb", borderRadius: 8 }}>
-                  <div style={{ fontSize: 14, fontWeight: 600, color: dark ? "#f3f4f6" : "#111", marginBottom: 12 }}>Net Banking</div>
-                  <div style={{ fontSize: 13, color: dark ? "rgba(255,255,255,.6)" : "#6b7280", marginBottom: 8 }}>
+                <div style={{ marginBottom: 20, padding: 16, background: "var(--bg-card)", borderRadius: 8 }}>
+                  <div style={{ fontSize: 14, fontWeight: 600, color: "var(--text-primary)", marginBottom: 12 }}>Net Banking</div>
+                  <div style={{ fontSize: 13, color: "var(--text-muted)", marginBottom: 8 }}>
                     You will be redirected to your bank's secure payment gateway
                   </div>
-                  <div style={{ fontSize: 12, color: dark ? "rgba(255,255,255,.5)" : "#9ca3af", marginBottom: 12 }}>
+                  <div style={{ fontSize: 12, color: "var(--text-muted-2)", marginBottom: 12 }}>
                     Supported banks: All major Indian banks
                   </div>
-                  <div style={{ fontSize: 13, color: dark ? "rgba(255,255,255,.6)" : "#6b7280", marginBottom: 4 }}>
-                    Payment Gateway: {COMPANY.cardGateway || "Razorpay"}
+                  <div style={{ fontSize: 13, color: "var(--text-muted)", marginBottom: 4 }}>
+                    Payment Gateway: {COMPANY.cardGateway || "—"}
                   </div>
                 </div>
               )}
@@ -419,7 +413,7 @@ export function UserPaymentPortal({ dark, toast }) {
                 <Btn label="Cancel" onClick={() => setShowPaymentForm(false)} style={{ flex: 1 }} />
               </div>
 
-              <div style={{ marginTop: 16, textAlign: "center", fontSize: 12, color: dark ? "rgba(255,255,255,.5)" : "#9ca3af" }}>
+              <div style={{ marginTop: 16, textAlign: "center", fontSize: 12, color: "var(--text-muted-2)" }}>
                 🔒 Secure payment powered by {COMPANY.name}
               </div>
             </div>

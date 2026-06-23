@@ -7,8 +7,10 @@ import { Table } from "../components/Table";
 import { Badge } from "../components/Badge";
 import { Btn } from "../components/Btn";
 import { Input } from "../components/Input";
+import { HiPencil, HiTrash } from "react-icons/hi2";
+import { IconBtn } from "../components/IconBtn";
 
-export function Employees({ dark, toast }) {
+export function Employees({ toast }) {
   const { data: employees, loading } = useData('/employees');
   const [refresh, setRefresh] = useState(0);
   const [showForm, setShowForm] = useState(false);
@@ -85,31 +87,31 @@ export function Employees({ dark, toast }) {
 
   return (
     <div>
-      <SectionHeader title="Employee Management" subtitle="Manage staff and employees" dark={dark}
+      <SectionHeader title="Employee Management" subtitle="Manage staff and employees"
         actions={[<Btn key="a" label="+ Add Employee" onClick={() => { setEditingEmployee(null); setForm({ name: "", role: "", phone: "", email: "", branchId: "" }); setShowForm(true); }} primary />]} />
 
       {showForm && (
-        <div style={{ background: dark ? "rgba(255,255,255,.05)" : "#f9fafb", border: dark ? "1px solid rgba(255,255,255,.1)" : "1px solid #e5e7eb", borderRadius: 12, padding: 24, marginBottom: 24 }}>
-          <div style={{ fontSize: 15, fontWeight: 600, color: dark ? "#f3f4f6" : "#111", marginBottom: 16 }}>{editingEmployee ? "Edit Employee" : "New Employee"}</div>
+        <div style={{ background: "var(--bg-card)", border: "1px solid var(--border-color)", borderRadius: 12, padding: 24, marginBottom: 24 }}>
+          <div style={{ fontSize: 15, fontWeight: 600, color: "var(--text-primary)", marginBottom: 16 }}>{editingEmployee ? "Edit Employee" : "New Employee"}</div>
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(220px,1fr))", gap: "0 20px" }}>
             <div>
-              <Input label="Full Name *" value={form.name} onChange={v => setForm({ ...form, name: v })} dark={dark} />
+              <Input label="Full Name *" value={form.name} onChange={v => setForm({ ...form, name: v })} />
               {errors.name && <div style={{ color: "#dc2626", fontSize: 11, marginTop: 4 }}>{errors.name}</div>}
             </div>
             <div>
-              <Input label="Role *" value={form.role} onChange={v => setForm({ ...form, role: v })} dark={dark} options={["Manager", "Agent", "Collector", "Accountant", "Admin"].map(v => ({ value: v, label: v }))} />
+              <Input label="Role *" value={form.role} onChange={v => setForm({ ...form, role: v })} options={["Manager", "Agent", "Collector", "Accountant", "Admin"].map(v => ({ value: v, label: v }))} />
               {errors.role && <div style={{ color: "#dc2626", fontSize: 11, marginTop: 4 }}>{errors.role}</div>}
             </div>
             <div>
-              <Input label="Phone *" value={form.phone} onChange={v => setForm({ ...form, phone: v })} dark={dark} />
+              <Input label="Phone *" value={form.phone} onChange={v => setForm({ ...form, phone: v })} />
               {errors.phone && <div style={{ color: "#dc2626", fontSize: 11, marginTop: 4 }}>{errors.phone}</div>}
             </div>
             <div>
-              <Input label="Email *" value={form.email} onChange={v => setForm({ ...form, email: v })} dark={dark} />
+              <Input label="Email *" value={form.email} onChange={v => setForm({ ...form, email: v })} />
               {errors.email && <div style={{ color: "#dc2626", fontSize: 11, marginTop: 4 }}>{errors.email}</div>}
             </div>
             <div>
-              <Input label="Branch *" value={form.branchId} onChange={v => setForm({ ...form, branchId: v })} dark={dark} options={["Main Branch", "Branch A", "Branch B"].map(v => ({ value: v, label: v }))} />
+              <Input label="Branch *" value={form.branchId} onChange={v => setForm({ ...form, branchId: v })} options={["Main Branch", "Branch A", "Branch B"].map(v => ({ value: v, label: v }))} />
               {errors.branchId && <div style={{ color: "#dc2626", fontSize: 11, marginTop: 4 }}>{errors.branchId}</div>}
             </div>
           </div>
@@ -120,7 +122,7 @@ export function Employees({ dark, toast }) {
         </div>
       )}
 
-      <Table dark={dark} cols={["ID", "Name", "Role", "Phone", "Email", "Branch", "Status", "Actions"]}
+      <Table cols={["ID", "Name", "Role", "Phone", "Email", "Branch", "Status", "Actions"]}
         rows={employees.map(e => [
           e.id,
           e.name,
@@ -130,8 +132,8 @@ export function Employees({ dark, toast }) {
           e.branchId,
           <Badge key={e.id} text={e.status} color={e.status === "Active" ? "green" : "red"} />,
           <div key={e.id} style={{ display: "flex", gap: 6 }}>
-            <button onClick={() => handleEdit(e)} style={{ fontSize: 11, padding: "4px 10px", borderRadius: 6, border: "1px solid #2563eb", background: "transparent", color: "#2563eb", cursor: "pointer" }}>Edit</button>
-            <button onClick={() => handleDelete(e.id)} style={{ fontSize: 11, padding: "4px 10px", borderRadius: 6, border: "1px solid #dc2626", background: "transparent", color: "#dc2626", cursor: "pointer" }}>Delete</button>
+<IconBtn icon={<HiPencil size={14} />} onClick={() => handleEdit(e)} color="#2563eb" title="Edit" />
+            <IconBtn icon={<HiTrash size={14} />} onClick={() => handleDelete(e.id)} color="#dc2626" title="Delete" />
           </div>
         ])} />
     </div>

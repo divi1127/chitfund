@@ -1,4 +1,3 @@
-// Badge component for status indicators
 export function Badge({ text, color }) {
   const colors = {
     green: "#059669",
@@ -18,7 +17,8 @@ export function Badge({ text, color }) {
       fontSize: 11,
       fontWeight: 600,
       textTransform: "uppercase",
-      letterSpacing: 0.5
+      letterSpacing: 0.5,
+      display: "inline-block",
     }}>
       {text}
     </span>

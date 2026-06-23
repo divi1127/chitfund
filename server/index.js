@@ -1,5 +1,7 @@
 import express from 'express';
 import cors from 'cors';
+import path from 'path';
+import { fileURLToPath } from 'url';
 import dotenv from 'dotenv';
 import { connectDB } from './db.js';
 import membersRouter from './routes/members.js';
@@ -12,6 +14,10 @@ import branchesRouter from './routes/branches.js';
 import authRouter from './routes/auth.js';
 import usersRouter from './routes/users.js';
 import invoicesRouter from './routes/invoices.js';
+import accountingRouter from './routes/accounting.js';
+import uploadRouter from './routes/upload.js';
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 // Load environment variables
 dotenv.config();
@@ -24,6 +30,7 @@ app.use(cors({
   origin: process.env.CORS_ORIGIN || 'http://localhost:3001'
 }));
 app.use(express.json());
+app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
 // Routes
 app.use('/api/auth', authRouter);
@@ -36,6 +43,8 @@ app.use('/api/collections', collectionsRouter);
 app.use('/api/auctions', auctionsRouter);
 app.use('/api/employees', employeesRouter);
 app.use('/api/branches', branchesRouter);
+app.use('/api/accounting', accountingRouter);
+app.use('/api/upload', uploadRouter);
 
 // Health check
 app.get('/api/health', (req, res) => {

@@ -24,6 +24,60 @@ code {
     monospace;
 }
 
+/* ── CSS Custom Properties for Theming ── */
+:root {
+  --bg-primary: #f1f5f9;
+  --bg-card: #fff;
+  --bg-card-alt: #f9fafb;
+  --bg-input: #fff;
+  --bg-sidebar: #0f172a;
+  --text-primary: #111;
+  --text-secondary: #374151;
+  --text-muted: #6b7280;
+  --text-muted-2: #9ca3af;
+  --border-color: #e5e7eb;
+  --border-input: #d1d5db;
+  --shadow-sm: 0 1px 3px rgba(0,0,0,.04);
+  --hover-bg: rgba(0,0,0,.03);
+  --table-header-bg: #f9fafb;
+  --table-row-border: #e5e7eb;
+  --scrollbar-thumb: rgba(0,0,0,.15);
+  --scrollbar-thumb-hover: rgba(0,0,0,.3);
+  --overlay-bg: rgba(0,0,0,.5);
+  --transition: all .2s ease;
+}
+
+[data-theme="dark"] {
+  --bg-primary: #0f172a;
+  --bg-card: rgba(255,255,255,.05);
+  --bg-card-alt: rgba(255,255,255,.08);
+  --bg-input: rgba(255,255,255,.05);
+  --bg-sidebar: #0f172a;
+  --text-primary: #f3f4f6;
+  --text-secondary: rgba(255,255,255,.8);
+  --text-muted: rgba(255,255,255,.5);
+  --text-muted-2: rgba(255,255,255,.4);
+  --border-color: rgba(255,255,255,.1);
+  --border-input: rgba(255,255,255,.15);
+  --shadow-sm: none;
+  --hover-bg: rgba(255,255,255,.05);
+  --table-header-bg: rgba(255,255,255,.08);
+  --table-row-border: rgba(255,255,255,.05);
+  --scrollbar-thumb: rgba(255,255,255,.1);
+  --scrollbar-thumb-hover: rgba(255,255,255,.2);
+  --overlay-bg: rgba(0,0,0,.7);
+}
+
+body {
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  transition: background .3s ease, color .3s ease;
+}
+
+* {
+  transition: background-color .25s ease, border-color .25s ease, color .25s ease, box-shadow .25s ease;
+}
+
 @keyframes fadeIn {
   from { opacity: 0; transform: translateY(8px); }
   to { opacity: 1; transform: none; }

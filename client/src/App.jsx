@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import { useState, useEffect } from "react";
+import { BrowserRouter, Routes, Route, Navigate, useNavigate } from "react-router-dom";
 import { Toast } from "./components/Toast";
 import { useToast } from "./hooks/useToast";
 import { PreviewDocument } from "./components/PreviewDocument";
@@ -25,14 +25,44 @@ import { Notifications } from "./pages/Notifications";
 import { Settings } from "./pages/Settings";
 import { UserProfile } from "./pages/UserProfile";
 import { UserPaymentPortal } from "./pages/UserPaymentPortal";
+import { fetchData } from "./utils/api";
 
 // ─── APP LAYOUT ───────────────────────────────────────────────────────────────
 function AppLayout() {
-  const [dark, setDark] = useState(false);
+  const navigate = useNavigate();
+  const [theme, setTheme] = useState(() => localStorage.getItem('theme') || 'light');
   const [collapsed, setCollapsed] = useState(false);
   const [preview, setPreview] = useState(null);
+  const [notificationCount, setNotificationCount] = useState(0);
   const { toasts, add, remove } = useToast();
   const { user, loading: authLoading, logout, hasModuleAccess } = useAuth();
+
+  useEffect(() => {
+    if (!user) return;
+    const loadCount = async () => {
+      try {
+        const [auctions, collections, invoicesData] = await Promise.all([
+          fetchData('/auctions').catch(() => []),
+          fetchData('/collections').catch(() => []),
+          user.role !== 'user' ? fetchData('/invoices').catch(() => []) : []
+        ]);
+        const scheduledAuctions = auctions.filter(a => a.status === "Scheduled").length || 0;
+        const dueCollections = collections.filter(c => c.status === "Due" || c.status === "Pending").length || 0;
+        const pendingApprovals = user.role !== 'user' ? invoicesData.filter(inv => inv.status === 'Proof Submitted' || inv.status === 'Pending').length || 0 : 0;
+        setNotificationCount(scheduledAuctions + dueCollections + pendingApprovals);
+      } catch (e) { setNotificationCount(0); }
+    };
+    loadCount();
+    const interval = setInterval(loadCount, 30000);
+    return () => clearInterval(interval);
+  }, [user]);
+
+  const dark = theme === 'dark';
+  const toggleTheme = () => {
+    const next = dark ? 'light' : 'dark';
+    setTheme(next);
+    localStorage.setItem('theme', next);
+  };
 
   if (authLoading) {
     return (
@@ -53,10 +83,10 @@ function AppLayout() {
   const filteredNavItems = NAV_ITEMS.filter(item => hasModuleAccess(item.id));
 
   return (
-    <div style={{
+    <div data-theme={theme} style={{
       display: "flex",
       height: "100vh",
-      background: dark ? "#0f172a" : "#f1f5f9",
+      background: "var(--bg-primary)",
     }}>
       {/* Sidebar - Fixed */}
       <Sidebar
@@ -76,8 +106,8 @@ function AppLayout() {
       }}>
         {/* Header */}
         <header style={{
-          background: dark ? "rgba(255,255,255,.04)" : "#fff",
-          borderBottom: dark ? "1px solid rgba(255,255,255,.08)" : "1px solid #e2e8f0",
+          background: "var(--bg-card)",
+          borderBottom: "1px solid var(--border-color)",
           padding: "14px 28px",
           display: "flex",
           justifyContent: "space-between",
@@ -86,15 +116,15 @@ function AppLayout() {
           top: 0,
           zIndex: 50,
           backdropFilter: "blur(12px)",
-          boxShadow: dark ? "none" : "0 1px 3px rgba(0,0,0,.04)",
+          boxShadow: "var(--shadow-sm)",
         }}>
-          <div style={{ fontSize: 18, fontWeight: 700, color: dark ? "#f1f5f9" : "#0f172a" }}>
+          <div style={{ fontSize: 18, fontWeight: 700, color: "var(--text-primary)" }}>
             {COMPANY.name}
           </div>
-          <div style={{ display: "flex", gap: 12, alignItems: "center" }}>
+            <div style={{ display: "flex", gap: 12, alignItems: "center" }}>
             <div style={{
               fontSize: 13,
-              color: dark ? "rgba(255,255,255,.5)" : "#64748b",
+              color: "var(--text-muted)",
               fontWeight: 500,
             }}>
               {user.name}
@@ -102,18 +132,57 @@ function AppLayout() {
                 ({user.role === "super_admin" ? "Super Admin" : user.role === "sub_admin" ? "Sub Admin" : "User"})
               </span>
             </div>
+
+            {/* Notification Bell */}
             <button
-              onClick={() => setDark(!dark)}
+              onClick={() => navigate("/notifications")}
+              style={{
+                position: "relative",
+                padding: "8px 12px",
+                borderRadius: 8,
+                border: "1px solid var(--border-color)",
+                background: "var(--bg-card)",
+                color: "var(--text-primary)",
+                cursor: "pointer",
+                fontSize: 16,
+                transition: "var(--transition)",
+              }}
+            >
+              🔔
+              {notificationCount > 0 && (
+                <span style={{
+                  position: "absolute",
+                  top: -4,
+                  right: -4,
+                  background: "#ef4444",
+                  color: "#fff",
+                  fontSize: 10,
+                  fontWeight: 700,
+                  borderRadius: "50%",
+                  width: 18,
+                  height: 18,
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  boxShadow: "0 2px 4px rgba(0,0,0,0.2)"
+                }}>
+                  {notificationCount > 9 ? "9+" : notificationCount}
+                </span>
+              )}
+            </button>
+
+            <button
+              onClick={toggleTheme}
               style={{
                 padding: "8px 14px",
                 borderRadius: 8,
-                border: dark ? "1px solid rgba(255,255,255,.12)" : "1px solid #e2e8f0",
-                background: dark ? "rgba(255,255,255,.06)" : "#fff",
-                color: dark ? "#f1f5f9" : "#0f172a",
+                border: "1px solid var(--border-color)",
+                background: "var(--bg-card)",
+                color: "var(--text-primary)",
                 cursor: "pointer",
                 fontSize: 13,
                 fontWeight: 500,
-                transition: "all .15s ease",
+                transition: "var(--transition)",
               }}
             >
               {dark ? "☀️ Light" : "🌙 Dark"}
@@ -129,7 +198,7 @@ function AppLayout() {
                 cursor: "pointer",
                 fontSize: 13,
                 fontWeight: 600,
-                transition: "all .15s ease",
+                transition: "var(--transition)",
               }}
               onMouseEnter={(e) => { e.currentTarget.style.background = "#ef4444"; e.currentTarget.style.color = "#fff"; }}
               onMouseLeave={(e) => { e.currentTarget.style.background = "transparent"; e.currentTarget.style.color = "#ef4444"; }}
@@ -144,26 +213,25 @@ function AppLayout() {
           flex: 1,
           overflowY: "auto",
           padding: "28px",
-          background: dark ? "transparent" : "#f1f5f9",
         }}>
           <Routes>
             <Route index element={<Navigate to="/dashboard" replace />} />
-            <Route path="/dashboard" element={<Dashboard dark={dark} toast={{ add }} />} />
-            <Route path="/members" element={<Members dark={dark} toast={{ add }} setPreview={setPreview} />} />
-            <Route path="/schemes" element={<Schemes dark={dark} toast={{ add }} />} />
-            <Route path="/groups" element={<Groups dark={dark} toast={{ add }} />} />
-            <Route path="/collections" element={<Collections dark={dark} toast={{ add }} setPreview={setPreview} />} />
-            <Route path="/billing" element={<BillingDashboard dark={dark} toast={{ add }} />} />
-            <Route path="/auctions" element={<Auctions dark={dark} toast={{ add }} setPreview={setPreview} />} />
-            <Route path="/prizes" element={<Prizes dark={dark} />} />
-            <Route path="/accounting" element={<Accounting dark={dark} />} />
-            <Route path="/reports" element={<ReportsDashboard dark={dark} toast={{ add }} />} />
-            <Route path="/employees" element={<Employees dark={dark} toast={{ add }} />} />
-            <Route path="/branches" element={<Branches dark={dark} toast={{ add }} />} />
-            <Route path="/notifications" element={<Notifications dark={dark} />} />
-            <Route path="/settings" element={<Settings dark={dark} toast={{ add }} />} />
-            <Route path="/profile" element={<UserProfile dark={dark} />} />
-            <Route path="/payments" element={<UserPaymentPortal dark={dark} toast={{ add }} />} />
+            <Route path="/dashboard" element={<Dashboard toast={{ add }} />} />
+            <Route path="/members" element={<Members toast={{ add }} setPreview={setPreview} />} />
+            <Route path="/schemes" element={<Schemes toast={{ add }} />} />
+            <Route path="/groups" element={<Groups toast={{ add }} />} />
+            <Route path="/collections" element={<Collections toast={{ add }} setPreview={setPreview} />} />
+            <Route path="/billing" element={<BillingDashboard toast={{ add }} />} />
+            <Route path="/auctions" element={<Auctions toast={{ add }} setPreview={setPreview} />} />
+            <Route path="/prizes" element={<Prizes />} />
+            <Route path="/accounting" element={<Accounting toast={{ add }} />} />
+            <Route path="/reports" element={<ReportsDashboard toast={{ add }} />} />
+            <Route path="/employees" element={<Employees toast={{ add }} />} />
+            <Route path="/branches" element={<Branches toast={{ add }} />} />
+            <Route path="/notifications" element={<Notifications />} />
+            <Route path="/settings" element={<Settings toast={{ add }} />} />
+            <Route path="/profile" element={<UserProfile toast={{ add }} />} />
+            <Route path="/payments" element={<UserPaymentPortal toast={{ add }} />} />
             <Route path="*" element={<Navigate to="/dashboard" replace />} />
           </Routes>
         </main>

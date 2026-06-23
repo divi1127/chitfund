@@ -7,6 +7,12 @@ const schemeSchema = new mongoose.Schema({
   duration: { type: Number, required: true },
   members: { type: Number, required: true },
   monthlyInstallment: { type: Number, required: true },
+  auctionAmount: { type: Number, default: 0 },
+  monthlyAmounts: [{
+    month: { type: Number, required: true },
+    amount: { type: Number, required: true },
+    auctionAmount: { type: Number, default: 0 }
+  }],
   commission: { type: Number, required: true },
   status: { type: String, enum: ['Active', 'Closed'], default: 'Active' }
 }, { timestamps: true });

@@ -1,4 +1,3 @@
-// Stat card component
 export function StatCard({ label, value, icon, color, dark, sub }) {
   const colors = {
     blue: "#2563eb",
@@ -12,8 +11,8 @@ export function StatCard({ label, value, icon, color, dark, sub }) {
   
   return (
     <div style={{
-      background: dark ? "rgba(255,255,255,.05)" : "#fff",
-      border: dark ? "1px solid rgba(255,255,255,.1)" : `1px solid ${accentColor}20`,
+      background: "var(--bg-card)",
+      border: "1px solid var(--border-color)",
       borderRadius: 12,
       padding: 20,
       display: "flex",
@@ -23,7 +22,6 @@ export function StatCard({ label, value, icon, color, dark, sub }) {
       cursor: "default",
       position: "relative",
       overflow: "hidden",
-      boxShadow: dark ? "none" : `0 1px 3px ${accentColor}08, 0 1px 2px ${accentColor}08`,
     }}
     onMouseEnter={(e) => {
       e.currentTarget.style.transform = "translateY(-2px)";
@@ -31,14 +29,14 @@ export function StatCard({ label, value, icon, color, dark, sub }) {
     }}
     onMouseLeave={(e) => {
       e.currentTarget.style.transform = "translateY(0)";
-      e.currentTarget.style.boxShadow = dark ? "none" : `0 1px 3px ${accentColor}08, 0 1px 2px ${accentColor}08`;
+      e.currentTarget.style.boxShadow = "none";
     }}
     >
       <div style={{
         width: 48,
         height: 48,
         borderRadius: 12,
-        background: dark ? `${accentColor}30` : `${accentColor}12`,
+        background: `${accentColor}18`,
         display: "flex",
         alignItems: "center",
         justifyContent: "center",
@@ -49,9 +47,9 @@ export function StatCard({ label, value, icon, color, dark, sub }) {
         {icon}
       </div>
       <div style={{ minWidth: 0 }}>
-        <div style={{ fontSize: 12, color: dark ? "rgba(255,255,255,.5)" : "#6b7280", marginBottom: 2, fontWeight: 500 }}>{label}</div>
-        <div style={{ fontSize: 22, fontWeight: 700, color: dark ? "#f3f4f6" : "#111", lineHeight: 1.3 }}>{value}</div>
-        {sub && <div style={{ fontSize: 11, color: dark ? "rgba(255,255,255,.35)" : "#9ca3af", marginTop: 2 }}>{sub}</div>}
+        <div style={{ fontSize: 12, color: "var(--text-muted)", marginBottom: 2, fontWeight: 500 }}>{label}</div>
+        <div style={{ fontSize: 22, fontWeight: 700, color: "var(--text-primary)", lineHeight: 1.3 }}>{value}</div>
+        {sub && <div style={{ fontSize: 11, color: "var(--text-muted-2)", marginTop: 2 }}>{sub}</div>}
       </div>
     </div>
   );

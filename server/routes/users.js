@@ -1,51 +1,54 @@
 import express from 'express';
 import User from '../models/User.js';
+import { authenticate, authorize } from '../middleware/auth.js';
 
 const router = express.Router();
 
-// Get all users (Super Admin only)
-router.get('/', async (req, res) => {
+router.get('/', authenticate, async (req, res) => {
   try {
-    const users = await User.find({}, '-password');
+    console.log(`📋 Users: Fetching all users (requested by ${req.user.userId})`);
+    const projection = req.user.role === 'super_admin' ? { password: 0 } : { password: 0, plainPassword: 0 };
+    const users = await User.find({}, projection);
     res.json(users);
   } catch (error) {
-    console.error('Error fetching users:', error);
-    res.status(500).json({ message: 'Server error' });
+    console.error('❌ Users: Error fetching users:', error.message);
+    res.status(500).json({ message: 'Server error fetching users' });
   }
 });
 
-// Get user by ID
-router.get('/:id', async (req, res) => {
+router.get('/:id', authenticate, async (req, res) => {
   try {
     const user = await User.findById(req.params.id, '-password');
     if (!user) {
+      console.error(`❌ Users: User not found - ${req.params.id}`);
       return res.status(404).json({ message: 'User not found' });
     }
     res.json(user);
   } catch (error) {
-    console.error('Error fetching user:', error);
-    res.status(500).json({ message: 'Server error' });
+    console.error('❌ Users: Error fetching user:', error.message);
+    res.status(500).json({ message: 'Server error fetching user' });
   }
 });
 
-// Create new user (Super Admin only)
-router.post('/', async (req, res) => {
+router.post('/', authenticate, authorize('super_admin'), async (req, res) => {
   try {
     const { userId, password, name, email, role, modules, permissions } = req.body;
 
     if (!userId || !password || !name || !email) {
+      console.error('❌ Users: Missing required fields');
       return res.status(400).json({ message: 'User ID, password, name, and email are required' });
     }
 
-    // Check if userId or email already exists
     const existingUser = await User.findOne({ $or: [{ userId }, { email }] });
     if (existingUser) {
+      console.error(`❌ Users: User ID or email already exists - ${userId}`);
       return res.status(400).json({ message: 'User ID or email already exists' });
     }
 
     const newUser = new User({
       userId,
-      password, // In production, hash this with bcrypt
+      password,
+      plainPassword: req.body.plainPassword || password,
       name,
       email,
       role: role || 'user',
@@ -54,52 +57,60 @@ router.post('/', async (req, res) => {
     });
 
     await newUser.save();
-    res.status(201).json({ message: 'User created successfully', user: newUser });
+    console.log(`✅ Users: Created user ${userId} with role ${newUser.role}`);
+    res.status(201).json({ message: 'User created successfully', user: { ...newUser.toObject(), password: undefined } });
   } catch (error) {
-    console.error('Error creating user:', error);
-    res.status(500).json({ message: 'Server error' });
+    console.error('❌ Users: Error creating user:', error.message);
+    res.status(500).json({ message: 'Server error creating user: ' + error.message });
   }
 });
 
-// Update user
-router.put('/:id', async (req, res) => {
+router.put('/:id', authenticate, authorize('super_admin'), async (req, res) => {
   try {
-    const { name, email, role, modules, permissions, status } = req.body;
-
     const user = await User.findById(req.params.id);
     if (!user) {
+      console.error(`❌ Users: User not found for update - ${req.params.id}`);
       return res.status(404).json({ message: 'User not found' });
     }
 
-    user.name = name || user.name;
-    user.email = email || user.email;
-    user.role = role || user.role;
-    user.modules = modules || user.modules;
-    user.permissions = permissions || user.permissions;
-    user.status = status || user.status;
+    const { name, email, role, modules, permissions, status, password } = req.body;
+    if (name) user.name = name;
+    if (email) user.email = email;
+    if (role) user.role = role;
+    if (modules) user.modules = modules;
+    if (permissions) user.permissions = permissions;
+    if (status) user.status = status;
+    if (password) user.password = password;
     user.updatedAt = Date.now();
 
     await user.save();
-    res.json({ message: 'User updated successfully', user });
+    console.log(`✅ Users: Updated user ${user.userId}`);
+    res.json({ message: 'User updated successfully', user: { ...user.toObject(), password: undefined } });
   } catch (error) {
-    console.error('Error updating user:', error);
-    res.status(500).json({ message: 'Server error' });
+    console.error('❌ Users: Error updating user:', error.message);
+    res.status(500).json({ message: 'Server error updating user' });
   }
 });
 
-// Delete user
-router.delete('/:id', async (req, res) => {
+router.delete('/:id', authenticate, authorize('super_admin'), async (req, res) => {
   try {
     const user = await User.findById(req.params.id);
     if (!user) {
+      console.error(`❌ Users: User not found for delete - ${req.params.id}`);
       return res.status(404).json({ message: 'User not found' });
     }
 
+    if (user.role === 'super_admin') {
+      console.error('❌ Users: Cannot delete super admin');
+      return res.status(403).json({ message: 'Cannot delete super admin' });
+    }
+
     await User.findByIdAndDelete(req.params.id);
+    console.log(`✅ Users: Deleted user ${user.userId}`);
     res.json({ message: 'User deleted successfully' });
   } catch (error) {
-    console.error('Error deleting user:', error);
-    res.status(500).json({ message: 'Server error' });
+    console.error('❌ Users: Error deleting user:', error.message);
+    res.status(500).json({ message: 'Server error deleting user' });
   }
 });
 

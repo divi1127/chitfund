@@ -1,11 +1,10 @@
-// Table component
 export function Table({ dark, cols, rows }) {
   const headerStyle = {
-    background: dark ? "rgba(255,255,255,.08)" : "#f9fafb",
+    background: "var(--table-header-bg)",
     padding: "12px",
     fontSize: 12,
     fontWeight: 600,
-    color: dark ? "rgba(255,255,255,.8)" : "#374151",
+    color: "var(--text-secondary)",
     textTransform: "uppercase",
     letterSpacing: 0.5
   };
@@ -13,13 +12,13 @@ export function Table({ dark, cols, rows }) {
   const cellStyle = {
     padding: "12px",
     fontSize: 13,
-    color: dark ? "rgba(255,255,255,.7)" : "#374151",
-    borderBottom: "1px solid " + (dark ? "rgba(255,255,255,.05)" : "#e5e7eb")
+    color: "var(--text-secondary)",
+    borderBottom: "1px solid var(--table-row-border)"
   };
   
   return (
     <div className="table-wrapper" style={{ overflowX: "auto" }}>
-      <table style={{ width: "100%", borderCollapse: "collapse", background: dark ? "rgba(255,255,255,.02)" : "#fff", borderRadius: 12, overflow: "hidden" }}>
+      <table style={{ width: "100%", borderCollapse: "collapse", background: "var(--bg-card)", borderRadius: 12, overflow: "hidden" }}>
         <thead>
           <tr>
             {cols.map((col, i) => (

@@ -1,76 +1,157 @@
 import express from 'express';
 import Invoice from '../models/Invoice.js';
+import Member from '../models/Member.js';
+import Group from '../models/Group.js';
+import Scheme from '../models/Scheme.js';
+import { authenticate, authorize } from '../middleware/auth.js';
+import { generateInvoiceNo, generateReceiptNo } from '../utils/idGenerator.js';
+import Collection from '../models/Collection.js';
 
 const COMPANY = {
-  name: 'Chit Fund Management',
-  address: '123 Business Street, Madurai',
-  phone: '+91 9876543210',
-  email: 'info@chitfund.com',
-  gstin: '33AAAAA0000A1Z5',
-  website: 'www.chitfund.com'
+  name: 'HR Chits Enterprises',
+  address: '12, Anna Salai, T. Nagar, Chennai – 600 017, Tamil Nadu',
+  phone: '+91 44 2815 6789',
+  email: 'info@hrchits.com',
+  gstin: '33AABCS1234A1ZQ',
+  website: 'www.hrchits.com'
 };
 
 const router = express.Router();
 
-// Generate invoice number
-const generateInvoiceNumber = () => {
-  const date = new Date();
-  const year = date.getFullYear();
-  const random = Math.floor(Math.random() * 9000) + 1000;
-  return `INV-${year}-${random}`;
-};
-
-// Generate receipt number
-const generateReceiptNumber = () => {
-  const random = Math.floor(Math.random() * 9000) + 1000;
-  return `RCPT-${random}`;
-};
-
-// Get all invoices
-router.get('/', async (req, res) => {
+router.get('/', authenticate, async (req, res) => {
   try {
+    console.log(`📋 Invoices: Fetching all invoices (requested by ${req.user.userId})`);
+    
+    if (req.user.role === 'user') {
+      const invoices = await Invoice.find({ memberId: req.user.userId }).sort({ createdAt: -1 });
+      return res.json(invoices);
+    }
+    
     const invoices = await Invoice.find().sort({ createdAt: -1 });
     res.json(invoices);
   } catch (error) {
-    console.error('Error fetching invoices:', error);
-    res.status(500).json({ message: 'Server error' });
+    console.error('❌ Invoices: Error fetching:', error.message);
+    res.status(500).json({ message: 'Server error fetching invoices' });
   }
 });
 
-// Get invoice by ID
-router.get('/:id', async (req, res) => {
+router.get('/member/:memberId', authenticate, async (req, res) => {
+  try {
+    const invoices = await Invoice.find({ memberId: req.params.memberId }).sort({ createdAt: -1 });
+    console.log(`📋 Invoices: Fetched ${invoices.length} invoices for member ${req.params.memberId}`);
+    res.json(invoices);
+  } catch (error) {
+    console.error('❌ Invoices: Error fetching member invoices:', error.message);
+    res.status(500).json({ message: 'Server error fetching member invoices' });
+  }
+});
+
+router.get('/history/:memberId', authenticate, async (req, res) => {
+  try {
+    const { memberId } = req.params;
+    const invoices = await Invoice.find({ memberId }).sort({ createdAt: -1 });
+    const member = await Member.findOne({ memberId });
+    const groups = await Group.find();
+    const schemes = await Scheme.find();
+
+    const history = invoices.map(inv => {
+      const g = groups.find(gr => gr.name === inv.chitGroup);
+      const s = schemes.find(sch => sch.name === inv.chitName);
+      return {
+        ...inv.toObject(),
+        group: g,
+        scheme: s,
+        schemeAmount: s?.amount || 0,
+        paidAmount: inv.amountPaid || 0
+      };
+    });
+
+    console.log(`📋 Invoices: History fetched for ${memberId} - ${history.length} records`);
+    res.json({ member, invoices: history });
+  } catch (error) {
+    console.error('❌ Invoices: Error fetching history:', error.message);
+    res.status(500).json({ message: 'Server error fetching invoice history' });
+  }
+});
+
+router.get('/accounting/:year/:month', authenticate, async (req, res) => {
+  try {
+    const { year, month } = req.params;
+    const startDate = new Date(year, month - 1, 1);
+    const endDate = new Date(year, month, 0);
+
+    const invoices = await Invoice.find({
+      date: { $gte: startDate, $lte: endDate }
+    }).sort({ createdAt: -1 });
+
+    const members = await Member.find();
+    const groups = await Group.find();
+    const schemes = await Scheme.find();
+
+    const accountingData = invoices.map(inv => {
+      const member = members.find(m => m.memberId === inv.memberId);
+      const group = groups.find(g => g.name === inv.chitGroup);
+      const scheme = schemes.find(s => s.name === inv.chitName);
+      return {
+        invoiceNumber: inv.invoiceNumber,
+        date: inv.date,
+        memberName: inv.memberName,
+        memberId: inv.memberId,
+        group: inv.chitGroup,
+        scheme: inv.chitName,
+        schemeAmount: scheme?.amount || 0,
+        paidAmount: inv.amountPaid || 0,
+        status: inv.status,
+        paymentMethod: inv.paymentMethod
+      };
+    });
+
+    const totals = {
+      totalSchemeAmount: accountingData.reduce((s, d) => s + d.schemeAmount, 0),
+      totalPaidAmount: accountingData.reduce((s, d) => s + d.paidAmount, 0),
+      totalInvoices: accountingData.length
+    };
+
+    console.log(`📋 Invoices: Accounting data for ${year}-${month}: ${accountingData.length} records, ₹${totals.totalPaidAmount}`);
+    res.json({ year, month, data: accountingData, totals });
+  } catch (error) {
+    console.error('❌ Invoices: Error fetching accounting:', error.message);
+    res.status(500).json({ message: 'Server error fetching accounting data' });
+  }
+});
+
+router.get('/years', authenticate, async (req, res) => {
+  try {
+    const invoices = await Invoice.find().select('date').sort({ date: 1 });
+    const years = [...new Set(invoices.map(inv => new Date(inv.date).getFullYear()))];
+    res.json(years);
+  } catch (error) {
+    console.error('❌ Invoices: Error fetching years:', error.message);
+    res.status(500).json({ message: 'Server error fetching years' });
+  }
+});
+
+router.get('/:id', authenticate, async (req, res) => {
   try {
     const invoice = await Invoice.findById(req.params.id);
     if (!invoice) {
+      console.error(`❌ Invoices: Not found - ${req.params.id}`);
       return res.status(404).json({ message: 'Invoice not found' });
     }
     res.json(invoice);
   } catch (error) {
-    console.error('Error fetching invoice:', error);
-    res.status(500).json({ message: 'Server error' });
+    console.error('❌ Invoices: Error fetching invoice:', error.message);
+    res.status(500).json({ message: 'Server error fetching invoice' });
   }
 });
 
-// Get invoices by member ID
-router.get('/member/:memberId', async (req, res) => {
+router.post('/', authenticate, authorize('super_admin', 'sub_admin', 'user'), async (req, res) => {
   try {
-    const invoices = await Invoice.find({ memberId: req.params.memberId }).sort({ createdAt: -1 });
-    res.json(invoices);
-  } catch (error) {
-    console.error('Error fetching member invoices:', error);
-    res.status(500).json({ message: 'Server error' });
-  }
-});
-
-// Create new invoice
-router.post('/', async (req, res) => {
-  try {
-    console.log(`Received status: '${req.body.status}' (Length: ${req.body.status?.length})`);
-    const invNo = req.body.invoiceNumber || generateInvoiceNumber();
+    const invNo = req.body.invoiceNumber || await generateInvoiceNo();
     const invoiceData = {
       ...req.body,
       invoiceNumber: invNo,
-      receiptNumber: req.body.receiptNumber || generateReceiptNumber(),
+      receiptNumber: req.body.receiptNumber || '',
       date: req.body.date || new Date(),
       time: req.body.time || new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' }),
       qrCodeData: req.body.qrCodeData || JSON.stringify({
@@ -78,56 +159,115 @@ router.post('/', async (req, res) => {
         memberId: req.body.memberId,
         paymentDate: new Date().toISOString(),
         amountPaid: req.body.amountPaid,
-        verificationUrl: `http://localhost:5000/api/invoices/verify/${invNo}`
+        verificationUrl: `${req.protocol}://${req.get('host')}/api/invoices/verify/${invNo}`
       }),
-      verificationUrl: req.body.verificationUrl || `http://localhost:5000/api/invoices/verify/${invNo}`
+      verificationUrl: req.body.verificationUrl || `${req.protocol}://${req.get('host')}/api/invoices/verify/${invNo}`
     };
 
     const invoice = new Invoice(invoiceData);
     await invoice.save();
+    console.log(`✅ Invoices: Created invoice ${invNo} for ${invoiceData.memberName}`);
     res.status(201).json({ message: 'Invoice created successfully', invoice });
   } catch (error) {
-    import('fs').then(fs => fs.writeFileSync('error_log.txt', String(error.message) + '\\n' + String(error.stack)));
-    console.error('Error creating invoice:', error);
+    console.error('❌ Invoices: Error creating:', error.message);
     res.status(500).json({ message: error.message });
   }
 });
 
-// Update invoice
-router.put('/:id', async (req, res) => {
+router.put('/:id', authenticate, async (req, res) => {
   try {
     const invoice = await Invoice.findById(req.params.id);
     if (!invoice) {
+      console.error(`❌ Invoices: Not found for update - ${req.params.id}`);
       return res.status(404).json({ message: 'Invoice not found' });
     }
 
     Object.assign(invoice, req.body);
     invoice.updatedAt = Date.now();
     await invoice.save();
+    console.log(`✅ Invoices: Updated invoice ${invoice.invoiceNumber}`);
     res.json({ message: 'Invoice updated successfully', invoice });
   } catch (error) {
-    console.error('Error updating invoice:', error);
-    res.status(500).json({ message: 'Server error' });
+    console.error('❌ Invoices: Error updating:', error.message);
+    res.status(500).json({ message: 'Server error updating invoice' });
   }
 });
 
-// Delete invoice
-router.delete('/:id', async (req, res) => {
+router.patch('/:id/approve', authenticate, authorize('super_admin', 'sub_admin'), async (req, res) => {
   try {
     const invoice = await Invoice.findById(req.params.id);
     if (!invoice) {
+      console.error(`❌ Invoices: Not found for approval - ${req.params.id}`);
       return res.status(404).json({ message: 'Invoice not found' });
     }
+    invoice.status = 'Paid';
+    invoice.remarks = 'Approved by ' + req.user.userId;
+    invoice.updatedAt = Date.now();
+    await invoice.save();
+    console.log(`✅ Invoices: Approved payment ${invoice.invoiceNumber} by ${req.user.userId}`);
 
-    await Invoice.findByIdAndDelete(req.params.id);
-    res.json({ message: 'Invoice deleted successfully' });
+    // Auto-create Collection entry
+    const group = await Group.findOne({ name: invoice.chitGroup });
+    const scheme = group ? await Scheme.findOne({ id: group.schemeId }) : null;
+    const receiptNo = await generateReceiptNo();
+    const collection = new Collection({
+      id: 'C' + Date.now().toString().slice(-6),
+      memberId: invoice.memberId,
+      groupId: group?.id || '',
+      amount: invoice.amountPaid || invoice.totalPayable,
+      date: new Date(),
+      installment: invoice.currentMonth || 1,
+      mode: invoice.paymentMethod === 'UPI' || invoice.paymentMethod === 'Bank Transfer' || invoice.paymentMethod === 'Online' ? invoice.paymentMethod : 'Cash',
+      status: 'Paid',
+      receiptNo: receiptNo,
+      cumulativeAmount: invoice.totalPaid || invoice.amountPaid || 0,
+      totalSchemeValue: scheme?.amount || invoice.totalChitValue || 0
+    });
+    await collection.save();
+    console.log(`✅ Invoices: Auto-created collection ${receiptNo} for approved invoice ${invoice.invoiceNumber}`);
+
+    res.json({ message: 'Payment approved successfully', invoice });
   } catch (error) {
-    console.error('Error deleting invoice:', error);
-    res.status(500).json({ message: 'Server error' });
+    console.error('❌ Invoices: Approval error:', error.message);
+    res.status(500).json({ message: 'Server error approving payment' });
   }
 });
 
-// Verify invoice
+router.patch('/:id/reject', authenticate, authorize('super_admin', 'sub_admin'), async (req, res) => {
+  try {
+    const { reason } = req.body;
+    const invoice = await Invoice.findById(req.params.id);
+    if (!invoice) {
+      console.error(`❌ Invoices: Not found for rejection - ${req.params.id}`);
+      return res.status(404).json({ message: 'Invoice not found' });
+    }
+    invoice.status = 'Rejected';
+    invoice.paymentNote = reason || 'Payment rejected by admin';
+    invoice.updatedAt = Date.now();
+    await invoice.save();
+    console.log(`✅ Invoices: Rejected payment ${invoice.invoiceNumber} by ${req.user.userId} - ${reason}`);
+    res.json({ message: 'Payment rejected', invoice });
+  } catch (error) {
+    console.error('❌ Invoices: Rejection error:', error.message);
+    res.status(500).json({ message: 'Server error rejecting payment' });
+  }
+});
+
+router.delete('/:id', authenticate, authorize('super_admin'), async (req, res) => {
+  try {
+    const invoice = await Invoice.findByIdAndDelete(req.params.id);
+    if (!invoice) {
+      console.error(`❌ Invoices: Not found for delete - ${req.params.id}`);
+      return res.status(404).json({ message: 'Invoice not found' });
+    }
+    console.log(`✅ Invoices: Deleted invoice ${invoice.invoiceNumber}`);
+    res.json({ message: 'Invoice deleted successfully' });
+  } catch (error) {
+    console.error('❌ Invoices: Error deleting:', error.message);
+    res.status(500).json({ message: 'Server error deleting invoice' });
+  }
+});
+
 router.get('/verify/:invoiceNumber', async (req, res) => {
   try {
     const invoice = await Invoice.findOne({ invoiceNumber: req.params.invoiceNumber });
@@ -136,143 +276,45 @@ router.get('/verify/:invoiceNumber', async (req, res) => {
     }
     res.json({ verified: true, invoice });
   } catch (error) {
-    console.error('Error verifying invoice:', error);
-    res.status(500).json({ message: 'Server error' });
+    console.error('❌ Invoices: Verify error:', error.message);
+    res.status(500).json({ message: 'Server error verifying invoice' });
   }
 });
 
-// Get daily collection report
-router.get('/reports/daily', async (req, res) => {
-  try {
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    const tomorrow = new Date(today);
-    tomorrow.setDate(tomorrow.getDate() + 1);
-
-    const invoices = await Invoice.find({
-      date: { $gte: today, $lt: tomorrow }
-    });
-
-    const total = invoices.reduce((sum, inv) => sum + inv.amountPaid, 0);
-    const cash = invoices.filter(inv => inv.paymentMethod === 'Cash').reduce((sum, inv) => sum + inv.amountPaid, 0);
-    const upi = invoices.filter(inv => inv.paymentMethod === 'UPI').reduce((sum, inv) => sum + inv.amountPaid, 0);
-    const bank = invoices.filter(inv => inv.paymentMethod === 'Bank').reduce((sum, inv) => sum + inv.amountPaid, 0);
-    const cheque = invoices.filter(inv => inv.paymentMethod === 'Cheque').reduce((sum, inv) => sum + inv.amountPaid, 0);
-
-    res.json({
-      date: today,
-      totalInvoices: invoices.length,
-      totalAmount: total,
-      paymentMethods: { cash, upi, bank, cheque },
-      invoices
-    });
-  } catch (error) {
-    console.error('Error generating daily report:', error);
-    res.status(500).json({ message: 'Server error' });
-  }
-});
-
-// Get monthly collection report
-router.get('/reports/monthly', async (req, res) => {
-  try {
-    const { year, month } = req.query;
-    const startDate = new Date(year, month - 1, 1);
-    const endDate = new Date(year, month, 0);
-
-    const invoices = await Invoice.find({
-      date: { $gte: startDate, $lte: endDate }
-    });
-
-    const total = invoices.reduce((sum, inv) => sum + inv.amountPaid, 0);
-    const fine = invoices.reduce((sum, inv) => sum + inv.lateFine, 0);
-
-    res.json({
-      year,
-      month,
-      totalInvoices: invoices.length,
-      totalAmount: total,
-      totalFine: fine,
-      invoices
-    });
-  } catch (error) {
-    console.error('Error generating monthly report:', error);
-    res.status(500).json({ message: 'Server error' });
-  }
-});
-
-// Send WhatsApp receipt
-router.post('/:id/send-whatsapp', async (req, res) => {
+router.post('/:id/send-whatsapp', authenticate, async (req, res) => {
   try {
     const invoice = await Invoice.findById(req.params.id);
     if (!invoice) {
       return res.status(404).json({ message: 'Invoice not found' });
     }
 
-    // In production, integrate with WhatsApp Business API
-    // For now, just return success
-    const whatsappMessage = `
-🧾 *Payment Receipt - ${COMPANY.name}*
+    console.log(`📱 Invoices: WhatsApp share requested for ${invoice.invoiceNumber}`);
+    const message = `🧾 *Payment Receipt - ${COMPANY.name}*\n\nInvoice No: ${invoice.invoiceNumber}\nReceipt No: ${invoice.receiptNumber}\nDate: ${new Date(invoice.date).toLocaleDateString()}\nAmount: ₹${invoice.amountPaid.toLocaleString()}\nPayment Mode: ${invoice.paymentMethod}\n\nThank you for your payment!`;
 
-Invoice No: ${invoice.invoiceNumber}
-Receipt No: ${invoice.receiptNumber}
-Date: ${new Date(invoice.date).toLocaleDateString()}
-Amount: ₹${invoice.amountPaid.toLocaleString()}
-Payment Mode: ${invoice.paymentMethod}
-
-Thank you for your payment!
-    `.trim();
-
-    console.log('WhatsApp message to send:', whatsappMessage);
-    
-    res.json({ 
-      message: 'WhatsApp receipt sent successfully',
-      phoneNumber: invoice.memberMobile,
-      message: whatsappMessage
-    });
+    console.log('📱 WhatsApp message:', message);
+    res.json({ message: 'WhatsApp receipt sent successfully', phoneNumber: invoice.memberMobile });
   } catch (error) {
-    console.error('Error sending WhatsApp receipt:', error);
-    res.status(500).json({ message: 'Server error' });
+    console.error('❌ Invoices: WhatsApp error:', error.message);
+    res.status(500).json({ message: 'Server error sending WhatsApp' });
   }
 });
 
-// Send Email receipt
-router.post('/:id/send-email', async (req, res) => {
+router.post('/:id/send-email', authenticate, async (req, res) => {
   try {
     const invoice = await Invoice.findById(req.params.id);
     if (!invoice) {
       return res.status(404).json({ message: 'Invoice not found' });
     }
 
-    // In production, integrate with email service like Nodemailer
-    // For now, just return success
-    const emailSubject = `Payment Receipt - ${invoice.invoiceNumber} - ${COMPANY.name}`;
-    const emailBody = `
-Dear ${invoice.memberName},
+    console.log(`📧 Invoices: Email share requested for ${invoice.invoiceNumber}`);
+    const subject = `Payment Receipt - ${invoice.invoiceNumber} - ${COMPANY.name}`;
+    const body = `Dear ${invoice.memberName},\n\nThank you for your payment.\n\nInvoice: ${invoice.invoiceNumber}\nReceipt: ${invoice.receiptNumber}\nAmount: ₹${invoice.amountPaid.toLocaleString()}\nDate: ${new Date(invoice.date).toLocaleDateString()}\n\nRegards,\n${COMPANY.name}`;
 
-Thank you for your payment. Here are your payment details:
-
-Invoice Number: ${invoice.invoiceNumber}
-Receipt Number: ${invoice.receiptNumber}
-Date: ${new Date(invoice.date).toLocaleDateString()}
-Amount: ₹${invoice.amountPaid.toLocaleString()}
-Payment Mode: ${invoice.paymentMethod}
-
-If you have any questions, please contact us at ${COMPANY.email}.
-
-Best regards,
-${COMPANY.name}
-    `.trim();
-
-    console.log('Email to send:', { to: invoice.memberEmail, subject: emailSubject, body: emailBody });
-    
-    res.json({ 
-      message: 'Email receipt sent successfully',
-      email: invoice.memberEmail,
-      subject: emailSubject
-    });
+    console.log('📧 Email body:', body);
+    res.json({ message: 'Email receipt sent successfully', email: invoice.memberEmail, subject });
   } catch (error) {
-    console.error('Error sending email receipt:', error);
-    res.status(500).json({ message: 'Server error' });
+    console.error('❌ Invoices: Email error:', error.message);
+    res.status(500).json({ message: 'Server error sending email' });
   }
 });
 

@@ -1,29 +1,41 @@
-// Authentication context for managing user authentication state
 import { createContext, useContext, useState, useEffect } from "react";
 
 const AuthContext = createContext(null);
 
+function isValidJwt(t) {
+  return t && t !== "null" && t !== "undefined" && t.includes(".");
+}
+
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
+  const [token, setToken] = useState(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // Check if user is logged in from localStorage
     const storedUser = localStorage.getItem("user");
-    if (storedUser) {
+    const storedToken = localStorage.getItem("token");
+    if (storedUser && isValidJwt(storedToken)) {
       setUser(JSON.parse(storedUser));
+      setToken(storedToken);
+    } else {
+      localStorage.removeItem("user");
+      localStorage.removeItem("token");
     }
     setLoading(false);
   }, []);
 
-  const login = (userData) => {
+  const login = (userData, tokenValue) => {
     setUser(userData);
+    setToken(tokenValue);
     localStorage.setItem("user", JSON.stringify(userData));
+    localStorage.setItem("token", tokenValue);
   };
 
   const logout = () => {
     setUser(null);
+    setToken(null);
     localStorage.removeItem("user");
+    localStorage.removeItem("token");
   };
 
   const hasPermission = (permission) => {
@@ -32,18 +44,23 @@ export function AuthProvider({ children }) {
     return user.permissions?.includes(permission) || false;
   };
 
+  const getAuthHeaders = () => {
+    if (!token) return {};
+    return { Authorization: `Bearer ${token}` };
+  };
+
   const hasModuleAccess = (moduleId) => {
     if (!user) return false;
     if (user.role === "super_admin") {
-      // Super Admin cannot access My Payments and Employees modules
       if (moduleId === "payments" || moduleId === "employees") return false;
       return true;
     }
+    if (user.role === "sub_admin") return true;
     return user.modules?.includes(moduleId) || false;
   };
 
   return (
-    <AuthContext.Provider value={{ user, loading, login, logout, hasPermission, hasModuleAccess }}>
+    <AuthContext.Provider value={{ user, token, loading, login, logout, hasPermission, hasModuleAccess, getAuthHeaders }}>
       {children}
     </AuthContext.Provider>
   );

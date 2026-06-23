@@ -10,8 +10,10 @@ import { Input } from "../components/Input";
 import { useAuth } from "../contexts/AuthContext";
 import { COMPANY } from "../utils/constants";
 import { QRCodeCanvas } from "qrcode.react";
+import { IconBtn } from "../components/IconBtn";
+import { HiEye, HiPrinter, HiReceiptRefund, HiArrowDownTray, HiDevicePhoneMobile, HiEnvelope } from "react-icons/hi2";
 
-export function BillingDashboard({ dark, toast }) {
+export function BillingDashboard({ toast }) {
   const { user } = useAuth();
   const { data: members, loading: membersLoading } = useData('/members');
   const { data: invoices, loading: invoicesLoading, refresh: refreshInvoices } = useData('/invoices');
@@ -42,7 +44,7 @@ export function BillingDashboard({ dark, toast }) {
     : invoices;
 
   const [form, setForm] = useState({
-    installmentAmount: 10000,
+    installmentAmount: "",
     lateFine: 0,
     discount: 0,
     previousDue: 0,
@@ -79,25 +81,25 @@ export function BillingDashboard({ dark, toast }) {
       const memberGroup = memberGroupId ? groups.find(g => g.id === memberGroupId) : null;
       const memberScheme = memberGroup ? schemes.find(s => s.id === memberGroup.schemeId) : null;
       
-      const monthlyInstallment = memberScheme ? memberScheme.monthlyInstallment : parseFloat(form.installmentAmount);
-      const duration = memberScheme ? memberScheme.duration : 50;
-      const totalChitValue = memberScheme ? memberScheme.amount : 500000;
+      const monthlyInstallment = memberScheme ? (memberScheme.monthlyAmounts?.[(memberGroup?.currentInstallment || 1) - 1]?.amount || memberScheme.monthlyInstallment) : parseFloat(form.installmentAmount);
+      const duration = memberScheme?.duration || "—";
+      const totalChitValue = memberScheme?.amount || "—";
 
       const invoiceData = {
-        branch: "Madurai Branch",
+        branch: COMPANY.branch,
         collectedBy: user.name,
         memberId: selectedMember.memberId,
         memberName: selectedMember.name,
         memberMobile: selectedMember.phone,
         memberAddress: selectedMember.address || "",
         memberAadhar: selectedMember.aadhaar || "",
-        chitName: memberScheme ? memberScheme.name : "Gold Savings Scheme",
-        chitGroup: memberGroup ? memberGroup.name : "G-25",
-        chitNumber: memberGroup ? `CHIT-${memberScheme?.amount || 500000}-001` : "CHIT-25-001",
+        chitName: memberScheme?.name || "—",
+        chitGroup: memberGroup?.name || "—",
+        chitNumber: memberGroup && memberScheme ? `CHIT-${memberScheme.amount}-001` : "—",
         totalChitValue: totalChitValue,
         monthlyAmount: monthlyInstallment,
         duration: duration,
-        currentMonth: memberGroup ? memberGroup.currentInstallment : 12,
+        currentMonth: memberGroup?.currentInstallment || 1,
         dueDate: new Date(),
         installmentAmount: monthlyInstallment,
         lateFine: parseFloat(form.lateFine),
@@ -108,10 +110,10 @@ export function BillingDashboard({ dark, toast }) {
         balance: 0,
         paymentMethod: form.paymentMethod,
         referenceNumber: form.referenceNumber,
-        paidInstallments: memberGroup ? memberGroup.currentInstallment - 1 : 11,
-        remainingInstallments: duration - (memberGroup ? memberGroup.currentInstallment - 1 : 11),
-        totalPaid: monthlyInstallment * (memberGroup ? memberGroup.currentInstallment - 1 : 11),
-        remainingAmount: totalChitValue - (monthlyInstallment * (memberGroup ? memberGroup.currentInstallment - 1 : 11)),
+        paidInstallments: memberGroup ? memberGroup.currentInstallment - 1 : 0,
+        remainingInstallments: duration !== "—" ? duration - (memberGroup ? memberGroup.currentInstallment - 1 : 0) : 0,
+        totalPaid: monthlyInstallment * (memberGroup ? memberGroup.currentInstallment - 1 : 0),
+        remainingAmount: totalChitValue !== "—" ? totalChitValue - (monthlyInstallment * (memberGroup ? memberGroup.currentInstallment - 1 : 0)) : 0,
         status: 'Paid',
         remarks: form.remarks
       };
@@ -141,26 +143,26 @@ export function BillingDashboard({ dark, toast }) {
 
   return (
     <div>
-      <SectionHeader title="Invoice Generation" subtitle="Generate and manage payment invoices" dark={dark} />
+      <SectionHeader title="Invoice Generation" subtitle="Generate and manage payment invoices"  />
 
       <div style={{ display: "grid", gap: 24 }}>
         {/* Search Section */}
-        <div style={{ background: dark ? "rgba(255,255,255,.05)" : "#fff", border: dark ? "1px solid rgba(255,255,255,.1)" : "1px solid #e5e7eb", borderRadius: 12, padding: 24 }}>
-          <div style={{ fontSize: 16, fontWeight: 600, color: dark ? "#f3f4f6" : "#111", marginBottom: 16 }}>Search Member</div>
+        <div style={{ background: "var(--bg-card)", border: "1px solid var(--border-color)", borderRadius: 12, padding: 24 }}>
+          <div style={{ fontSize: 16, fontWeight: 600, color: "var(--text-primary)", marginBottom: 16 }}>Search Member</div>
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(200px,1fr))", gap: 16 }}>
             <Input 
               label="Member ID" 
               value={searchTerm} 
               onChange={setSearchTerm} 
               placeholder="Enter Member ID or Mobile" 
-              dark={dark} 
+               
             />
             <Btn label="Search" onClick={() => {}} primary style={{ marginTop: 24 }} />
           </div>
 
           {filteredMembers.length > 0 && (
             <div style={{ marginTop: 20 }}>
-              <div style={{ fontSize: 14, fontWeight: 600, color: dark ? "rgba(255,255,255,.6)" : "#374151", marginBottom: 12 }}>
+              <div style={{ fontSize: 14, fontWeight: 600, color: "var(--text-muted)", marginBottom: 12 }}>
                 Found {filteredMembers.length} member(s)
               </div>
               <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill,minmax(300px,1fr))", gap: 16 }}>
@@ -169,24 +171,24 @@ export function BillingDashboard({ dark, toast }) {
                     key={member.id}
                     onClick={() => setSelectedMember(member)}
                     style={{
-                      background: dark ? "rgba(255,255,255,.05)" : "#f9fafb",
-                      border: selectedMember?.id === member.id ? "2px solid #2563eb" : dark ? "1px solid rgba(255,255,255,.1)" : "1px solid #e5e7eb",
+                      background: "var(--bg-card)",
+                      border: selectedMember?.id === member.id ? "2px solid #2563eb" : "1px solid var(--border-color)",
                       borderRadius: 8,
                       padding: 16,
                       cursor: "pointer",
                       transition: "all .2s ease"
                     }}
                   >
-                    <div style={{ fontSize: 15, fontWeight: 600, color: dark ? "#f3f4f6" : "#111", marginBottom: 8 }}>
+                    <div style={{ fontSize: 15, fontWeight: 600, color: "var(--text-primary)", marginBottom: 8 }}>
                       {member.name}
                     </div>
-                    <div style={{ fontSize: 13, color: dark ? "rgba(255,255,255,.6)" : "#6b7280", marginBottom: 4 }}>
-                      ID: {member.memberId}
+                    <div style={{ fontSize: 13, color: "var(--text-muted)", marginBottom: 4 }}>
+                      ID: {member.userId || member.memberId}
                     </div>
-                    <div style={{ fontSize: 13, color: dark ? "rgba(255,255,255,.6)" : "#6b7280", marginBottom: 4 }}>
+                    <div style={{ fontSize: 13, color: "var(--text-muted)", marginBottom: 4 }}>
                       Mobile: {member.mobile}
                     </div>
-                    <div style={{ fontSize: 13, color: dark ? "rgba(255,255,255,.6)" : "#6b7280" }}>
+                    <div style={{ fontSize: 13, color: "var(--text-muted)" }}>
                       Address: {member.address}
                     </div>
                     <Badge text={member.status || "Active"} color="green" style={{ marginTop: 12 }} />
@@ -203,56 +205,56 @@ export function BillingDashboard({ dark, toast }) {
           const memberGroup = memberGroupId ? groups.find(g => g.id === memberGroupId) : null;
           const memberScheme = memberGroup ? schemes.find(s => s.id === memberGroup.schemeId) : null;
           return (
-          <div style={{ background: dark ? "rgba(255,255,255,.05)" : "#fff", border: dark ? "1px solid rgba(255,255,255,.1)" : "1px solid #e5e7eb", borderRadius: 12, padding: 24 }}>
-            <div style={{ fontSize: 16, fontWeight: 600, color: dark ? "#f3f4f6" : "#111", marginBottom: 16 }}>Member Information</div>
+          <div style={{ background: "var(--bg-card)", border: "1px solid var(--border-color)", borderRadius: 12, padding: 24 }}>
+            <div style={{ fontSize: 16, fontWeight: 600, color: "var(--text-primary)", marginBottom: 16 }}>Member Information</div>
             <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(200px,1fr))", gap: 16, marginBottom: 20 }}>
               <div>
-                <div style={{ fontSize: 12, color: dark ? "rgba(255,255,255,.5)" : "#6b7280", marginBottom: 4 }}>Member Name</div>
-                <div style={{ fontSize: 15, fontWeight: 600, color: dark ? "#f3f4f6" : "#111" }}>{selectedMember.name}</div>
+                <div style={{ fontSize: 12, color: "var(--text-muted)", marginBottom: 4 }}>Member Name</div>
+                <div style={{ fontSize: 15, fontWeight: 600, color: "var(--text-primary)" }}>{selectedMember.name}</div>
               </div>
               <div>
-                <div style={{ fontSize: 12, color: dark ? "rgba(255,255,255,.5)" : "#6b7280", marginBottom: 4 }}>Member ID</div>
-                <div style={{ fontSize: 15, fontWeight: 600, color: dark ? "#f3f4f6" : "#111" }}>{selectedMember.memberId}</div>
+                <div style={{ fontSize: 12, color: "var(--text-muted)", marginBottom: 4 }}>Member ID</div>
+                <div style={{ fontSize: 15, fontWeight: 600, color: "var(--text-primary)" }}>{selectedMember.memberId}</div>
               </div>
               <div>
-                <div style={{ fontSize: 12, color: dark ? "rgba(255,255,255,.5)" : "#6b7280", marginBottom: 4 }}>Mobile</div>
-                <div style={{ fontSize: 15, fontWeight: 600, color: dark ? "#f3f4f6" : "#111" }}>{selectedMember.mobile}</div>
+                <div style={{ fontSize: 12, color: "var(--text-muted)", marginBottom: 4 }}>Mobile</div>
+                <div style={{ fontSize: 15, fontWeight: 600, color: "var(--text-primary)" }}>{selectedMember.mobile}</div>
               </div>
               <div>
-                <div style={{ fontSize: 12, color: dark ? "rgba(255,255,255,.5)" : "#6b7280", marginBottom: 4 }}>Address</div>
-                <div style={{ fontSize: 15, fontWeight: 600, color: dark ? "#f3f4f6" : "#111" }}>{selectedMember.address}</div>
+                <div style={{ fontSize: 12, color: "var(--text-muted)", marginBottom: 4 }}>Address</div>
+                <div style={{ fontSize: 15, fontWeight: 600, color: "var(--text-primary)" }}>{selectedMember.address}</div>
               </div>
             </div>
 
-            <div style={{ fontSize: 16, fontWeight: 600, color: dark ? "#f3f4f6" : "#111", marginBottom: 16, marginTop: 24 }}>Chit Information</div>
+            <div style={{ fontSize: 16, fontWeight: 600, color: "var(--text-primary)", marginBottom: 16, marginTop: 24 }}>Chit Information</div>
             <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(200px,1fr))", gap: 16, marginBottom: 20 }}>
               <div>
-                <div style={{ fontSize: 12, color: dark ? "rgba(255,255,255,.5)" : "#6b7280", marginBottom: 4 }}>Chit Name</div>
-                <div style={{ fontSize: 15, fontWeight: 600, color: dark ? "#f3f4f6" : "#111" }}>{memberScheme?.name || "Not Assigned"}</div>
+                <div style={{ fontSize: 12, color: "var(--text-muted)", marginBottom: 4 }}>Chit Name</div>
+                <div style={{ fontSize: 15, fontWeight: 600, color: "var(--text-primary)" }}>{memberScheme?.name || "Not Assigned"}</div>
               </div>
               <div>
-                <div style={{ fontSize: 12, color: dark ? "rgba(255,255,255,.5)" : "#6b7280", marginBottom: 4 }}>Chit Group</div>
-                <div style={{ fontSize: 15, fontWeight: 600, color: dark ? "#f3f4f6" : "#111" }}>{memberGroup?.name || "Not Assigned"}</div>
+                <div style={{ fontSize: 12, color: "var(--text-muted)", marginBottom: 4 }}>Chit Group</div>
+                <div style={{ fontSize: 15, fontWeight: 600, color: "var(--text-primary)" }}>{memberGroup?.name || "Not Assigned"}</div>
               </div>
               <div>
-                <div style={{ fontSize: 12, color: dark ? "rgba(255,255,255,.5)" : "#6b7280", marginBottom: 4 }}>Monthly Amount</div>
-                <div style={{ fontSize: 15, fontWeight: 600, color: dark ? "#f3f4f6" : "#111" }}>₹{memberScheme?.monthlyInstallment?.toLocaleString() || "0"}</div>
+                <div style={{ fontSize: 12, color: "var(--text-muted)", marginBottom: 4 }}>Monthly Amount</div>
+                <div style={{ fontSize: 15, fontWeight: 600, color: "var(--text-primary)" }}>₹{(memberScheme?.monthlyAmounts?.[(memberGroup?.currentInstallment || 1) - 1]?.amount || memberScheme?.monthlyInstallment)?.toLocaleString() || "0"}</div>
               </div>
               <div>
-                <div style={{ fontSize: 12, color: dark ? "rgba(255,255,255,.5)" : "#6b7280", marginBottom: 4 }}>Current Installment</div>
-                <div style={{ fontSize: 15, fontWeight: 600, color: dark ? "#f3f4f6" : "#111" }}>{memberGroup?.currentInstallment || "0"}</div>
+                <div style={{ fontSize: 12, color: "var(--text-muted)", marginBottom: 4 }}>Current Installment</div>
+                <div style={{ fontSize: 15, fontWeight: 600, color: "var(--text-primary)" }}>{memberGroup?.currentInstallment || "0"}</div>
               </div>
               <div>
-                <div style={{ fontSize: 12, color: dark ? "rgba(255,255,255,.5)" : "#6b7280", marginBottom: 4 }}>Next Due Date</div>
-                <div style={{ fontSize: 15, fontWeight: 600, color: dark ? "#f3f4f6" : "#111" }}>{memberGroup?.nextDueDate ? new Date(memberGroup.nextDueDate).toLocaleDateString() : "Not Set"}</div>
+                <div style={{ fontSize: 12, color: "var(--text-muted)", marginBottom: 4 }}>Next Due Date</div>
+                <div style={{ fontSize: 15, fontWeight: 600, color: "var(--text-primary)" }}>{memberGroup?.nextDueDate ? new Date(memberGroup.nextDueDate).toLocaleDateString() : "Not Set"}</div>
               </div>
               <div>
-                <div style={{ fontSize: 12, color: dark ? "rgba(255,255,255,.5)" : "#6b7280", marginBottom: 4 }}>Auction Status</div>
+                <div style={{ fontSize: 12, color: "var(--text-muted)", marginBottom: 4 }}>Auction Status</div>
                 <Badge text={memberGroup?.status || "Active"} color={memberGroup?.status === "Active" ? "green" : "yellow"} />
               </div>
             </div>
 
-            {user?.role !== 'super_admin' && (
+            {user?.role !== 'user' && (
               <Btn label="Generate Invoice" onClick={() => setShowInvoiceForm(true)} primary style={{ marginTop: 16 }} />
             )}
           </div>
@@ -261,31 +263,31 @@ export function BillingDashboard({ dark, toast }) {
 
         {/* Invoice Form */}
         {showInvoiceForm && selectedMember && (
-          <div style={{ background: dark ? "rgba(255,255,255,.05)" : "#fff", border: dark ? "1px solid rgba(255,255,255,.1)" : "1px solid #e5e7eb", borderRadius: 12, padding: 24 }}>
-            <div style={{ fontSize: 16, fontWeight: 600, color: dark ? "#f3f4f6" : "#111", marginBottom: 16 }}>Billing Section</div>
+          <div style={{ background: "var(--bg-card)", border: "1px solid var(--border-color)", borderRadius: 12, padding: 24 }}>
+            <div style={{ fontSize: 16, fontWeight: 600, color: "var(--text-primary)", marginBottom: 16 }}>Billing Section</div>
             <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(200px,1fr))", gap: 16 }}>
               <div>
-                <Input label="Monthly Amount" value={form.installmentAmount} onChange={v => setForm({ ...form, installmentAmount: v })} dark={dark} type="number" />
+                <Input label="Monthly Amount" value={form.installmentAmount} onChange={v => setForm({ ...form, installmentAmount: v })}  type="number" />
               </div>
               <div>
-                <Input label="Late Fine" value={form.lateFine} onChange={v => setForm({ ...form, lateFine: v })} dark={dark} type="number" />
+                <Input label="Late Fine" value={form.lateFine} onChange={v => setForm({ ...form, lateFine: v })}  type="number" />
               </div>
               <div>
-                <Input label="Discount" value={form.discount} onChange={v => setForm({ ...form, discount: v })} dark={dark} type="number" />
+                <Input label="Discount" value={form.discount} onChange={v => setForm({ ...form, discount: v })}  type="number" />
               </div>
               <div>
-                <Input label="Other Charges" value={form.previousDue} onChange={v => setForm({ ...form, previousDue: v })} dark={dark} type="number" />
+                <Input label="Other Charges" value={form.previousDue} onChange={v => setForm({ ...form, previousDue: v })}  type="number" />
               </div>
             </div>
 
-            <div style={{ marginTop: 20, padding: 16, background: dark ? "rgba(255,255,255,.05)" : "#f9fafb", borderRadius: 8, border: dark ? "1px solid rgba(255,255,255,.1)" : "1px solid #e5e7eb" }}>
-              <div style={{ fontSize: 18, fontWeight: 700, color: dark ? "#f3f4f6" : "#111", marginBottom: 8 }}>
+            <div style={{ marginTop: 20, padding: 16, background: "var(--bg-card)", borderRadius: 8, border: "1px solid var(--border-color)" }}>
+              <div style={{ fontSize: 18, fontWeight: 700, color: "var(--text-primary)", marginBottom: 8 }}>
                 Total Amount: ₹{calculateTotal().toLocaleString()}
               </div>
             </div>
 
             <div style={{ marginTop: 20 }}>
-              <div style={{ fontSize: 14, fontWeight: 600, color: dark ? "rgba(255,255,255,.6)" : "#374151", marginBottom: 12 }}>Payment Mode</div>
+              <div style={{ fontSize: 14, fontWeight: 600, color: "var(--text-muted)", marginBottom: 12 }}>Payment Mode</div>
               <div style={{ display: "flex", gap: 12, flexWrap: "wrap" }}>
                 {['Cash', 'UPI', 'Bank', 'Cheque'].map(mode => (
                   <button
@@ -295,8 +297,8 @@ export function BillingDashboard({ dark, toast }) {
                       padding: "10px 20px",
                       borderRadius: 8,
                       border: form.paymentMethod === mode ? "2px solid #2563eb" : "1px solid #d1d5db",
-                      background: form.paymentMethod === mode ? "rgba(37, 99, 235, 0.1)" : dark ? "rgba(255,255,255,.05)" : "#fff",
-                      color: dark ? "#f3f4f6" : "#111",
+                      background: form.paymentMethod === mode ? "rgba(37, 99, 235, 0.1)" : "var(--bg-card)",
+                      color: "var(--text-primary)",
                       cursor: "pointer",
                       fontSize: 14,
                       fontWeight: form.paymentMethod === mode ? 600 : 400,
@@ -310,11 +312,11 @@ export function BillingDashboard({ dark, toast }) {
             </div>
 
             <div style={{ marginTop: 16 }}>
-              <Input label="Reference Number" value={form.referenceNumber} onChange={v => setForm({ ...form, referenceNumber: v })} dark={dark} placeholder="Optional" />
+              <Input label="Reference Number" value={form.referenceNumber} onChange={v => setForm({ ...form, referenceNumber: v })}  placeholder="Optional" />
             </div>
 
             <div style={{ marginTop: 16 }}>
-              <Input label="Remarks" value={form.remarks} onChange={v => setForm({ ...form, remarks: v })} dark={dark} placeholder="Payment received successfully" />
+              <Input label="Remarks" value={form.remarks} onChange={v => setForm({ ...form, remarks: v })}  placeholder="Payment received successfully" />
             </div>
 
             <div style={{ display: "flex", gap: 12, marginTop: 20 }}>
@@ -326,13 +328,13 @@ export function BillingDashboard({ dark, toast }) {
 
         {/* Invoice Preview */}
         {showInvoicePreview && generatedInvoice && (
-          <InvoicePreview invoice={generatedInvoice} dark={dark} onClose={() => setShowInvoicePreview(false)} />
+          <InvoicePreview invoice={generatedInvoice}  onClose={() => setShowInvoicePreview(false)} />
         )}
 
         {/* Recent Invoices */}
-        <div style={{ background: dark ? "rgba(255,255,255,.05)" : "#fff", border: dark ? "1px solid rgba(255,255,255,.1)" : "1px solid #e5e7eb", borderRadius: 12, padding: 24 }}>
-          <div style={{ fontSize: 16, fontWeight: 600, color: dark ? "#f3f4f6" : "#111", marginBottom: 16 }}>Recent Invoices</div>
-          <Table dark={dark} cols={["Invoice No", "Member", "Amount", "Payment Mode", "Status", "Date", "Actions"]}
+        <div style={{ background: "var(--bg-card)", border: "1px solid var(--border-color)", borderRadius: 12, padding: 24 }}>
+          <div style={{ fontSize: 16, fontWeight: 600, color: "var(--text-primary)", marginBottom: 16 }}>Recent Invoices</div>
+          <Table  cols={["Invoice No", "Member", "Amount", "Payment Mode", "Status", "Date", "Actions"]}
             rows={filteredInvoices.slice(0, 10).map(inv => [
               inv.invoiceNumber,
               inv.memberName,
@@ -340,50 +342,50 @@ export function BillingDashboard({ dark, toast }) {
               inv.paymentMethod,
               <Badge key={inv.id} text={inv.status} color={getStatusColor(inv.status)} />,
               new Date(inv.date).toLocaleDateString(),
-              <div key={inv.id} style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
-                <button onClick={() => { setGeneratedInvoice(inv); setShowInvoicePreview(true); }} style={{ fontSize: 11, padding: "5px 10px", borderRadius: 6, border: "1px solid #2563eb", background: "#2563eb", color: "#fff", cursor: "pointer", fontWeight: 600, transition: "all 0.2s", opacity: 0.9 }} onMouseEnter={e => e.currentTarget.style.opacity = "1"} onMouseLeave={e => e.currentTarget.style.opacity = "0.9"}>View</button>
-                <button onClick={() => window.print()} style={{ fontSize: 11, padding: "5px 10px", borderRadius: 6, border: "1px solid #10b981", background: "#10b981", color: "#fff", cursor: "pointer", fontWeight: 600, transition: "all 0.2s", opacity: 0.9 }} onMouseEnter={e => e.currentTarget.style.opacity = "1"} onMouseLeave={e => e.currentTarget.style.opacity = "0.9"}>Print</button>
+              <div key={inv.id} style={{ display: "flex", gap: 4, flexWrap: "wrap", alignItems: "center" }}>
+                <IconBtn icon={<HiEye size={14} />} onClick={() => { setGeneratedInvoice(inv); setShowInvoicePreview(true); }} color="#2563eb" title="View" />
+                <IconBtn icon={<HiPrinter size={14} />} onClick={() => window.print()} color="#10b981" title="Print" />
                 {inv.status === 'Paid' && (
-                  <button onClick={() => { setSelectedInvoiceForReceipt(inv); setShowReceiptPopup(true); }} style={{ fontSize: 11, padding: "5px 10px", borderRadius: 6, border: "1px solid #8b5cf6", background: "#8b5cf6", color: "#fff", cursor: "pointer", fontWeight: 600, transition: "all 0.2s", opacity: 0.9 }} onMouseEnter={e => e.currentTarget.style.opacity = "1"} onMouseLeave={e => e.currentTarget.style.opacity = "0.9"}>Receipt</button>
+                  <IconBtn icon={<HiReceiptRefund size={14} />} onClick={() => { setSelectedInvoiceForReceipt(inv); setShowReceiptPopup(true); }} color="#8b5cf6" title="Receipt" />
                 )}
-                <button onClick={() => toast.add("Downloading PDF...")} style={{ fontSize: 11, padding: "5px 10px", borderRadius: 6, border: "1px solid #f59e0b", background: "#f59e0b", color: "#fff", cursor: "pointer", fontWeight: 600, transition: "all 0.2s", opacity: 0.9 }} onMouseEnter={e => e.currentTarget.style.opacity = "1"} onMouseLeave={e => e.currentTarget.style.opacity = "0.9"}>Download</button>
-                <button onClick={async () => {
+                <IconBtn icon={<HiArrowDownTray size={14} />} onClick={() => toast.add("Downloading PDF...")} color="#f59e0b" title="Download" />
+                <IconBtn icon={<HiDevicePhoneMobile size={14} />} onClick={async () => {
                   try {
                     await fetch(`/api/invoices/${inv._id}/send-whatsapp`, { method: 'POST' });
                     toast.add("WhatsApp receipt sent successfully!");
                   } catch (error) {
                     toast.add("Error sending WhatsApp receipt", "error");
                   }
-                }} style={{ fontSize: 11, padding: "5px 10px", borderRadius: 6, border: "1px solid #25D366", background: "#25D366", color: "#fff", cursor: "pointer", fontWeight: 600, transition: "all 0.2s", opacity: 0.9 }} onMouseEnter={e => e.currentTarget.style.opacity = "1"} onMouseLeave={e => e.currentTarget.style.opacity = "0.9"}>WhatsApp</button>
-                <button onClick={async () => {
+                }} color="#25D366" title="WhatsApp" />
+                <IconBtn icon={<HiEnvelope size={14} />} onClick={async () => {
                   try {
                     await fetch(`/api/invoices/${inv._id}/send-email`, { method: 'POST' });
                     toast.add("Email receipt sent successfully!");
                   } catch (error) {
                     toast.add("Error sending email receipt", "error");
                   }
-                }} style={{ fontSize: 11, padding: "5px 10px", borderRadius: 6, border: "1px solid #ea4335", background: "#ea4335", color: "#fff", cursor: "pointer", fontWeight: 600, transition: "all 0.2s", opacity: 0.9 }} onMouseEnter={e => e.currentTarget.style.opacity = "1"} onMouseLeave={e => e.currentTarget.style.opacity = "0.9"}>Email</button>
+                }} color="#ea4335" title="Email" />
               </div>
             ])} />
         </div>
 
         {/* Payment History */}
         {selectedMember && (
-          <div style={{ background: dark ? "rgba(255,255,255,.05)" : "#fff", border: dark ? "1px solid rgba(255,255,255,.1)" : "1px solid #e5e7eb", borderRadius: 12, padding: 24 }}>
-            <div style={{ fontSize: 16, fontWeight: 600, color: dark ? "#f3f4f6" : "#111", marginBottom: 16 }}>Payment History - {selectedMember.name}</div>
+          <div style={{ background: "var(--bg-card)", border: "1px solid var(--border-color)", borderRadius: 12, padding: 24 }}>
+            <div style={{ fontSize: 16, fontWeight: 600, color: "var(--text-primary)", marginBottom: 16 }}>Payment History - {selectedMember.name}</div>
             {filteredInvoices.filter(inv => inv.memberId === selectedMember.memberId).length === 0 ? (
-              <div style={{ textAlign: "center", padding: 40, color: dark ? "rgba(255,255,255,.6)" : "#6b7280" }}>
+              <div style={{ textAlign: "center", padding: 40, color: "var(--text-muted)" }}>
                 No payment history available for this member.
               </div>
             ) : (
-              <Table dark={dark} cols={["Invoice No", "Date", "Amount Paid", "Payment Mode", "Status", "Actions"]}
+              <Table  cols={["Invoice No", "Date", "Amount Paid", "Payment Mode", "Status", "Actions"]}
                 rows={filteredInvoices.filter(inv => inv.memberId === selectedMember.memberId).map(inv => [
                   inv.invoiceNumber,
                   new Date(inv.date).toLocaleDateString(),
                   `₹${inv.amountPaid.toLocaleString()}`,
                   inv.paymentMethod,
                   <Badge key={inv.id + "badge"} text={inv.status} color={inv.status === 'Paid' ? 'green' : inv.status === 'Partially Paid' ? 'yellow' : 'red'} />,
-                  <button key={inv.id + "btn"} onClick={() => { setSelectedInvoiceForReceipt(inv); setShowReceiptPopup(true); }} style={{ fontSize: 11, padding: "4px 10px", borderRadius: 6, border: "1px solid #8b5cf6", background: "transparent", color: "#8b5cf6", cursor: "pointer" }}>Receipt</button>
+                  <IconBtn key={inv.id + "btn"} icon={<HiReceiptRefund size={14} />} onClick={() => { setSelectedInvoiceForReceipt(inv); setShowReceiptPopup(true); }} color="#8b5cf6" title="Receipt" />
                 ])} />
             )}
           </div>
@@ -392,23 +394,23 @@ export function BillingDashboard({ dark, toast }) {
         {/* Receipt Popup */}
         {showReceiptPopup && selectedInvoiceForReceipt && (
           <div style={{ position: "fixed", top: 0, left: 0, right: 0, bottom: 0, background: "rgba(0,0,0,0.5)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 1000 }}>
-            <div style={{ background: dark ? "#1e1b4b" : "#fff", borderRadius: 12, maxWidth: 700, width: "90%", maxHeight: "90vh", overflow: "auto", padding: 24 }}>
+            <div style={{ background: "var(--bg-card)", borderRadius: 12, maxWidth: 700, width: "90%", maxHeight: "90vh", overflow: "auto", padding: 24 }}>
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20 }}>
-                <div style={{ fontSize: 18, fontWeight: 700, color: dark ? "#f3f4f6" : "#111" }}>Payment Receipt</div>
-                <button onClick={() => setShowReceiptPopup(false)} style={{ fontSize: 24, background: "none", border: "none", cursor: "pointer", color: dark ? "#f3f4f6" : "#111" }}>×</button>
+                <div style={{ fontSize: 18, fontWeight: 700, color: "var(--text-primary)" }}>Payment Receipt</div>
+                <button onClick={() => setShowReceiptPopup(false)} style={{ fontSize: 24, background: "none", border: "none", cursor: "pointer", color: "var(--text-primary)" }}>×</button>
               </div>
 
                 {/* Receipt Header */}
                 <div style={{ textAlign: "center", marginBottom: 32, paddingBottom: 24, borderBottom: "2px solid #2563eb" }}>
                   <div style={{ fontSize: 28, fontWeight: 800, color: "#2563eb", marginBottom: 8 }}>{COMPANY.name}</div>
-                  <div style={{ fontSize: 13, color: dark ? "rgba(255,255,255,0.6)" : "#6b7280" }}>{COMPANY.address}</div>
-                  <div style={{ fontSize: 13, color: dark ? "rgba(255,255,255,0.6)" : "#6b7280" }}>Tel: {COMPANY.phone} | Email: {COMPANY.email}</div>
-                  <div style={{ fontSize: 13, fontWeight: 700, color: dark ? "#f3f4f6" : "#111", marginTop: 16, textTransform: "uppercase", letterSpacing: "1px" }}>Official Payment Receipt</div>
+                  <div style={{ fontSize: 13, color: "var(--text-muted)" }}>{COMPANY.address}</div>
+                  <div style={{ fontSize: 13, color: "var(--text-muted)" }}>Tel: {COMPANY.phone} | Email: {COMPANY.email}</div>
+                  <div style={{ fontSize: 13, fontWeight: 700, color: "var(--text-primary)", marginTop: 16, textTransform: "uppercase", letterSpacing: "1px" }}>Official Payment Receipt</div>
                 </div>
 
                 <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 32, marginBottom: 32 }}>
                    {/* Member Details */}
-                  <div style={{ background: dark ? "rgba(255,255,255,0.03)" : "#f8fafc", padding: 20, borderRadius: 12, border: dark ? "1px solid rgba(255,255,255,0.05)" : "1px solid #e2e8f0" }}>
+                  <div style={{ background: "var(--bg-card)", padding: 20, borderRadius: 12, border: "1px solid var(--border-color)" }}>
                     <div style={{ fontSize: 12, fontWeight: 700, color: "#2563eb", marginBottom: 12, textTransform: "uppercase" }}>Member Details</div>
                     <div style={{ marginBottom: 8 }}><span style={{ fontSize: 12, color: "#6b7280" }}>Name:</span> <span style={{ fontSize: 14, fontWeight: 700 }}>{selectedInvoiceForReceipt.memberName}</span></div>
                     <div style={{ marginBottom: 8 }}><span style={{ fontSize: 12, color: "#6b7280" }}>ID:</span> <span style={{ fontSize: 14, fontWeight: 600 }}>{selectedInvoiceForReceipt.memberId}</span></div>
@@ -417,7 +419,7 @@ export function BillingDashboard({ dark, toast }) {
                   </div>
 
                   {/* Payment Details */}
-                  <div style={{ background: dark ? "rgba(255,255,255,0.03)" : "#f8fafc", padding: 20, borderRadius: 12, border: dark ? "1px solid rgba(255,255,255,0.05)" : "1px solid #e2e8f0" }}>
+                  <div style={{ background: "var(--bg-card)", padding: 20, borderRadius: 12, border: "1px solid var(--border-color)" }}>
                     <div style={{ fontSize: 12, fontWeight: 700, color: "#2563eb", marginBottom: 12, textTransform: "uppercase" }}>Transaction Info</div>
                     <div style={{ marginBottom: 8 }}><span style={{ fontSize: 12, color: "#6b7280" }}>Receipt No:</span> <span style={{ fontSize: 14, fontWeight: 700 }}>{selectedInvoiceForReceipt.receiptNumber}</span></div>
                     <div style={{ marginBottom: 8 }}><span style={{ fontSize: 12, color: "#6b7280" }}>Date:</span> <span style={{ fontSize: 14, fontWeight: 600 }}>{new Date(selectedInvoiceForReceipt.date).toLocaleDateString()}</span></div>
@@ -472,9 +474,9 @@ export function BillingDashboard({ dark, toast }) {
                 </div>
 
                 <div style={{ display: "flex", gap: 12, marginTop: 40 }}>
-                  <Btn label="Print Receipt" onClick={() => window.print()} primary style={{ flex: 1 }} />
-                  <Btn label="Download PDF" onClick={() => toast.add("Downloading professional PDF...")} style={{ flex: 1, background: "#10b981", color: "#fff" }} />
-                  <Btn label="Close" onClick={() => setShowReceiptPopup(false)} style={{ flex: 1 }} />
+                  <button onClick={() => window.print()} style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 6, flex: 1, padding: "10px 20px", borderRadius: 8, border: "none", background: "#2563eb", color: "#fff", cursor: "pointer", fontSize: 13, fontWeight: 600 }}><HiPrinter size={16} /> Print</button>
+                  <button onClick={() => toast.add("Downloading professional PDF...")} style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 6, flex: 1, padding: "10px 20px", borderRadius: 8, border: "none", background: "#10b981", color: "#fff", cursor: "pointer", fontSize: 13, fontWeight: 600 }}><HiArrowDownTray size={16} /> Download</button>
+                  <button onClick={() => setShowReceiptPopup(false)} style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 6, flex: 1, padding: "10px 20px", borderRadius: 8, border: "1px solid var(--border-color)", background: "transparent", color: "var(--text-primary)", cursor: "pointer", fontSize: 13, fontWeight: 600 }}>Close</button>
                 </div>
             </div>
           </div>
@@ -485,7 +487,7 @@ export function BillingDashboard({ dark, toast }) {
 }
 
 // Invoice Preview Component
-function InvoicePreview({ invoice, dark, onClose }) {
+function InvoicePreview({ invoice, onClose }) {
   const statusColors = {
     'Paid': '#10b981',
     'Partially Paid': '#f59e0b',
@@ -734,12 +736,12 @@ function InvoicePreview({ invoice, dark, onClose }) {
         </div>
 
         {/* Action Buttons */}
-        <div style={{ display: "flex", gap: 12, marginTop: 24, justifyContent: "center", flexWrap: "wrap" }}>
-          <button onClick={() => window.print()} style={{ padding: "12px 24px", borderRadius: 8, border: "1px solid #2563eb", background: "#2563eb", color: "#fff", cursor: "pointer", fontSize: 14, fontWeight: 600 }}>
-            Print Invoice
+        <div style={{ display: "flex", gap: 10, marginTop: 24, justifyContent: "center", flexWrap: "wrap" }}>
+          <button onClick={() => window.print()} style={{ display: "inline-flex", alignItems: "center", gap: 6, padding: "10px 20px", borderRadius: 8, border: "none", background: "#2563eb", color: "#fff", cursor: "pointer", fontSize: 13, fontWeight: 600, transition: "all .2s" }}>
+            <HiPrinter size={16} /> Print
           </button>
-          <button onClick={() => toast.add("Downloading PDF...")} style={{ padding: "12px 24px", borderRadius: 8, border: "1px solid #10b981", background: "#10b981", color: "#fff", cursor: "pointer", fontSize: 14, fontWeight: 600 }}>
-            Download PDF
+          <button onClick={() => toast.add("Downloading PDF...")} style={{ display: "inline-flex", alignItems: "center", gap: 6, padding: "10px 20px", borderRadius: 8, border: "none", background: "#10b981", color: "#fff", cursor: "pointer", fontSize: 13, fontWeight: 600, transition: "all .2s" }}>
+            <HiArrowDownTray size={16} /> Download
           </button>
           <button onClick={async () => {
             try {
@@ -748,8 +750,8 @@ function InvoicePreview({ invoice, dark, onClose }) {
             } catch (error) {
               toast.add("Error sending WhatsApp receipt", "error");
             }
-          }} style={{ padding: "12px 24px", borderRadius: 8, border: "1px solid #25D366", background: "#25D366", color: "#fff", cursor: "pointer", fontSize: 14, fontWeight: 600 }}>
-            Send WhatsApp
+          }} style={{ display: "inline-flex", alignItems: "center", gap: 6, padding: "10px 20px", borderRadius: 8, border: "none", background: "#25D366", color: "#fff", cursor: "pointer", fontSize: 13, fontWeight: 600, transition: "all .2s" }}>
+            <HiDevicePhoneMobile size={16} /> WhatsApp
           </button>
           <button onClick={async () => {
             try {
@@ -758,8 +760,8 @@ function InvoicePreview({ invoice, dark, onClose }) {
             } catch (error) {
               toast.add("Error sending email receipt", "error");
             }
-          }} style={{ padding: "12px 24px", borderRadius: 8, border: "1px solid #2563eb", background: "#2563eb", color: "#fff", cursor: "pointer", fontSize: 14, fontWeight: 600 }}>
-            Send Email
+          }} style={{ display: "inline-flex", alignItems: "center", gap: 6, padding: "10px 20px", borderRadius: 8, border: "none", background: "#ea4335", color: "#fff", cursor: "pointer", fontSize: 13, fontWeight: 600, transition: "all .2s" }}>
+            <HiEnvelope size={16} /> Email
           </button>
         </div>
       </div>

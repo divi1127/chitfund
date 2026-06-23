@@ -1,66 +1,115 @@
-// Accounting page component
+import { useState } from "react";
 import { useData } from "../hooks/useData";
+import { fetchData } from "../utils/api";
 import { SectionHeader } from "../components/SectionHeader";
 import { Table } from "../components/Table";
+import { Badge } from "../components/Badge";
+import { Btn } from "../components/Btn";
 import { fmt } from "../utils/helpers";
 import { useAuth } from "../contexts/AuthContext";
 
-export function Accounting({ dark }) {
+export function Accounting({ toast }) {
   const { user } = useAuth();
-  const { data: collections, loading } = useData('/collections');
-  const { data: invoices, loading: invoicesLoading } = useData('/invoices');
-  
-  // Filter invoices for the current user (if user role)
-  const userInvoices = user?.role === 'user' 
-    ? invoices.filter(inv => inv.memberId === user.userId || inv.memberName === user.name)
-    : invoices;
+  const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
+  const [selectedMonth, setSelectedMonth] = useState(new Date().getMonth() + 1);
+  const [accountingData, setAccountingData] = useState(null);
+  const [loading, setLoading] = useState(false);
+  const { data: years } = useData('/accounting/years');
 
-  const totalCollected = userInvoices.reduce((sum, inv) => sum + (inv.amountPaid || 0), 0);
-  const cashCollections = userInvoices.filter(inv => inv.paymentMethod === "Cash").reduce((sum, inv) => sum + (inv.amountPaid || 0), 0);
-  const onlineCollections = userInvoices.filter(inv => inv.paymentMethod === "UPI" || inv.paymentMethod === "Bank").reduce((sum, inv) => sum + (inv.amountPaid || 0), 0);
+  const months = [
+    { value: 1, label: "January" }, { value: 2, label: "February" }, { value: 3, label: "March" },
+    { value: 4, label: "April" }, { value: 5, label: "May" }, { value: 6, label: "June" },
+    { value: 7, label: "July" }, { value: 8, label: "August" }, { value: 9, label: "September" },
+    { value: 10, label: "October" }, { value: 11, label: "November" }, { value: 12, label: "December" }
+  ];
 
-  if (loading || invoicesLoading) return <div style={{ padding: 40, textAlign: "center" }}>Loading...</div>;
+  const loadAccountingData = async () => {
+    setLoading(true);
+    try {
+      const data = await fetchData(`/accounting/${selectedYear}/${selectedMonth}`);
+      setAccountingData(data);
+    } catch (error) {
+      toast?.add("Error loading accounting data: " + error.message, "error");
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
     <div>
-      <SectionHeader title="Accounting" subtitle="Financial overview and transactions" dark={dark} />
-      
-      {user?.role === 'user' && (
-        <div style={{ background: dark ? "rgba(255,255,255,.05)" : "#fff", border: dark ? "1px solid rgba(255,255,255,.1)" : "1px solid #e5e7eb", borderRadius: 12, padding: 20, marginBottom: 24 }}>
-          <div style={{ fontSize: 14, fontWeight: 600, color: dark ? "#f3f4f6" : "#111", marginBottom: 8 }}>My Account</div>
-          <div style={{ fontSize: 12, color: dark ? "rgba(255,255,255,.6)" : "#6b7280" }}>
-            {user.name} ({user.userId})
-          </div>
-        </div>
-      )}
+      <SectionHeader title="Accounting" subtitle="Year and month-wise financial overview" />
 
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(200px,1fr))", gap: 16, marginBottom: 24 }}>
-        <div style={{ background: dark ? "rgba(255,255,255,.05)" : "#fff", border: dark ? "1px solid rgba(255,255,255,.1)" : "1px solid #e5e7eb", borderRadius: 12, padding: 20 }}>
-          <div style={{ fontSize: 12, color: dark ? "rgba(255,255,255,.5)" : "#6b7280", marginBottom: 8 }}>Total Payments</div>
-          <div style={{ fontSize: 24, fontWeight: 700, color: dark ? "#f3f4f6" : "#111" }}>{fmt(totalCollected)}</div>
+      <div style={{ display: "flex", gap: 16, marginBottom: 24, alignItems: "flex-end", flexWrap: "wrap" }}>
+        <div>
+          <label style={{ display: "block", fontSize: 12, fontWeight: 600, color: "var(--text-secondary)", marginBottom: 6 }}>Year</label>
+          <select
+            value={selectedYear}
+            onChange={e => setSelectedYear(Number(e.target.value))}
+            style={{ padding: "8px 12px", borderRadius: 8, border: "1px solid var(--border-color)", background: "var(--bg-input)", color: "var(--text-primary)", fontSize: 13, minWidth: 120 }}
+          >
+            {(years.length > 0 ? years : [new Date().getFullYear()]).map(y => (
+              <option key={y} value={y}>{y}</option>
+            ))}
+          </select>
         </div>
-        <div style={{ background: dark ? "rgba(255,255,255,.05)" : "#fff", border: dark ? "1px solid rgba(255,255,255,.1)" : "1px solid #e5e7eb", borderRadius: 12, padding: 20 }}>
-          <div style={{ fontSize: 12, color: dark ? "rgba(255,255,255,.5)" : "#6b7280", marginBottom: 8 }}>Cash Payments</div>
-          <div style={{ fontSize: 24, fontWeight: 700, color: dark ? "#f3f4f6" : "#111" }}>{fmt(cashCollections)}</div>
+        <div>
+          <label style={{ display: "block", fontSize: 12, fontWeight: 600, color: "var(--text-secondary)", marginBottom: 6 }}>Month</label>
+          <select
+            value={selectedMonth}
+            onChange={e => setSelectedMonth(Number(e.target.value))}
+            style={{ padding: "8px 12px", borderRadius: 8, border: "1px solid var(--border-color)", background: "var(--bg-input)", color: "var(--text-primary)", fontSize: 13, minWidth: 140 }}
+          >
+            {months.map(m => (
+              <option key={m.value} value={m.value}>{m.label}</option>
+            ))}
+          </select>
         </div>
-        <div style={{ background: dark ? "rgba(255,255,255,.05)" : "#fff", border: dark ? "1px solid rgba(255,255,255,.1)" : "1px solid #e5e7eb", borderRadius: 12, padding: 20 }}>
-          <div style={{ fontSize: 12, color: dark ? "rgba(255,255,255,.5)" : "#6b7280", marginBottom: 8 }}>Online Payments</div>
-          <div style={{ fontSize: 24, fontWeight: 700, color: dark ? "#f3f4f6" : "#111" }}>{fmt(onlineCollections)}</div>
-        </div>
-        <div style={{ background: dark ? "rgba(255,255,255,.05)" : "#fff", border: dark ? "1px solid rgba(255,255,255,.1)" : "1px solid #e5e7eb", borderRadius: 12, padding: 20 }}>
-          <div style={{ fontSize: 12, color: dark ? "rgba(255,255,255,.5)" : "#6b7280", marginBottom: 8 }}>Total Transactions</div>
-          <div style={{ fontSize: 24, fontWeight: 700, color: dark ? "#f3f4f6" : "#111" }}>{userInvoices.length}</div>
-        </div>
+        <Btn label={loading ? "Loading..." : "Load Data"} onClick={loadAccountingData} primary />
       </div>
 
-      <Table dark={dark} cols={["Invoice No", "Date", "Payment Mode", "Amount", "Status"]}
-        rows={userInvoices.slice(0, 10).map(inv => [
-          inv.invoiceNumber,
-          new Date(inv.date).toLocaleDateString(),
-          inv.paymentMethod,
-          fmt(inv.amountPaid),
-          inv.status
-        ])} />
+      {accountingData && (
+        <>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(180px,1fr))", gap: 16, marginBottom: 24 }}>
+            <div style={{ background: "var(--bg-card)", border: "1px solid var(--border-color)", borderRadius: 12, padding: 20 }}>
+              <div style={{ fontSize: 12, color: "var(--text-muted)", marginBottom: 4 }}>Period</div>
+              <div style={{ fontSize: 18, fontWeight: 600, color: "var(--text-primary)" }}>{months[selectedMonth - 1].label} {selectedYear}</div>
+            </div>
+            <div style={{ background: "var(--bg-card)", border: "1px solid var(--border-color)", borderRadius: 12, padding: 20 }}>
+              <div style={{ fontSize: 12, color: "var(--text-muted)", marginBottom: 4 }}>Total Members</div>
+              <div style={{ fontSize: 18, fontWeight: 600, color: "var(--text-primary)" }}>{accountingData.totals?.totalMembers || 0}</div>
+            </div>
+            <div style={{ background: "var(--bg-card)", border: "1px solid var(--border-color)", borderRadius: 12, padding: 20 }}>
+              <div style={{ fontSize: 12, color: "var(--text-muted)", marginBottom: 4 }}>Scheme Amount</div>
+              <div style={{ fontSize: 18, fontWeight: 600, color: "var(--text-primary)" }}>{fmt(accountingData.totals?.totalSchemeAmount || 0)}</div>
+            </div>
+            <div style={{ background: "var(--bg-card)", border: "1px solid var(--border-color)", borderRadius: 12, padding: 20 }}>
+              <div style={{ fontSize: 12, color: "var(--text-muted)", marginBottom: 4 }}>Paid Amount</div>
+              <div style={{ fontSize: 18, fontWeight: 600, color: "#16a34a" }}>{fmt(accountingData.totals?.totalPaidAmount || 0)}</div>
+            </div>
+          </div>
+
+          <Table cols={["Invoice No", "Date", "Member Name", "Member ID", "Phone", "Group", "Scheme", "Scheme Amount", "Paid Amount", "Status", "Payment Method"]}
+            rows={accountingData.data.map(d => [
+              d.invoiceNumber,
+              new Date(d.date).toLocaleDateString(),
+              d.memberName,
+              d.memberId,
+              d.phone || "—",
+              d.group || "—",
+              d.scheme || "—",
+              fmt(d.schemeAmount),
+              fmt(d.paidAmount),
+              <Badge key={d.invoiceNumber} text={d.status} color={d.status === "Paid" ? "green" : "yellow"} />,
+              d.paymentMethod
+            ])} />
+        </>
+      )}
+
+      {!accountingData && !loading && (
+        <div style={{ textAlign: "center", padding: 60, color: "var(--text-muted)" }}>
+          Select a year and month, then click "Load Data" to view accounting records.
+        </div>
+      )}
     </div>
   );
 }

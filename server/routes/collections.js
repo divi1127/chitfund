@@ -1,44 +1,169 @@
 import express from 'express';
 import Collection from '../models/Collection.js';
+import Invoice from '../models/Invoice.js';
+import Member from '../models/Member.js';
+import Group from '../models/Group.js';
+import Scheme from '../models/Scheme.js';
+import { authenticate, authorize } from '../middleware/auth.js';
+import { generateReceiptNo } from '../utils/idGenerator.js';
 
 const router = express.Router();
 
-router.get('/', async (req, res) => {
+router.get('/', authenticate, async (req, res) => {
   try {
+    console.log(`📋 Collections: Fetching all collections (requested by ${req.user.userId})`);
     const collections = await Collection.find();
+
+    if (req.user.role === 'user') {
+      const userMember = await Member.findOne({ memberId: req.user.userId });
+      if (!userMember) return res.json([]);
+      const filtered = collections.filter(c => c.memberId === userMember.id || c.memberId === userMember.memberId);
+      return res.json(filtered);
+    }
+
     res.json(collections);
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    console.error('❌ Collections: Error fetching:', error.message);
+    res.status(500).json({ message: 'Server error fetching collections' });
   }
 });
 
-router.get('/:id', async (req, res) => {
+router.get('/:id', authenticate, async (req, res) => {
   try {
     const collection = await Collection.findOne({ id: req.params.id });
-    if (!collection) return res.status(404).json({ message: 'Collection not found' });
+    if (!collection) {
+      console.error(`❌ Collections: Not found - ${req.params.id}`);
+      return res.status(404).json({ message: 'Collection not found' });
+    }
     res.json(collection);
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    console.error('❌ Collections: Error fetching:', error.message);
+    res.status(500).json({ message: 'Server error fetching collection' });
   }
 });
 
-router.post('/', async (req, res) => {
+router.get('/monthly/:year/:month', authenticate, async (req, res) => {
   try {
-    const collection = new Collection(req.body);
+    const { year, month } = req.params;
+    const startDate = new Date(year, month - 1, 1);
+    const endDate = new Date(year, month, 0);
+
+    const collections = await Collection.find({
+      date: { $gte: startDate, $lte: endDate }
+    });
+    const invoices = await Invoice.find({
+      date: { $gte: startDate, $lte: endDate }
+    });
+
+    const totalCollected = collections.reduce((s, c) => s + (c.amount || 0), 0);
+    const totalInvoiced = invoices.reduce((s, i) => s + (i.amountPaid || 0), 0);
+
+    console.log(`📋 Collections: Monthly report for ${year}-${month}: ₹${totalCollected}`);
+    res.json({ year, month, collections, invoices, totalCollected, totalInvoiced });
+  } catch (error) {
+    console.error('❌ Collections: Error monthly report:', error.message);
+    res.status(500).json({ message: 'Server error generating monthly report' });
+  }
+});
+
+router.post('/', authenticate, authorize('super_admin', 'sub_admin'), async (req, res) => {
+  try {
+    const data = { ...req.body };
+    const receiptNo = await generateReceiptNo();
+
+    const collectionData = {
+      ...data,
+      id: data.id || 'C' + Date.now().toString().slice(-6),
+      receiptNo: receiptNo,
+      amount: Number(data.amount),
+      installment: Number(data.installment),
+      status: 'Paid'
+    };
+
+    const collection = new Collection(collectionData);
     const savedCollection = await collection.save();
+    console.log(`✅ Collections: Created collection ${receiptNo} for ₹${collectionData.amount}`);
+
+    const member = await Member.findOne({ id: data.memberId });
+    const group = await Group.findOne({ id: data.groupId });
+    const scheme = group ? await Scheme.findOne({ id: group.schemeId }) : null;
+
+    const invoiceNo = 'INV' + new Date().getFullYear() + String(Date.now()).slice(-5);
+    const invoiceData = {
+      invoiceNumber: invoiceNo,
+      receiptNumber: receiptNo,
+      date: data.date || new Date(),
+      time: new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' }),
+      branch: 'Main Branch',
+      collectedBy: req.user.name,
+      memberId: member?.memberId || data.memberId,
+      memberName: member?.name || '',
+      memberMobile: member?.phone || '',
+      memberAddress: member?.address || '',
+      memberAadhar: member?.aadhaar || '',
+      chitName: scheme?.name || '',
+      chitGroup: group?.name || '',
+      chitNumber: `CHIT-${scheme?.amount || ''}-001`,
+      totalChitValue: scheme?.amount || 0,
+      monthlyAmount: scheme?.monthlyInstallment || 0,
+      duration: scheme?.duration || 0,
+      currentMonth: data.installment || 1,
+      dueDate: data.date || new Date(),
+      installmentAmount: Number(data.amount),
+      lateFine: 0,
+      discount: 0,
+      previousDue: 0,
+      totalPayable: Number(data.amount),
+      amountPaid: Number(data.amount),
+      balance: 0,
+      paymentMethod: data.mode || 'Cash',
+      referenceNumber: data.referenceNumber || '',
+      paidInstallments: 1,
+      remainingInstallments: (scheme?.duration || 0) - (data.installment || 1),
+      totalPaid: Number(data.amount),
+      remainingAmount: (scheme?.amount || 0) - Number(data.amount),
+      status: 'Paid',
+      remarks: 'Payment via collection'
+    };
+
+    const invoice = new Invoice(invoiceData);
+    await invoice.save();
+    console.log(`✅ Collections: Auto-created invoice ${invoiceNo} for collection ${receiptNo}`);
+
     res.status(201).json(savedCollection);
   } catch (error) {
-    res.status(400).json({ message: error.message });
+    console.error('❌ Collections: Error creating:', error.message);
+    res.status(400).json({ message: 'Error creating collection: ' + error.message });
   }
 });
 
-router.put('/:id', async (req, res) => {
+router.put('/:id', authenticate, authorize('super_admin'), async (req, res) => {
   try {
     const collection = await Collection.findOneAndUpdate({ id: req.params.id }, req.body, { new: true });
-    if (!collection) return res.status(404).json({ message: 'Collection not found' });
+    if (!collection) {
+      console.error(`❌ Collections: Not found for update - ${req.params.id}`);
+      return res.status(404).json({ message: 'Collection not found' });
+    }
+    console.log(`✅ Collections: Updated collection ${collection.receiptNo}`);
     res.json(collection);
   } catch (error) {
-    res.status(400).json({ message: error.message });
+    console.error('❌ Collections: Error updating:', error.message);
+    res.status(400).json({ message: 'Error updating collection: ' + error.message });
+  }
+});
+
+router.delete('/:id', authenticate, authorize('super_admin'), async (req, res) => {
+  try {
+    const collection = await Collection.findOneAndDelete({ id: req.params.id });
+    if (!collection) {
+      console.error(`❌ Collections: Not found for delete - ${req.params.id}`);
+      return res.status(404).json({ message: 'Collection not found' });
+    }
+    console.log(`✅ Collections: Deleted collection ${collection.receiptNo}`);
+    res.json({ message: 'Collection deleted successfully' });
+  } catch (error) {
+    console.error('❌ Collections: Error deleting:', error.message);
+    res.status(500).json({ message: 'Server error deleting collection' });
   }
 });
 

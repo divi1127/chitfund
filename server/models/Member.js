@@ -6,7 +6,7 @@ const memberSchema = new mongoose.Schema({
   userId: { type: String, required: true, unique: true },
   name: { type: String, required: true },
   phone: { type: String, required: true },
-  email: { type: String, required: true },
+  email: { type: String, default: '' },
   address: { type: String, required: true },
   aadhaar: { type: String, required: true },
   pan: { type: String, required: true },

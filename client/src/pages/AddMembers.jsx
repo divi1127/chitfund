@@ -9,7 +9,7 @@ import { Btn } from "../components/Btn";
 import { Input } from "../components/Input";
 import { useAuth } from "../contexts/AuthContext";
 
-export function AddMembers({ dark, toast }) {
+export function AddMembers({ toast }) {
   const { user } = useAuth();
   const { data: members, loading, refresh } = useData('/members');
   const [showForm, setShowForm] = useState(false);
@@ -26,11 +26,14 @@ export function AddMembers({ dark, toast }) {
 
   // Auto-generate member ID
   const generateMemberId = () => {
-    const date = new Date();
-    const year = date.getFullYear();
-    const month = String(date.getMonth() + 1).padStart(2, '0');
-    const random = Math.floor(Math.random() * 9000) + 1000;
-    return `MEM${year}${month}${random}`;
+    const yr = String(new Date().getFullYear()).slice(-2);
+    const prefix = `HRCHIT${yr}`;
+    const existing = members.filter(m => m.memberId && m.memberId.startsWith(prefix));
+    const max = existing.reduce((n, m) => {
+      const num = parseInt(m.memberId.slice(prefix.length), 10);
+      return num > n ? num : n;
+    }, 0);
+    return `${prefix}${String(max + 1).padStart(3, '0')}`;
   };
 
   const handleSubmit = async (e) => {
@@ -47,6 +50,7 @@ export function AddMembers({ dark, toast }) {
         modules: ['dashboard', 'members', 'schemes', 'groups', 'collections', 'billing', 'auctions', 'accounting', 'profile', 'payments'],
         permissions: ['view']
       };
+      delete memberData.password;
 
       await createData('/members', memberData);
       toast.add('Member added successfully!');
@@ -71,40 +75,40 @@ export function AddMembers({ dark, toast }) {
 
   return (
     <div>
-      <SectionHeader title="Add Members" subtitle="Add new members with auto-generated IDs" dark={dark} />
+      <SectionHeader title="Add Members" subtitle="Add new members with auto-generated IDs" />
 
       <div style={{ display: "grid", gap: 24 }}>
         {/* Add Member Form */}
         {!showForm ? (
-          <div style={{ background: dark ? "rgba(255,255,255,.05)" : "#fff", border: dark ? "1px solid rgba(255,255,255,.1)" : "1px solid #e5e7eb", borderRadius: 12, padding: 24, textAlign: "center" }}>
-            <div style={{ fontSize: 14, color: dark ? "rgba(255,255,255,.6)" : "#6b7280", marginBottom: 16 }}>
+          <div style={{ background: "var(--bg-card)", border: "1px solid var(--border-color)", borderRadius: 12, padding: 24, textAlign: "center" }}>
+            <div style={{ fontSize: 14, color: "var(--text-muted)", marginBottom: 16 }}>
               Add new members to the system. IDs will be auto-generated.
             </div>
             <Btn label="Add New Member" onClick={() => setShowForm(true)} primary />
           </div>
         ) : (
-          <div style={{ background: dark ? "rgba(255,255,255,.05)" : "#fff", border: dark ? "1px solid rgba(255,255,255,.1)" : "1px solid #e5e7eb", borderRadius: 12, padding: 24 }}>
+          <div style={{ background: "var(--bg-card)", border: "1px solid var(--border-color)", borderRadius: 12, padding: 24 }}>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20 }}>
-              <div style={{ fontSize: 18, fontWeight: 700, color: dark ? "#f3f4f6" : "#111" }}>Add New Member</div>
-              <button onClick={() => setShowForm(false)} style={{ fontSize: 24, background: "none", border: "none", cursor: "pointer", color: dark ? "#f3f4f6" : "#111" }}>×</button>
+              <div style={{ fontSize: 18, fontWeight: 700, color: "var(--text-primary)" }}>Add New Member</div>
+              <button onClick={() => setShowForm(false)} style={{ fontSize: 24, background: "none", border: "none", cursor: "pointer", color: "var(--text-primary)" }}>×</button>
             </div>
 
             <form onSubmit={handleSubmit} style={{ display: "grid", gap: 16 }}>
               <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(250px,1fr))", gap: 16 }}>
-                <Input label="Full Name" value={form.name} onChange={v => setForm({ ...form, name: v })} dark={dark} required />
-                <Input label="Email" value={form.email} onChange={v => setForm({ ...form, email: v })} dark={dark} type="email" required />
-                <Input label="Mobile Number" value={form.mobile} onChange={v => setForm({ ...form, mobile: v })} dark={dark} type="tel" required />
-                <Input label="Password" value={form.password} onChange={v => setForm({ ...form, password: v })} dark={dark} type="password" required />
-                <Input label="Address" value={form.address} onChange={v => setForm({ ...form, address: v })} dark={dark} />
-                <Input label="Chit Scheme" value={form.scheme} onChange={v => setForm({ ...form, scheme: v })} dark={dark} />
-                <Input label="Group" value={form.group} onChange={v => setForm({ ...form, group: v })} dark={dark} />
+                <Input label="Full Name" value={form.name} onChange={v => setForm({ ...form, name: v })} required />
+                <Input label="Email" value={form.email} onChange={v => setForm({ ...form, email: v })} type="email" required />
+                <Input label="Mobile Number" value={form.mobile} onChange={v => setForm({ ...form, mobile: v })} type="tel" required />
+                <Input label="Password" value={form.password} onChange={v => setForm({ ...form, password: v })} type="password" required />
+                <Input label="Address" value={form.address} onChange={v => setForm({ ...form, address: v })} />
+                <Input label="Chit Scheme" value={form.scheme} onChange={v => setForm({ ...form, scheme: v })} />
+                <Input label="Group" value={form.group} onChange={v => setForm({ ...form, group: v })} />
               </div>
 
-              <div style={{ padding: 16, background: dark ? "rgba(255,255,255,.05)" : "#f9fafb", borderRadius: 8 }}>
-                <div style={{ fontSize: 14, color: dark ? "rgba(255,255,255,.6)" : "#6b7280", marginBottom: 8 }}>
+              <div style={{ padding: 16, background: "var(--bg-card)", borderRadius: 8 }}>
+                <div style={{ fontSize: 14, color: "var(--text-muted)", marginBottom: 8 }}>
                   Member ID will be auto-generated
                 </div>
-                <div style={{ fontSize: 16, fontWeight: 600, color: dark ? "#f3f4f6" : "#111" }}>
+                <div style={{ fontSize: 16, fontWeight: 600, color: "var(--text-primary)" }}>
                   Format: MEM{new Date().getFullYear()}MM#### (e.g., MEM2026011234)
                 </div>
               </div>
@@ -118,9 +122,9 @@ export function AddMembers({ dark, toast }) {
         )}
 
         {/* Members List */}
-        <div style={{ background: dark ? "rgba(255,255,255,.05)" : "#fff", border: dark ? "1px solid rgba(255,255,255,.1)" : "1px solid #e5e7eb", borderRadius: 12, padding: 24 }}>
-          <div style={{ fontSize: 16, fontWeight: 600, color: dark ? "#f3f4f6" : "#111", marginBottom: 16 }}>Existing Members</div>
-          <Table dark={dark} cols={["Member ID", "Name", "Email", "Mobile", "Scheme", "Status", "Created"]}
+        <div style={{ background: "var(--bg-card)", border: "1px solid var(--border-color)", borderRadius: 12, padding: 24 }}>
+          <div style={{ fontSize: 16, fontWeight: 600, color: "var(--text-primary)", marginBottom: 16 }}>Existing Members</div>
+          <Table cols={["Member ID", "Name", "Email", "Mobile", "Scheme", "Status", "Created"]}
             rows={members.map(member => [
               member.memberId,
               member.name,

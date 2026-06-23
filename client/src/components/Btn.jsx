@@ -1,4 +1,3 @@
-// Button component
 export function Btn({ label, onClick, primary, secondary, danger, disabled, style }) {
   const baseStyle = {
     padding: "10px 20px",
@@ -21,11 +20,7 @@ export function Btn({ label, onClick, primary, secondary, danger, disabled, styl
   const selectedStyle = primary ? variantStyles.primary : secondary ? variantStyles.secondary : danger ? variantStyles.danger : variantStyles.default;
   
   return (
-    <button 
-      onClick={onClick} 
-      disabled={disabled}
-      style={{ ...baseStyle, ...selectedStyle, ...style }}
-    >
+    <button onClick={onClick} disabled={disabled} style={{ ...baseStyle, ...selectedStyle, ...style }}>
       {label}
     </button>
   );

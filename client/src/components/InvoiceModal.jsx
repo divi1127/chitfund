@@ -1,43 +1,93 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { Btn } from './Btn';
 import { Input } from './Input';
 import { Badge } from './Badge';
 import { COMPANY } from '../utils/constants';
 import { QRCodeCanvas } from 'qrcode.react';
+import { HiUser, HiCube, HiCurrencyRupee, HiCheckCircle, HiXCircle } from "react-icons/hi2";
 
-export function InvoiceModal({ invoice, dark, onClose, onPaymentSuccess, toast }) {
+export function InvoiceModal({ invoice, onClose, onPaymentSuccess, toast }) {
   const [paymentMethod, setPaymentMethod] = useState('UPI');
   const [referenceNumber, setReferenceNumber] = useState('');
+  const [proofFile, setProofFile] = useState(null);
+  const [proofPreview, setProofPreview] = useState(null);
   const [processing, setProcessing] = useState(false);
+  const fileRef = useRef(null);
+  const dark = typeof document !== 'undefined' && document.documentElement.getAttribute('data-theme') === 'dark';
 
   if (!invoice) return null;
 
+  const isDigital = paymentMethod !== 'Cash';
+
+  const handleFileSelect = (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    setProofFile(file);
+    const reader = new FileReader();
+    reader.onload = () => setProofPreview(reader.result);
+    reader.readAsDataURL(file);
+  };
+
+  const getToken = () => localStorage.getItem("token");
+
   const handleConfirmPayment = async () => {
-    if (!referenceNumber && paymentMethod !== 'Cash') {
-      toast.add('Please enter a reference number or transaction ID', 'error');
+    if (isDigital && !referenceNumber) {
+      toast.add('Please enter a transaction ID / reference number', 'error');
       return;
     }
-    
+    if (isDigital && !proofFile) {
+      toast.add('Please upload a payment screenshot as proof', 'error');
+      return;
+    }
+
     setProcessing(true);
     try {
-      const response = await fetch(`http://localhost:5000/api/invoices/${invoice._id}`, {
+      let proofUrl = '';
+
+      // Upload screenshot first if digital payment
+      if (isDigital && proofFile) {
+        const formData = new FormData();
+        formData.append('file', proofFile);
+        const uploadRes = await fetch('/api/upload', {
+          method: 'POST',
+          headers: { Authorization: `Bearer ${getToken()}` },
+          body: formData
+        });
+        if (!uploadRes.ok) throw new Error('Screenshot upload failed');
+        const uploadData = await uploadRes.json();
+        proofUrl = uploadData.url;
+      }
+
+      const updateBody = {
+        paymentMethod: paymentMethod === 'Bank Transfer' ? 'Bank' : paymentMethod === 'Online Payment' ? 'Online' : paymentMethod,
+        referenceNumber: referenceNumber,
+        amountPaid: invoice.totalPayable,
+        balance: 0,
+        totalPaid: (invoice.totalPaid || 0) + invoice.totalPayable,
+        paidInstallments: (invoice.paidInstallments || 0) + 1,
+        paymentProof: proofUrl,
+        updatedAt: new Date()
+      };
+
+      if (paymentMethod === 'Cash') {
+        // Cash — mark as Pending, admin will approve
+        updateBody.status = 'Pending';
+        updateBody.remarks = 'Cash payment submitted, awaiting confirmation';
+      } else {
+        // Digital — mark as Proof Submitted
+        updateBody.status = 'Proof Submitted';
+        updateBody.remarks = 'Payment proof uploaded, awaiting admin approval';
+      }
+
+      const response = await fetch(`/api/invoices/${invoice._id}`, {
         method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          status: 'Paid',
-          paymentMethod: paymentMethod,
-          referenceNumber: referenceNumber,
-          amountPaid: invoice.totalPayable,
-          balance: 0,
-          totalPaid: (invoice.totalPaid || 0) + invoice.totalPayable,
-          paidInstallments: (invoice.paidInstallments || 0) + 1,
-          updatedAt: new Date()
-        })
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${getToken()}` },
+        body: JSON.stringify(updateBody)
       });
 
-      if (!response.ok) throw new Error('Payment failed');
+      if (!response.ok) throw new Error('Payment submission failed');
 
-      toast.add('Payment confirmed successfully!', 'success');
+      toast.add(paymentMethod === 'Cash' ? 'Cash payment noted! Admin will confirm shortly.' : 'Payment proof submitted! Awaiting admin approval.', 'success');
       if (onPaymentSuccess) onPaymentSuccess();
       onClose();
     } catch (error) {
@@ -70,9 +120,9 @@ export function InvoiceModal({ invoice, dark, onClose, onPaymentSuccess, toast }
     overflowY: "auto",
     padding: 0,
     boxShadow: "0 25px 50px -12px rgba(0, 0, 0, 0.7)",
-    border: dark ? "1px solid rgba(255,255,255,0.1)" : "1px solid #e5e7eb",
+    border: "1px solid var(--border-color)",
     position: "relative",
-    color: dark ? "#f3f4f6" : "#111",
+    color: "var(--text-primary)",
     display: "flex",
     flexDirection: "column"
   };
@@ -80,7 +130,7 @@ export function InvoiceModal({ invoice, dark, onClose, onPaymentSuccess, toast }
   const headerStyle = {
     background: dark ? "rgba(37, 99, 235, 0.15)" : "linear-gradient(135deg, #f8fafc 0%, #eff6ff 100%)",
     padding: "28px 32px",
-    borderBottom: dark ? "1px solid rgba(255,255,255,0.05)" : "1px solid #e5e7eb",
+    borderBottom: "1px solid var(--border-color)",
     position: "sticky",
     top: 0,
     zIndex: 10
@@ -92,8 +142,8 @@ export function InvoiceModal({ invoice, dark, onClose, onPaymentSuccess, toast }
 
   const footerStyle = {
     padding: "20px 32px",
-    background: dark ? "rgba(37, 99, 235, 0.05)" : "#f9fafb",
-    borderTop: dark ? "1px solid rgba(255,255,255,0.05)" : "1px solid #e5e7eb",
+    background: "var(--bg-card-alt)",
+    borderTop: "1px solid var(--border-color)",
     display: "flex",
     gap: 12,
     position: "sticky",
@@ -122,7 +172,7 @@ export function InvoiceModal({ invoice, dark, onClose, onPaymentSuccess, toast }
 
   const dataItem = (label, value, isBold = false) => (
     <div style={{ marginBottom: 6 }}>
-      <div style={{ fontSize: 11, color: dark ? "rgba(255,255,255,0.5)" : "#6b7280", fontWeight: 600, marginBottom: 2 }}>{label}</div>
+      <div style={{ fontSize: 11, color: "var(--text-muted)", fontWeight: 600, marginBottom: 2 }}>{label}</div>
       <div style={{ fontSize: 14, fontWeight: isBold ? 700 : 500 }}>{value}</div>
     </div>
   );
@@ -146,39 +196,39 @@ export function InvoiceModal({ invoice, dark, onClose, onPaymentSuccess, toast }
               </div>
             </div>
             <div style={{ textAlign: "right" }}>
-              <div style={{ fontSize: 20, fontWeight: 800, color: dark ? "#fff" : "#111", letterSpacing: "0.05em" }}>INVOICE</div>
+              <div style={{ fontSize: 20, fontWeight: 800, color: "var(--text-primary)", letterSpacing: "0.05em" }}>INVOICE</div>
               <div style={{ fontSize: 15, fontWeight: 700, color: "#2563eb", marginTop: 4 }}>#{invoice.invoiceNumber}</div>
               <div style={{ marginTop: 8 }}>
                 <Badge text={invoice.status} color={invoice.status === 'Paid' ? 'green' : (invoice.status === 'Pending' ? 'yellow' : 'red')} />
               </div>
             </div>
           </div>
-          <button onClick={onClose} style={{ position: "absolute", top: 20, right: 20, background: "none", border: "none", cursor: "pointer", fontSize: 24, color: dark ? "#fff" : "#000", opacity: 0.5 }}>×</button>
+          <button onClick={onClose} style={{ position: "absolute", top: 20, right: 20, background: "none", border: "none", cursor: "pointer", fontSize: 24, color: "var(--text-primary)", opacity: 0.5 }}>×</button>
         </div>
 
         <div style={bodyStyle}>
           {/* Member & Group Info */}
           <div style={gridRow}>
             <div style={{
-              background: dark ? "rgba(255,255,255,0.03)" : "#fff",
+              background: "var(--bg-card)",
               padding: 20,
               borderRadius: 16,
               border: "2px solid #2563eb",
               boxShadow: "0 2px 8px rgba(37, 99, 235, 0.08)",
             }}>
-              <div style={sectionHeader}>👤 Member Details</div>
+              <div style={sectionHeader}><HiUser size={14} /> Member Details</div>
               {dataItem("NAME", invoice.memberName, true)}
               {dataItem("MEMBER ID", invoice.memberId)}
               {dataItem("MOBILE", invoice.memberMobile)}
             </div>
             <div style={{
-              background: dark ? "rgba(255,255,255,0.03)" : "#fff",
+              background: "var(--bg-card)",
               padding: 20,
               borderRadius: 16,
               border: "2px solid #ea580c",
               boxShadow: "0 2px 8px rgba(234, 88, 12, 0.08)",
             }}>
-              <div style={sectionHeader}>📦 Chit Group & Scheme</div>
+              <div style={sectionHeader}><HiCube size={14} /> Chit Group & Scheme</div>
               {dataItem("GROUP NAME", invoice.chitGroup, true)}
               {dataItem("SCHEME NAME", invoice.chitName)}
               {dataItem("DATE", new Date(invoice.date).toLocaleDateString())}
@@ -188,7 +238,7 @@ export function InvoiceModal({ invoice, dark, onClose, onPaymentSuccess, toast }
 
           {/* Amount Calculation */}
           <div style={{ marginBottom: 32 }}>
-            <div style={sectionHeader}>💰 Payment Summary</div>
+            <div style={sectionHeader}><HiCurrencyRupee size={14} /> Payment Summary</div>
             <div style={{
               display: "grid",
               gap: 1,
@@ -196,15 +246,15 @@ export function InvoiceModal({ invoice, dark, onClose, onPaymentSuccess, toast }
               borderRadius: 12,
               overflow: "hidden",
             }}>
-              <div style={{ display: "flex", justifyContent: "space-between", padding: "12px 16px", background: dark ? "rgba(255,255,255,0.05)" : "#f9fafb" }}>
+              <div style={{ display: "flex", justifyContent: "space-between", padding: "12px 16px", background: "var(--bg-card-alt)" }}>
                 <span style={{ fontSize: 14 }}>Installment Number:</span>
                 <span style={{ fontSize: 14, fontWeight: 700 }}>{invoice.currentMonth || 1}</span>
               </div>
-              <div style={{ display: "flex", justifyContent: "space-between", padding: "12px 16px", background: dark ? "rgba(255,255,255,0.05)" : "#fff" }}>
+              <div style={{ display: "flex", justifyContent: "space-between", padding: "12px 16px", background: "var(--bg-card)" }}>
                 <span style={{ fontSize: 14 }}>Monthly Installment Amount:</span>
                 <span style={{ fontSize: 14, fontWeight: 700 }}>₹{invoice.installmentAmount?.toLocaleString()}</span>
               </div>
-              <div style={{ display: "flex", justifyContent: "space-between", padding: "12px 16px", background: dark ? "rgba(255,255,255,0.05)" : "#f9fafb" }}>
+              <div style={{ display: "flex", justifyContent: "space-between", padding: "12px 16px", background: "var(--bg-card-alt)" }}>
                 <span style={{ fontSize: 14 }}>Previous Due:</span>
                 <span style={{ fontSize: 14, fontWeight: 700, color: "#ef4444" }}>₹{invoice.previousDue?.toLocaleString() || '0'}</span>
               </div>
@@ -222,8 +272,14 @@ export function InvoiceModal({ invoice, dark, onClose, onPaymentSuccess, toast }
           </div>
 
           {/* Payment Methods */}
-          {invoice.status === 'Pending' && (
+          {(invoice.status === 'Pending' || invoice.status === 'Rejected') && (
             <div>
+              {invoice.status === 'Rejected' && (
+                <div style={{ background: "#fef2f2", padding: 16, borderRadius: 12, border: "1px solid #fecaca", marginBottom: 20 }}>
+                  <div style={{ fontSize: 14, fontWeight: 700, color: "#dc2626", marginBottom: 4 }}>⚠ Payment Rejected</div>
+                  <div style={{ fontSize: 13, color: "#991b1b" }}>{invoice.paymentNote || 'Your previous payment was rejected. Please resubmit with correct proof.'}</div>
+                </div>
+              )}
               <div style={sectionHeader}>💳 Select Payment Method</div>
               <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(130px, 1fr))", gap: 12, marginBottom: 24 }}>
                 {['Cash', 'UPI', 'Bank Transfer', 'Online Payment'].map(method => (
@@ -233,9 +289,9 @@ export function InvoiceModal({ invoice, dark, onClose, onPaymentSuccess, toast }
                     style={{
                       padding: "16px 8px",
                       borderRadius: 12,
-                      border: paymentMethod === method ? "2px solid #2563eb" : dark ? "1px solid rgba(255,255,255,0.1)" : "1px solid #e5e7eb",
+                      border: paymentMethod === method ? "2px solid #2563eb" : "1px solid var(--border-color)",
                       background: paymentMethod === method ? "rgba(37, 99, 235, 0.15)" : "transparent",
-                      color: dark ? (paymentMethod === method ? "#fff" : "rgba(255,255,255,0.6)") : (paymentMethod === method ? "#2563eb" : "#4b5563"),
+                      color: paymentMethod === method ? "var(--text-primary)" : "var(--text-muted)",
                       cursor: "pointer",
                       textAlign: "center",
                       transition: "all 0.2s",
@@ -248,16 +304,16 @@ export function InvoiceModal({ invoice, dark, onClose, onPaymentSuccess, toast }
                 ))}
               </div>
 
-              <div style={{ background: dark ? "rgba(37, 99, 235, 0.05)" : "#f0f7ff", padding: 24, borderRadius: 16, border: "1px dashed #2563eb" }}>
+              <div style={{ background: "var(--bg-card-alt)", padding: 24, borderRadius: 16, border: "1px dashed #2563eb" }}>
                 {paymentMethod === 'UPI' && (
-                  <div style={{ display: "flex", gap: 24, alignItems: "center" }}>
+                  <div style={{ display: "flex", gap: 24, alignItems: "center", flexWrap: "wrap" }}>
                     <div style={{ background: "#fff", padding: 12, borderRadius: 12 }}>
                       <QRCodeCanvas value={`upi://pay?pa=${COMPANY.upiId || 'company@upi'}&pn=${COMPANY.name}&am=${invoice.totalPayable}&cu=INR`} size={140} level="H" />
                     </div>
-                    <div>
+                    <div style={{ flex: 1 }}>
                       <div style={{ fontSize: 16, fontWeight: 700, color: "#2563eb", marginBottom: 8 }}>Pay via UPI</div>
                       <div style={{ fontSize: 13, marginBottom: 16, opacity: 0.8 }}>Scan the QR code or use the ID below to pay via any UPI app like GPay, PhonePe, or Paytm.</div>
-                      <div style={{ background: dark ? "rgba(255,255,255,0.1)" : "rgba(37, 99, 235, 0.1)", padding: "8px 12px", borderRadius: 8, fontSize: 14, fontWeight: 700 }}>
+                      <div style={{ background: "var(--bg-card-alt)", padding: "8px 12px", borderRadius: 8, fontSize: 14, fontWeight: 700 }}>
                         UPI ID: {COMPANY.upiId || 'company@upi'}
                       </div>
                     </div>
@@ -276,7 +332,7 @@ export function InvoiceModal({ invoice, dark, onClose, onPaymentSuccess, toast }
                 {paymentMethod === 'Cash' && (
                   <div style={{ textAlign: "center", padding: "10px 0" }}>
                     <div style={{ fontSize: 15, fontWeight: 600, color: "#2563eb" }}>Cash Payment</div>
-                    <div style={{ fontSize: 13, marginTop: 8, opacity: 0.8 }}>Please pay the total amount at our office counter and collect your printed receipt.</div>
+                    <div style={{ fontSize: 13, marginTop: 8, opacity: 0.8 }}>Please pay the total amount at our office counter. Your payment will be confirmed by the admin after collection.</div>
                   </div>
                 )}
 
@@ -287,18 +343,70 @@ export function InvoiceModal({ invoice, dark, onClose, onPaymentSuccess, toast }
                   </div>
                 )}
 
-                {paymentMethod !== 'Cash' && (
+                {isDigital && (
                   <div style={{ marginTop: 24 }}>
-                    <Input label="Transaction ID / Reference Number" value={referenceNumber} onChange={setReferenceNumber} dark={dark} placeholder="Enter your payment reference ID" required />
+                    <Input label="Transaction ID / Reference Number *" value={referenceNumber} onChange={setReferenceNumber} placeholder="Enter your payment reference ID" required />
+                  </div>
+                )}
+
+                {isDigital && (
+                  <div style={{ marginTop: 16 }}>
+                    <div style={{ fontSize: 13, fontWeight: 600, color: "var(--text-secondary)", marginBottom: 6 }}>Upload Payment Screenshot / Proof *</div>
+                    <div
+                      onClick={() => fileRef.current?.click()}
+                      style={{
+                        border: "2px dashed var(--border-color)",
+                        borderRadius: 12,
+                        padding: 24,
+                        textAlign: "center",
+                        cursor: "pointer",
+                        background: proofPreview ? "var(--bg-card)" : "transparent"
+                      }}
+                    >
+                      {proofPreview ? (
+                        <div>
+                          <img src={proofPreview} alt="Proof" style={{ maxHeight: 200, maxWidth: "100%", borderRadius: 8, marginBottom: 8 }} />
+                          <div style={{ fontSize: 12, color: "#2563eb" }}>Click to change</div>
+                        </div>
+                      ) : (
+                        <div style={{ color: "var(--text-muted)" }}>
+                          <div style={{ fontSize: 28, marginBottom: 8 }}>📷</div>
+                          <div style={{ fontWeight: 600 }}>Tap to upload screenshot</div>
+                          <div style={{ fontSize: 11, marginTop: 4 }}>JPG, PNG, WEBP (max 5MB)</div>
+                        </div>
+                      )}
+                    </div>
+                    <input ref={fileRef} type="file" accept="image/*" onChange={handleFileSelect} style={{ display: "none" }} />
                   </div>
                 )}
               </div>
             </div>
           )}
 
+          {invoice.status === 'Proof Submitted' && (
+            <div style={{ background: "#fefce8", padding: 24, borderRadius: 16, border: "1px solid #eab308", textAlign: "center" }}>
+              <div style={{ fontSize: 40, marginBottom: 8 }}>⏳</div>
+              <div style={{ fontSize: 18, fontWeight: 800, color: "#854d0e" }}>AWAITING APPROVAL</div>
+              <div style={{ fontSize: 14, color: "#854d0e", opacity: 0.8, marginTop: 4 }}>Your payment proof has been submitted. Admin will review and confirm shortly.</div>
+              {invoice.paymentProof && (
+                <div style={{ marginTop: 16 }}>
+                  <img src={invoice.paymentProof} alt="Uploaded proof" style={{ maxHeight: 200, maxWidth: "100%", borderRadius: 8, border: "1px solid var(--border-color)" }} />
+                </div>
+              )}
+            </div>
+          )}
+
+          {invoice.status === 'Rejected' && (
+            <div style={{ background: "#fef2f2", padding: 24, borderRadius: 16, border: "1px solid #fecaca", textAlign: "center" }}>
+              <div style={{ fontSize: 40, marginBottom: 8 }}><HiXCircle size={40} /></div>
+              <div style={{ fontSize: 18, fontWeight: 800, color: "#991b1b" }}>PAYMENT REJECTED</div>
+              <div style={{ fontSize: 14, color: "#991b1b", opacity: 0.8, marginTop: 4 }}>{invoice.paymentNote || 'Your payment was not approved. Please resubmit with correct details.'}</div>
+            </div>
+          )}
+
           {invoice.status === 'Paid' && (
             <div style={{ background: "#dcfce7", padding: 24, borderRadius: 16, border: "1px solid #10b981", textAlign: "center" }}>
-              <div style={{ fontSize: 40, marginBottom: 8 }}>✅</div>
+              <div style={{ fontSize: 40, marginBottom: 8 }}><HiCheckCircle size={40} /></div>
               <div style={{ fontSize: 18, fontWeight: 800, color: "#065f46" }}>PAYMENT COMPLETED</div>
               <div style={{ fontSize: 14, color: "#065f46", opacity: 0.8, marginTop: 4 }}>This invoice was paid on {new Date(invoice.updatedAt || invoice.date).toLocaleDateString()}</div>
               <div style={{ marginTop: 20 }}>
@@ -309,10 +417,10 @@ export function InvoiceModal({ invoice, dark, onClose, onPaymentSuccess, toast }
         </div>
 
         {/* Footer */}
-        {invoice.status === 'Pending' ? (
+        {invoice.status === 'Pending' || invoice.status === 'Rejected' ? (
           <div style={footerStyle}>
-            <Btn label={processing ? "Confirming..." : "Confirm Payment"} onClick={handleConfirmPayment} primary disabled={processing} style={{ flex: 2, padding: "16px", borderRadius: 12, height: "unset" }} />
-            <Btn label="Pay Later" onClick={onClose} style={{ flex: 1, padding: "16px", borderRadius: 12, height: "unset" }} />
+            <Btn label={processing ? "Submitting..." : "Submit Payment"} onClick={handleConfirmPayment} primary disabled={processing} style={{ flex: 2, padding: "16px", borderRadius: 12, height: "unset" }} />
+            <Btn label="Cancel" onClick={onClose} style={{ flex: 1, padding: "16px", borderRadius: 12, height: "unset" }} />
           </div>
         ) : (
           <div style={footerStyle}>
