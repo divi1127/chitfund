@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { useAuth } from "../contexts/AuthContext";
 import { COMPANY } from "../utils/constants";
 import { loginUser } from "../utils/api";
+import { ArrowLeft } from "lucide-react";
 
 function ChangePasswordModal({ userId, token, onClose, onSuccess }) {
   const [currentPassword, setCurrentPassword] = useState("");
@@ -157,6 +158,9 @@ export function Login() {
               position: "absolute",
               left: 0,
               top: 0,
+              display: "flex",
+              alignItems: "center",
+              gap: 6,
               padding: "8px 12px",
               borderRadius: 8,
               border: "1px solid #d1d5db",
@@ -166,8 +170,11 @@ export function Login() {
               fontSize: 13,
               fontWeight: 500,
             }}
+            onMouseEnter={(e) => e.currentTarget.style.background = "#f9fafb"}
+            onMouseLeave={(e) => e.currentTarget.style.background = "#fff"}
           >
-            ← Back to Home
+            <ArrowLeft size={16} />
+            Home
           </button>
           <div style={{
             width: 64, height: 64, borderRadius: 14,
