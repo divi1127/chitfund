@@ -7,6 +7,7 @@ const userSchema = new mongoose.Schema({
   plainPassword: { type: String, default: '' },
   name: { type: String, required: true },
   email: { type: String, required: true, unique: true },
+  phone: { type: String },
   role: {
     type: String,
     enum: ['super_admin', 'sub_admin', 'user'],
@@ -14,8 +15,10 @@ const userSchema = new mongoose.Schema({
   },
   modules: [{ type: String }],
   permissions: [{ type: String }],
-  mustChangePassword: { type: Boolean, default: false },
+
   status: { type: String, enum: ['active', 'inactive'], default: 'active' },
+  branch: { type: String },
+  assignedBranch: { type: String },
   createdAt: { type: Date, default: Date.now },
   updatedAt: { type: Date, default: Date.now }
 });
@@ -25,23 +28,19 @@ userSchema.pre('save', async function (next) {
   try {
     const salt = await bcrypt.genSalt(10);
     this.password = await bcrypt.hash(this.password, salt);
-    console.log(`✅ User: Password hashed for ${this.userId}`);
     next();
   } catch (error) {
-    console.error(`❌ User: Error hashing password for ${this.userId}:`, error.message);
     next(error);
   }
 });
 
-userSchema.methods.comparePassword = async function (candidatePassword) {
-  try {
-    const isMatch = await bcrypt.compare(candidatePassword, this.password);
-    console.log(`✅ User: Password comparison for ${this.userId}: ${isMatch ? 'MATCH' : 'MISMATCH'}`);
-    return isMatch;
-  } catch (error) {
-    console.error(`❌ User: Error comparing password for ${this.userId}:`, error.message);
-    return false;
+userSchema.pre('findOneAndUpdate', async function (next) {
+  const update = this.getUpdate();
+  if (update.password) {
+    const salt = await bcrypt.genSalt(10);
+    update.password = await bcrypt.hash(update.password, salt);
   }
-};
+  next();
+});
 
 export default mongoose.model('User', userSchema);

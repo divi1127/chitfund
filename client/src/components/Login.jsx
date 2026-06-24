@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useAuth } from "../contexts/AuthContext";
 import { COMPANY } from "../utils/constants";
+import { loginUser } from "../utils/api";
 
 function ChangePasswordModal({ userId, token, onClose, onSuccess }) {
   const [currentPassword, setCurrentPassword] = useState("");
@@ -114,26 +115,8 @@ export function Login() {
     setLoading(true);
 
     try {
-      const response = await fetch("/api/auth/login", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ userId: userId.trim(), password: password.trim() })
-      });
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.message || "Login failed");
-      }
-
-      if (data.user.mustChangePassword) {
-        setPendingToken(data.user.token);
-        setPendingUser(data.user);
-        setShowChangePw(true);
-        return;
-      }
-
-      login(data.user, data.user.token);
+      const data = await loginUser(userId.trim(), password.trim());
+      login(data.user);
     } catch (err) {
       setError(err.message);
     } finally {
@@ -188,9 +171,21 @@ export function Login() {
             <label style={{ display: "block", fontSize: 13, fontWeight: 600, color: "#374151", marginBottom: 8 }}>
               User ID
             </label>
-            <input type="text" value={userId} onChange={(e) => setUserId(e.target.value)}
-              placeholder="Enter your User ID" required
-              style={{ width: "100%", padding: "12px 16px", border: "1px solid #d1d5db", borderRadius: 10, fontSize: 14, boxSizing: "border-box", outline: "none" }}
+            <input
+              type="text"
+              value={userId}
+              onChange={(e) => setUserId(e.target.value)}
+              placeholder="Enter your User ID"
+              required
+              style={{
+                width: "100%",
+                padding: "12px 16px",
+                border: "1px solid #d1d5db",
+                borderRadius: 10,
+                fontSize: 14,
+                boxSizing: "border-box",
+                outline: "none"
+              }}
               onFocus={(e) => e.target.style.borderColor = "#2563eb"}
               onBlur={(e) => e.target.style.borderColor = "#d1d5db"} />
           </div>
@@ -199,9 +194,21 @@ export function Login() {
             <label style={{ display: "block", fontSize: 13, fontWeight: 600, color: "#374151", marginBottom: 8 }}>
               Password
             </label>
-            <input type="password" value={password} onChange={(e) => setPassword(e.target.value)}
-              placeholder="Enter your Password" required
-              style={{ width: "100%", padding: "12px 16px", border: "1px solid #d1d5db", borderRadius: 10, fontSize: 14, boxSizing: "border-box", outline: "none" }}
+            <input
+              type="password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              placeholder="Enter your Password"
+              required
+              style={{
+                width: "100%",
+                padding: "12px 16px",
+                border: "1px solid #d1d5db",
+                borderRadius: 10,
+                fontSize: 14,
+                boxSizing: "border-box",
+                outline: "none"
+              }}
               onFocus={(e) => e.target.style.borderColor = "#2563eb"}
               onBlur={(e) => e.target.style.borderColor = "#d1d5db"} />
           </div>
@@ -225,8 +232,10 @@ export function Login() {
         </form>
 
         <div style={{ marginTop: 24, borderTop: "1px solid #f3f4f6", paddingTop: 20 }}>
-          <p style={{ fontSize: 11, color: "#9ca3af", textAlign: "center", marginBottom: 10 }}>Quick Login</p>
-          <div style={{ display: "flex", gap: 8 }}>
+          <p style={{ fontSize: 11, color: "#9ca3af", textAlign: "center", marginBottom: 10 }}>
+            Quick Login (Development)
+          </p>
+          <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
             {[
               { label: "Super Admin", id: "ADMIN001", pw: "admin123", color: "#2563eb" },
               { label: "Sub Admin",   id: "SUB001",   pw: "sub123",   color: "#7c3aed" },
@@ -235,10 +244,18 @@ export function Login() {
               <button key={acc.id} type="button"
                 onClick={() => { setUserId(acc.id); setPassword(acc.pw); setError(""); }}
                 style={{
-                  flex: 1, padding: "8px 4px", borderRadius: 8,
-                  border: `1px solid ${acc.color}22`, background: `${acc.color}0d`,
-                  color: acc.color, fontSize: 11, fontWeight: 600, cursor: "pointer"
-                }}>
+                  flex: 1,
+                  padding: "8px 4px",
+                  borderRadius: 8,
+                  border: `1px solid ${acc.color}22`,
+                  background: `${acc.color}0d`,
+                  color: acc.color,
+                  fontSize: 11,
+                  fontWeight: 600,
+                  cursor: "pointer",
+                  minWidth: 0,
+                }}
+              >
                 {acc.label}
               </button>
             ))}

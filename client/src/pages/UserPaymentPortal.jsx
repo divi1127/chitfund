@@ -83,8 +83,7 @@ export function UserPaymentPortal({ toast }) {
       const paymentData = {
         ...selectedInvoice,
         amountPaid: parseFloat(form.amount),
-        paymentMethod: form.paymentMethod,
-        referenceNumber: form.referenceNumber || '',
+
         balance: selectedInvoice.balance - parseFloat(form.amount),
         status: parseFloat(form.amount) >= selectedInvoice.balance ? 'Paid' : 'Partially Paid',
         remarks: `Online payment via user portal - ${form.paymentMethod}`

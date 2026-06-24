@@ -1,10 +1,21 @@
-import { createContext, useContext, useState, useEffect } from "react";
+import { createContext, useContext, useState, useEffect, useCallback } from "react";
 
 const AuthContext = createContext(null);
 
-function isValidJwt(t) {
-  return t && t !== "null" && t !== "undefined" && t.includes(".");
-}
+const ROLE_PERMISSIONS = {
+  super_admin: {
+    navItems: ["dashboard", "members", "schemes", "groups", "collections", "billing", "auctions", "prizes", "accounting", "reports", "employees", "branches", "notifications", "settings", "profile", "enquiries", "user-management", "audit-logs", "kyc"],
+    permissions: ["create", "edit", "delete", "view", "approve", "reject", "configure", "export"],
+  },
+  sub_admin: {
+    navItems: ["dashboard", "members", "schemes", "groups", "collections", "billing", "auctions", "reports", "notifications", "profile", "kyc", "enquiries"],
+    permissions: ["create", "edit", "view"],
+  },
+  user: {
+    navItems: ["dashboard", "profile", "payments", "notifications", "enquiries"],
+    permissions: ["view"],
+  },
+};
 
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
@@ -13,13 +24,13 @@ export function AuthProvider({ children }) {
 
   useEffect(() => {
     const storedUser = localStorage.getItem("user");
-    const storedToken = localStorage.getItem("token");
-    if (storedUser && isValidJwt(storedToken)) {
-      setUser(JSON.parse(storedUser));
-      setToken(storedToken);
-    } else {
-      localStorage.removeItem("user");
-      localStorage.removeItem("token");
+    if (storedUser) {
+      try {
+        const parsed = JSON.parse(storedUser);
+        setUser(parsed);
+      } catch {
+        localStorage.removeItem("user");
+      }
     }
     setLoading(false);
   }, []);
@@ -31,36 +42,38 @@ export function AuthProvider({ children }) {
     localStorage.setItem("token", tokenValue);
   };
 
-  const logout = () => {
+  const logout = useCallback(() => {
     setUser(null);
     setToken(null);
     localStorage.removeItem("user");
-    localStorage.removeItem("token");
-  };
+    window.location.href = "/login";
+  }, []);
 
-  const hasPermission = (permission) => {
+  const hasPermission = useCallback((permission) => {
     if (!user) return false;
     if (user.role === "super_admin") return true;
     return user.permissions?.includes(permission) || false;
-  };
+  }, [user]);
 
-  const getAuthHeaders = () => {
-    if (!token) return {};
-    return { Authorization: `Bearer ${token}` };
-  };
-
-  const hasModuleAccess = (moduleId) => {
+  const hasModuleAccess = useCallback((moduleId) => {
     if (!user) return false;
+    const roleConfig = ROLE_PERMISSIONS[user.role];
+    if (!roleConfig) return false;
     if (user.role === "super_admin") {
-      if (moduleId === "payments" || moduleId === "employees") return false;
-      return true;
+      return roleConfig.navItems.includes(moduleId);
     }
-    if (user.role === "sub_admin") return true;
-    return user.modules?.includes(moduleId) || false;
-  };
+    return roleConfig.navItems.includes(moduleId) || user.modules?.includes(moduleId) || false;
+  }, [user]);
+
+  const getDashboardForRole = useCallback(() => {
+    if (!user) return null;
+    return user.role;
+  }, [user]);
 
   return (
-    <AuthContext.Provider value={{ user, token, loading, login, logout, hasPermission, hasModuleAccess, getAuthHeaders }}>
+    <AuthContext.Provider value={{
+      user, loading, login, logout, hasPermission, hasModuleAccess, getDashboardForRole
+    }}>
       {children}
     </AuthContext.Provider>
   );

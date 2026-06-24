@@ -152,6 +152,144 @@ router.put('/:id', authenticate, authorize('super_admin'), async (req, res) => {
   }
 });
 
+// ── Member self-payment (user portal) ──────────────────────────────────────
+router.post('/member-payment', authenticate, async (req, res) => {
+  try {
+    const data = req.body;
+    const receiptNo = await generateReceiptNo();
+    const member = await Member.findOne({ id: data.memberId });
+    const group = await Group.findOne({ id: data.groupId });
+    const scheme = group ? await Scheme.findOne({ id: group.schemeId }) : null;
+
+    // Prevent duplicate payment for same month
+    const existing = await Collection.findOne({
+      memberId: data.memberId,
+      groupId: data.groupId,
+      installment: Number(data.installment),
+      status: { $in: ['Paid', 'Pending'] }
+    });
+    if (existing) {
+      return res.status(400).json({ message: `Month ${data.installment} already has a ${existing.status.toLowerCase()} payment.` });
+    }
+
+    const collection = await Collection.create({
+      id: 'C' + Date.now().toString().slice(-8),
+      memberId: data.memberId,
+      groupId: data.groupId,
+      amount: Number(data.amount),
+      installment: Number(data.installment),
+      mode: data.mode,
+      date: data.date || new Date(),
+      status: data.status || 'Pending',
+      receiptNo,
+      upiRef: data.upiRef || '',
+      upiProof: data.upiProof || '',
+    });
+
+    // Auto-create invoice only for UPI (Paid) payments
+    if (data.status === 'Paid') {
+      const invoiceNo = 'INV' + new Date().getFullYear() + String(Date.now()).slice(-5);
+      await Invoice.create({
+        invoiceNumber: invoiceNo,
+        receiptNumber: receiptNo,
+        date: data.date || new Date(),
+        time: new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' }),
+        branch: 'Main Branch',
+        collectedBy: member?.name || 'Self',
+        memberId: member?.memberId || data.memberId,
+        memberName: member?.name || '',
+        memberMobile: member?.phone || '',
+        memberAddress: member?.address || '',
+        memberAadhar: member?.aadhaar || '',
+        chitName: scheme?.name || '',
+        chitGroup: group?.name || '',
+        chitNumber: `CHIT-${scheme?.amount || ''}-001`,
+        totalChitValue: scheme?.amount || 0,
+        monthlyAmount: Number(data.amount),
+        duration: scheme?.duration || 0,
+        currentMonth: Number(data.installment),
+        dueDate: data.date || new Date(),
+        installmentAmount: Number(data.amount),
+        lateFine: 0, discount: 0, previousDue: 0,
+        totalPayable: Number(data.amount),
+        amountPaid: Number(data.amount),
+        balance: 0,
+        paymentMethod: data.mode,
+        referenceNumber: data.upiRef || '',
+        paidInstallments: Number(data.installment),
+        remainingInstallments: (scheme?.duration || 0) - Number(data.installment),
+        totalPaid: Number(data.amount),
+        remainingAmount: (scheme?.amount || 0) - Number(data.amount),
+        status: 'Paid',
+        remarks: 'Self-payment via UPI'
+      });
+      console.log(`✅ Member self-payment: ${receiptNo} ₹${data.amount} Month ${data.installment} [Paid]`);
+    } else {
+      console.log(`⏳ Cash payment pending: ${receiptNo} ₹${data.amount} Month ${data.installment} [Pending]`);
+    }
+
+    res.status(201).json(collection);
+  } catch (error) {
+    console.error('❌ member-payment error:', error.message);
+    res.status(400).json({ message: error.message });
+  }
+});
+
+// ── Admin approve cash payment ──────────────────────────────────────────────
+router.put('/:id/approve', authenticate, authorize('super_admin', 'sub_admin'), async (req, res) => {
+  try {
+    const collection = await Collection.findOneAndUpdate(
+      { id: req.params.id, status: 'Pending' },
+      { status: 'Paid' },
+      { new: true }
+    );
+    if (!collection) return res.status(404).json({ message: 'Pending collection not found' });
+
+    const receiptNo = collection.receiptNo;
+    const member = await Member.findOne({ id: collection.memberId });
+    const group = await Group.findOne({ id: collection.groupId });
+    const scheme = group ? await Scheme.findOne({ id: group.schemeId }) : null;
+    const invoiceNo = 'INV' + new Date().getFullYear() + String(Date.now()).slice(-5);
+
+    await Invoice.create({
+      invoiceNumber: invoiceNo,
+      receiptNumber: receiptNo,
+      date: collection.date,
+      time: new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' }),
+      branch: 'Main Branch',
+      collectedBy: req.user.name,
+      memberId: member?.memberId || collection.memberId,
+      memberName: member?.name || '',
+      memberMobile: member?.phone || '',
+      memberAddress: member?.address || '',
+      memberAadhar: member?.aadhaar || '',
+      chitName: scheme?.name || '',
+      chitGroup: group?.name || '',
+      totalChitValue: scheme?.amount || 0,
+      monthlyAmount: collection.amount,
+      duration: scheme?.duration || 0,
+      currentMonth: collection.installment,
+      installmentAmount: collection.amount,
+      lateFine: 0, discount: 0, previousDue: 0,
+      totalPayable: collection.amount,
+      amountPaid: collection.amount,
+      balance: 0,
+      paymentMethod: 'Cash',
+      remainingInstallments: (scheme?.duration || 0) - collection.installment,
+      totalPaid: collection.amount,
+      remainingAmount: (scheme?.amount || 0) - collection.amount,
+      status: 'Paid',
+      remarks: 'Cash payment approved by admin'
+    });
+
+    console.log(`✅ Cash approved: ${receiptNo} by ${req.user.userId}`);
+    res.json(collection);
+  } catch (error) {
+    console.error('❌ approve error:', error.message);
+    res.status(500).json({ message: error.message });
+  }
+});
+
 router.delete('/:id', authenticate, authorize('super_admin'), async (req, res) => {
   try {
     const collection = await Collection.findOneAndDelete({ id: req.params.id });

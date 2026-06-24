@@ -9,7 +9,7 @@ import { Table } from "../components/Table";
 import { Badge } from "../components/Badge";
 import { Btn } from "../components/Btn";
 import { fmt, today } from "../utils/helpers";
-import { FiDollarSign, FiUsers, FiFolder, FiFileText, FiBarChart2, FiTag, FiClock, FiTrendingUp } from "react-icons/fi";
+import { FiDollarSign, FiUsers, FiFolder, FiFileText, FiBarChart2, FiTag, FiClock, FiTrendingUp, FiMessageSquare } from "react-icons/fi";
 import { useAuth } from "../contexts/AuthContext";
 import { COMPANY, ROUTES } from "../utils/constants";
 import { InvoiceModal } from "../components/InvoiceModal";
@@ -23,6 +23,7 @@ export function Dashboard({ toast }) {
   const { data: auctions } = useData('/auctions');
   const { data: schemes } = useData('/schemes');
   const { data: invoices, loading: invoicesLoading } = useData('/invoices');
+  const { data: enquiries } = useData('/enquiries');
   const [showInvoicePopup, setShowInvoicePopup] = useState(false);
   const [selectedInvoice, setSelectedInvoice] = useState(null);
 
@@ -316,14 +317,15 @@ export function Dashboard({ toast }) {
       <SectionHeader title="Dashboard" subtitle={"Good morning! Here's what's happening today, " + today()}  />
 
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(180px,1fr))", gap: 16, marginBottom: 28 }}>
-        <StatCard label="Monthly Collections" value={`₹${monthlyCollectionsAmount.toLocaleString()}`} sub={`Current month (${new Date().toLocaleString('default', { month: 'long' })})`} color="#10b981"  icon={<FiDollarSign size={22} />} />
-        <StatCard label="Total Members" value={members.length} sub="Active members" color="#d97706"  icon={<FiUsers size={22} />} />
-        <StatCard label="Total Groups" value={groups.length} sub="Running groups" color="#16a34a"  icon={<FiFolder size={22} />} />
-        <StatCard label="Total Schemes" value={schemes.length} sub="Available schemes" color="#2563eb"  icon={<FiFileText size={22} />} />
-        <StatCard label="Total Collections" value={collections.filter(c => c.status === "Paid").length} sub="Paid collections" color="#8b5cf6"  icon={<FiBarChart2 size={22} />} />
-        <StatCard label="Auctions" value={auctions.length} sub="Total auctions" color="#f59e0b"  icon={<FiTag size={22} />} />
-        <StatCard label="Auctions Pending" value={auctions.filter(a => a.status === "Scheduled").length} sub="Scheduled auctions" color="#dc2626"  icon={<FiClock size={22} />} />
-        <StatCard label="Total Amount" value={fmt(collections.reduce((sum, c) => sum + (c.amount || 0), 0))} sub="Collected amount" color="#dc2626"  icon={<FiTrendingUp size={22} />} />
+        <StatCard label="Monthly Collections" value={`₹${monthlyCollectionsAmount.toLocaleString()}`} sub={`Current month (${new Date().toLocaleString('default', { month: 'long' })})`} color="#10b981" dark={dark} icon={<FiDollarSign size={22} />} />
+        <StatCard label="Total Members" value={members.length} sub="Active members" color="#d97706" dark={dark} icon={<FiUsers size={22} />} />
+        <StatCard label="Total Enquiries" value={enquiries?.length || 0} sub="Website leads" color="#0ea5e9" dark={dark} icon={<FiMessageSquare size={22} />} />
+        <StatCard label="Total Groups" value={groups.length} sub="Running groups" color="#16a34a" dark={dark} icon={<FiFolder size={22} />} />
+        <StatCard label="Total Schemes" value={schemes.length} sub="Available schemes" color="#2563eb" dark={dark} icon={<FiFileText size={22} />} />
+        <StatCard label="Total Collections" value={collections.length} sub="All collections" color="#8b5cf6" dark={dark} icon={<FiBarChart2 size={22} />} />
+        <StatCard label="Auctions" value={auctions.length} sub="Total auctions" color="#f59e0b" dark={dark} icon={<FiTag size={22} />} />
+        <StatCard label="Auctions Pending" value={auctions.filter(a => a.status === "Scheduled").length} sub="Scheduled auctions" color="#dc2626" dark={dark} icon={<FiClock size={22} />} />
+        <StatCard label="Total Amount" value={fmt(collections.reduce((sum, c) => sum + (c.amount || 0), 0))} sub="Collected amount" color="#dc2626" dark={dark} icon={<FiTrendingUp size={22} />} />
       </div>
 
       <div style={{ display: "grid", gridTemplateColumns: "2fr 1fr", gap: 20, marginBottom: 20 }}>

@@ -9,12 +9,21 @@ import { Btn } from "../components/Btn";
 import { Input } from "../components/Input";
 import { IconBtn } from "../components/IconBtn";
 import { HiPencil, HiTrash, HiUserGroup } from "react-icons/hi2";
+import { useAuth } from "../contexts/AuthContext";
 
 export function Groups({ toast }) {
+  const { user } = useAuth();
   const { data: groups, loading } = useData('/groups');
   const [refresh, setRefresh] = useState(0);
   const { data: schemes } = useData('/schemes');
   const { data: members } = useData('/members');
+
+  const isUser = user?.role === 'user';
+  const canEdit = user?.role === 'super_admin' || user?.role === 'sub_admin';
+  // user sees only their groups
+  const userMember = isUser ? members.find(m => m.memberId === user.userId || m.email === user.email) : null;
+  const userGroupIds = userMember?.groups || [];
+  const visibleGroups = isUser ? groups.filter(g => userGroupIds.includes(g.id)) : groups;
   const [showForm, setShowForm] = useState(false);
   const [showMemberModal, setShowMemberModal] = useState(false);
   const [editingGroup, setEditingGroup] = useState(null);
@@ -150,10 +159,13 @@ export function Groups({ toast }) {
 
   return (
     <div>
-      <SectionHeader title="Group Management" subtitle="Track all active chit groups"
-        actions={[<Btn key="a" label="+ New Group" onClick={() => { setEditingGroup(null); setForm({ name: "", schemeId: "", startDate: "", agentId: "" }); setShowForm(true); }} primary />]} />
+      <SectionHeader
+        title="Group Management"
+        subtitle={isUser ? "Your enrolled group details" : "Track all active chit groups"}
+        actions={canEdit ? [<Btn key="a" label="+ New Group" onClick={() => { setEditingGroup(null); setForm({ name: "", schemeId: "", startDate: "", agentId: "" }); setShowForm(true); }} primary />] : []}
+      />
 
-      {showForm && (
+      {showForm && canEdit && (
         <div style={{ background: "var(--bg-card-alt)", border: "1px solid var(--border-color)", borderRadius: 12, padding: 24, marginBottom: 24 }}>
           <div style={{ fontSize: 15, fontWeight: 600, color: "var(--text-primary)", marginBottom: 16 }}>{editingGroup ? "Edit Group" : "New Group"}</div>
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(220px,1fr))", gap: "0 20px" }}>
@@ -207,18 +219,20 @@ export function Groups({ toast }) {
         </div>
       )}
 
-      <Table cols={["Group", "Scheme", "Start Date", "Installment", "Members (Limit)", "Status", "Actions"]}
-        rows={groups.map(g => {
+      <Table cols={["Group", "Scheme", "Start Date", "Duration", "Members (Limit)", "Status", ...(canEdit ? ["Actions"] : [])]}
+        rows={visibleGroups.map(g => {
           const s = schemeById(g.schemeId);
           const memberCount = g.members ? g.members.length : 0;
           const memberLimit = s?.members || 20;
           return [g.name, s?.name, g.startDate?.split('T')[0], s?.duration ? s.duration + " months" : "-", `${memberCount}/${memberLimit}`,
             <Badge key={g.id} text={g.status} color="green" />,
-            <div key={g.id} style={{ display: "inline-flex", gap: 6 }}>
-              <IconBtn icon={<HiUserGroup size={14} />} onClick={() => handleManageMembers(g)} color="#d97706" title="Members" />
-              <IconBtn icon={<HiPencil size={14} />} onClick={() => handleEdit(g)} color="#2563eb" title="Edit" />
-              <IconBtn icon={<HiTrash size={14} />} onClick={() => handleDelete(g.id)} color="#dc2626" title="Delete" />
-            </div>
+            canEdit ? (
+              <div key={g.id} style={{ display: "inline-flex", gap: 6 }}>
+                <IconBtn icon={<HiUserGroup size={14} />} onClick={() => handleManageMembers(g)} color="#d97706" title="Members" />
+                <IconBtn icon={<HiPencil size={14} />} onClick={() => handleEdit(g)} color="#2563eb" title="Edit" />
+                <IconBtn icon={<HiTrash size={14} />} onClick={() => handleDelete(g.id)} color="#dc2626" title="Delete" />
+              </div>
+            ) : null
           ];
         })} />
     </div>

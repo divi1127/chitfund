@@ -10,6 +10,8 @@ const collectionSchema = new mongoose.Schema({
   mode: { type: String, enum: ['Cash', 'Online', 'Cheque', 'DD', 'UPI', 'Bank Transfer'], required: true },
   status: { type: String, enum: ['Paid', 'Pending'], default: 'Pending' },
   receiptNo: { type: String },
+  upiRef: { type: String, default: '' },
+  upiProof: { type: String, default: '' },
   cumulativeAmount: { type: Number, default: 0 },
   totalSchemeValue: { type: Number, default: 0 }
 }, { timestamps: true });
