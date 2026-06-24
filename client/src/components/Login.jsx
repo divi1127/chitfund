@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { useAuth } from "../contexts/AuthContext";
 import { COMPANY } from "../utils/constants";
 import { loginUser } from "../utils/api";
@@ -100,6 +101,7 @@ function ChangePasswordModal({ userId, token, onClose, onSuccess }) {
 }
 
 export function Login() {
+  const navigate = useNavigate();
   const [userId, setUserId] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
@@ -148,7 +150,25 @@ export function Login() {
         maxWidth: 420,
         boxShadow: "0 20px 60px rgba(0,0,0,0.3)"
       }}>
-        <div style={{ textAlign: "center", marginBottom: 32 }}>
+        <div style={{ textAlign: "center", marginBottom: 32, position: "relative" }}>
+          <button
+            onClick={() => navigate("/")}
+            style={{
+              position: "absolute",
+              left: 0,
+              top: 0,
+              padding: "8px 12px",
+              borderRadius: 8,
+              border: "1px solid #d1d5db",
+              background: "#fff",
+              color: "#374151",
+              cursor: "pointer",
+              fontSize: 13,
+              fontWeight: 500,
+            }}
+          >
+            ← Back to Home
+          </button>
           <div style={{
             width: 64, height: 64, borderRadius: 14,
             background: "linear-gradient(135deg, #2563eb 0%, #1e40af 100%)",
