@@ -30,7 +30,20 @@ const app = express();
 const PORT = process.env.PORT || 5000;
 
 app.use(cors({
-  origin: process.env.CORS_ORIGIN || 'http://localhost:3001'
+  origin: function (origin, callback) {
+    const allowed = process.env.CORS_ORIGIN || 'http://localhost:3001';
+    const origins = allowed.split(',').map(s => s.trim().replace(/\/$/, ''));
+    if (!origin) return callback(null, true);
+    const normalizedOrigin = origin.replace(/\/$/, '');
+    if (origins.includes(normalizedOrigin) || normalizedOrigin.endsWith('.vercel.app')) {
+      callback(null, normalizedOrigin);
+    } else {
+      callback(new Error('Not allowed by CORS'));
+    }
+  },
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
 }));
 app.use(express.json({ limit: '50mb' }));
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
