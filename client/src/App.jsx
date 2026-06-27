@@ -146,14 +146,10 @@ function AppLayout() {
     hasModuleAccess(item.id)
   );
 
+  const sidebarW = collapsed ? 64 : 240;
+
   return (
-    <div
-      style={{
-        display: "flex",
-        height: "100vh",
-        background: dark ? "#0f172a" : "#f1f5f9",
-      }}
-    >
+    <div style={{ minHeight: "100vh", background: dark ? "#0f172a" : "#f1f5f9" }}>
 
       <Sidebar
         dark={dark}
@@ -167,24 +163,22 @@ function AppLayout() {
       <div
         className="app-main"
         style={{
-          flex: 1,
-          marginLeft: 0,
+          marginLeft: sidebarW,
           display: "flex",
           flexDirection: "column",
-          minHeight: 0,
+          minHeight: "100vh",
           transition: "margin-left .25s ease",
         }}
       >
         <style>{`
-          :root { --sidebar-width: ${collapsed ? '64px' : '240px'}; }
-          @media (min-width: 768px) {
-            .app-main { margin-left: var(--sidebar-width); }
-            .mobile-hamburger { display: none !important; }
-            .mobile-overlay { display: none !important; }
-          }
           @media (max-width: 767px) {
+            .app-main { margin-left: 0 !important; }
+            .mobile-hamburger { display: flex !important; }
             .desktop-user-name { display: none !important; }
-            .header-btn { padding: 6px 8px !important; }
+            .header-btn-text { display: none !important; }
+          }
+          @media (min-width: 768px) {
+            .mobile-hamburger { display: none !important; }
           }
           @media (min-width: 640px) {
             .main-content { padding: 24px !important; }
@@ -192,8 +186,9 @@ function AppLayout() {
           @media (min-width: 1024px) {
             .main-content { padding: 28px !important; }
           }
-          .d-grid { display: grid !important; gap: 20px; }
+          .d-grid { display: grid !important; gap: 16px; }
           @media (min-width: 768px) {
+            .d-grid { gap: 20px; }
             .d-grid-2 { grid-template-columns: 1fr 1fr !important; }
             .d-grid-2-1 { grid-template-columns: 2fr 1fr !important; }
           }
@@ -203,10 +198,11 @@ function AppLayout() {
           }
         `}</style>
         <header
+          className="app-header"
           style={{
             background: dark ? "rgba(255,255,255,.04)" : "#fff",
             borderBottom: dark ? "1px solid rgba(255,255,255,.08)" : "1px solid #e2e8f0",
-            padding: "14px 16px",
+            padding: "12px 16px",
             display: "flex",
             justifyContent: "space-between",
             alignItems: "center",
@@ -217,14 +213,14 @@ function AppLayout() {
             gap: 8,
           }}
         >
-          <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 10, minWidth: 0 }}>
             <button
               onClick={() => setMobileOpen(true)}
               className="mobile-hamburger"
               style={{
                 background: "none", border: "none", cursor: "pointer",
-                padding: 4, color: dark ? "#f1f5f9" : "#0f172a", fontSize: 20,
-                display: "flex", alignItems: "center",
+                padding: 4, color: dark ? "#f1f5f9" : "#0f172a",
+                display: "flex", alignItems: "center", flexShrink: 0,
               }}
             >
               <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
@@ -233,63 +229,45 @@ function AppLayout() {
                 <line x1="3" y1="18" x2="21" y2="18" />
               </svg>
             </button>
-            <div
-              style={{
-                fontSize: 18,
-                fontWeight: 700,
-                color: dark ? "#f1f5f9" : "#0f172a",
-              }}
-            >
+            <div style={{ fontSize: 16, fontWeight: 700, color: dark ? "#f1f5f9" : "#0f172a", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
               {COMPANY.name}
             </div>
           </div>
 
-          <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
-            <div className="desktop-user-name" style={{ fontSize: 13, color: dark ? "rgba(255,255,255,.5)" : "#64748b" }}>
+          <div style={{ display: "flex", gap: 6, alignItems: "center", flexShrink: 0 }}>
+            <div className="desktop-user-name" style={{ fontSize: 13, color: dark ? "rgba(255,255,255,.5)" : "#64748b", whiteSpace: "nowrap" }}>
               {user?.name}
               <span style={{ opacity: 0.5, marginLeft: 8 }}>
                 ({user?.role === "super_admin" ? "Super Admin" : user?.role === "sub_admin" ? "Sub Admin" : "User"})
               </span>
             </div>
 
-
             <button
               onClick={() => navigate("/notifications")}
               className="header-btn"
               style={{
                 position: "relative",
-                padding: "8px 12px",
+                padding: "8px 10px",
                 borderRadius: 8,
                 border: "1px solid " + (dark ? "rgba(255,255,255,.15)" : "#d1d5db"),
                 background: dark ? "rgba(255,255,255,.05)" : "#fff",
                 color: dark ? "#f3f4f6" : "#111",
                 cursor: "pointer",
-                fontSize: 16,
+                display: "flex", alignItems: "center", justifyContent: "center",
                 transition: "all 0.2s",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center"
               }}
             >
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke={dark ? "#f3f4f6" : "#374151"} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={dark ? "#f3f4f6" : "#374151"} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                 <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" />
                 <path d="M13.73 21a2 2 0 0 1-3.46 0" />
               </svg>
               {notificationCount > 0 && (
                 <span style={{
-                  position: "absolute",
-                  top: -4,
-                  right: -4,
-                  background: "#ef4444",
-                  color: "#fff",
-                  fontSize: 10,
-                  fontWeight: 700,
-                  borderRadius: "50%",
-                  width: 18,
-                  height: 18,
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
+                  position: "absolute", top: -4, right: -4,
+                  background: "#ef4444", color: "#fff",
+                  fontSize: 10, fontWeight: 700, borderRadius: "50%",
+                  width: 17, height: 17,
+                  display: "flex", alignItems: "center", justifyContent: "center",
                   boxShadow: "0 2px 4px rgba(0,0,0,0.2)"
                 }}>
                   {notificationCount > 9 ? "9+" : notificationCount}
@@ -301,39 +279,43 @@ function AppLayout() {
               onClick={toggleTheme}
               className="header-btn"
               style={{
-                padding: "8px 14px",
+                padding: "8px 10px",
                 borderRadius: 8,
                 cursor: "pointer",
                 border: "1px solid " + (dark ? "rgba(255,255,255,.15)" : "#d1d5db"),
                 background: dark ? "rgba(255,255,255,.05)" : "#fff",
                 color: dark ? "#f3f4f6" : "#111",
-                fontSize: 12,
+                fontSize: 12, display: "flex", alignItems: "center", gap: 4,
               }}
             >
-              {dark ? "Light" : "Dark"}
+              {dark
+                ? <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
+                : <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+              }
+              <span className="header-btn-text">{dark ? "Light" : "Dark"}</span>
             </button>
 
             <button
               onClick={logout}
               className="header-btn"
               style={{
-                padding: "8px 16px",
+                padding: "8px 12px",
                 borderRadius: 8,
                 border: "1px solid #ef4444",
                 background: "transparent",
                 color: "#ef4444",
                 cursor: "pointer",
-                fontSize: 12,
-                fontWeight: 600,
-
+                fontSize: 12, fontWeight: 600,
+                display: "flex", alignItems: "center", gap: 4,
               }}
             >
-              Logout
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+              <span className="header-btn-text">Logout</span>
             </button>
           </div>
         </header>
 
-        <main style={{ flex: 1, overflowY: "auto", padding: "16px" }} className="main-content">
+        <main style={{ flex: 1, overflowY: "auto", padding: "16px", minHeight: 0 }} className="main-content">
           <Routes>
             <Route path="/dashboard" element={<RoleBasedDashboard dark={dark} toast={{ add }} />} />
 
