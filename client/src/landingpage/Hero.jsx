@@ -70,7 +70,7 @@ export const Hero = ({ onNavigate }) => {
   }, [isHovered, next]);
 
   return (
-    <section id="home" className="relative min-h-screen flex items-center pt-20 pb-12 overflow-hidden bg-white" style={{ height: '100vh' }}>
+    <section id="home" className="relative flex items-center pt-20 pb-16 overflow-hidden bg-white" style={{ minHeight: '100svh' }}>
       <div className="absolute inset-0 pointer-events-none" />
 
       <div className="section-container relative z-10 w-full">
@@ -152,20 +152,25 @@ export const Hero = ({ onNavigate }) => {
               />
             </motion.div>
           ))}
-          <div className="absolute inset-0 bg-gradient-to-r from-white/95 via-white/70 to-white/10" />
+          <div className="absolute inset-0 bg-gradient-to-b from-white/90 via-white/80 to-white/60 sm:bg-gradient-to-r sm:from-white/95 sm:via-white/70 sm:to-white/10" />
 
-          <div className="absolute bottom-8 right-8 flex items-center gap-2 z-20">
+          <div className="absolute bottom-5 left-1/2 -translate-x-1/2 sm:left-auto sm:translate-x-0 sm:right-8 sm:bottom-8 flex items-center gap-2.5 z-20">
             {slides.map((_, i) => (
               <button
                 key={i}
                 onClick={() => setCurrent(i)}
-                className={`rounded-full transition-all duration-300 ${
-                  i === current
-                    ? 'w-6 h-1.5 bg-premium-gold shadow-sm'
-                    : 'w-1.5 h-1.5 bg-white/50 hover:bg-white/80'
-                }`}
                 aria-label={`Go to slide ${i + 1}`}
-              />
+                className="relative flex items-center justify-center p-1.5"
+                style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '6px' }}
+              >
+                <span
+                  className={`block rounded-full transition-all duration-300 ${
+                    i === current
+                      ? 'w-6 h-2 bg-premium-gold shadow-sm'
+                      : 'w-2 h-2 bg-white/60 hover:bg-white/90'
+                  }`}
+                />
+              </button>
             ))}
           </div>
         </motion.div>

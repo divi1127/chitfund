@@ -17,10 +17,8 @@ export const Navbar = ({ onNavigate }) => {
   const [isScrolled, setIsScrolled] = useState(false);
   const [activeId, setActiveId]     = useState('home');
 
-  /* ── scroll spy ── */
   const handleScroll = useCallback(() => {
     setIsScrolled(window.scrollY > 24);
-
     const ids = NAV_LINKS.map(l => l.id);
     for (let i = ids.length - 1; i >= 0; i--) {
       const el = document.getElementById(ids[i]);
@@ -37,7 +35,6 @@ export const Navbar = ({ onNavigate }) => {
     return () => window.removeEventListener('scroll', handleScroll);
   }, [handleScroll]);
 
-  /* ── lock body scroll when drawer open ── */
   useEffect(() => {
     document.body.style.overflow = isOpen ? 'hidden' : '';
     return () => { document.body.style.overflow = ''; };
@@ -50,17 +47,13 @@ export const Navbar = ({ onNavigate }) => {
 
   return (
     <>
-      {/* Skip link for accessibility */}
       <a href="#main-content" className="skip-link">Skip to main content</a>
 
       <nav
         role="navigation"
         aria-label="Site navigation"
+        className="fixed top-0 left-0 right-0 z-50 transition-shadow duration-300"
         style={{
-          position: 'fixed',
-          top: 0, left: 0, right: 0,
-          zIndex: 50,
-          transition: 'background 0.3s, box-shadow 0.3s, border-color 0.3s',
           background: 'rgba(255,255,255,0.98)',
           backdropFilter: 'blur(16px)',
           borderBottom: '1px solid #E2E8F0',
@@ -68,34 +61,24 @@ export const Navbar = ({ onNavigate }) => {
         }}
       >
         <div
-          className="section-container"
-          style={{
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-            paddingTop: '1rem',
-            paddingBottom: '1rem',
-          }}
+          className="section-container flex items-center justify-between"
+          style={{ paddingTop: '0.875rem', paddingBottom: '0.875rem' }}
         >
-          {/* ── Logo ── */}
+          {/* Logo */}
           <button
             onClick={() => handleNav('home')}
             aria-label="Go to home"
-            style={{
-              display: 'flex', alignItems: 'center', gap: '0.625rem',
-              background: 'none', border: 'none', cursor: 'pointer', padding: 0,
-              flexShrink: 0,
-            }}
+            className="flex items-center gap-2.5 bg-transparent border-0 cursor-pointer p-0 shrink-0"
           >
-            <img src={logo} alt="HR Chits" style={{ height: 40, objectFit: 'contain' }} />
-            <span style={{ display: 'flex', flexDirection: 'column', lineHeight: 1 }}>
+            <img src={logo} alt="HR Chits" style={{ height: 38, objectFit: 'contain' }} />
+            <span className="flex flex-col leading-none">
               <span style={{ fontSize: '1.125rem', fontWeight: 800, letterSpacing: '0.12em', color: '#1565C0' }}>HR</span>
               <span style={{ fontSize: '0.55rem', fontWeight: 700, letterSpacing: '0.35em', color: '#64748B', textTransform: 'uppercase' }}>CHITS</span>
             </span>
           </button>
 
-          {/* ── Desktop nav links ── */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: '1.75rem' }} className="hidden lg:flex">
+          {/* Desktop nav */}
+          <div className="hidden md:flex items-center gap-1">
             {NAV_LINKS.map(link => {
               const isActive = activeId === link.id;
               return (
@@ -105,53 +88,52 @@ export const Navbar = ({ onNavigate }) => {
                   aria-current={isActive ? 'page' : undefined}
                   style={{
                     position: 'relative',
-                    background: 'none', border: 'none', cursor: 'pointer', padding: '0.25rem 0',
-                    fontSize: '0.9rem', fontWeight: 600,
+                    background: 'none', border: 'none', cursor: 'pointer',
+                    padding: '0.375rem 0.75rem',
+                    fontSize: '0.875rem', fontWeight: 600,
                     color: isActive ? '#1565C0' : '#64748B',
                     transition: 'color 0.2s',
+                    borderRadius: 6,
                   }}
                   onMouseEnter={e => { if (!isActive) e.currentTarget.style.color = '#1E293B'; }}
                   onMouseLeave={e => { if (!isActive) e.currentTarget.style.color = '#64748B'; }}
                 >
                   {link.name}
-                  {/* underline indicator */}
                   <span
                     style={{
-                      position: 'absolute', bottom: -2, left: 0,
+                      position: 'absolute', bottom: 0, left: '50%', transform: 'translateX(-50%)',
                       height: 2, borderRadius: 2,
                       background: '#D4AF37',
-                      width: isActive ? '100%' : '0%',
+                      width: isActive ? '70%' : '0%',
                       transition: 'width 0.25s ease',
                     }}
                   />
                 </button>
               );
             })}
-          </div>
 
-          {/* ── Desktop CTA ── */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }} className="hidden lg:flex">
             <Link
               to="/login"
               style={{
                 fontSize: '0.875rem', fontWeight: 600,
                 color: '#64748B', textDecoration: 'none',
-                padding: '0.5rem 1rem', borderRadius: 8,
+                padding: '0.5rem 0.875rem', borderRadius: 8,
                 transition: 'color 0.2s, background 0.2s',
               }}
-              onMouseEnter={e => { e.currentTarget.style.color = '#1565C0'; e.currentTarget.style.background = 'rgba(21,101,192,0.05)'; }}
+              onMouseEnter={e => { e.currentTarget.style.color = '#1565C0'; e.currentTarget.style.background = 'rgba(21,101,192,0.06)'; }}
               onMouseLeave={e => { e.currentTarget.style.color = '#64748B'; e.currentTarget.style.background = 'transparent'; }}
             >
-              Members Login
+              Login
             </Link>
+
             <button
               onClick={() => handleNav('contact')}
+              className="inline-flex items-center gap-1 shrink-0"
               style={{
-                display: 'inline-flex', alignItems: 'center', gap: '0.375rem',
                 fontWeight: 700, fontSize: '0.875rem', color: '#fff',
                 background: 'linear-gradient(135deg, #1565C0, #1E88E5)',
                 border: 'none', cursor: 'pointer',
-                padding: '0.625rem 1.25rem', borderRadius: 10,
+                padding: '0.5rem 1.125rem', borderRadius: 10,
                 transition: 'box-shadow 0.2s, transform 0.2s',
                 boxShadow: '0 2px 8px rgba(21,101,192,0.2)',
               }}
@@ -162,27 +144,25 @@ export const Navbar = ({ onNavigate }) => {
             </button>
           </div>
 
-          {/* ── Mobile hamburger ── */}
+          {/* Mobile hamburger */}
           <button
             onClick={() => setIsOpen(o => !o)}
             aria-label={isOpen ? 'Close menu' : 'Open menu'}
             aria-expanded={isOpen}
-            className="flex lg:hidden"
+            className="md:hidden flex items-center justify-center"
             style={{
-              background: 'none', border: 'none', cursor: 'pointer',
-              padding: '0.375rem', borderRadius: 8,
-              color: '#64748B',
-              transition: 'color 0.2s',
+              background: isOpen ? 'rgba(21,101,192,0.06)' : 'none',
+              border: 'none', cursor: 'pointer',
+              padding: '0.5rem', borderRadius: 8,
+              color: isOpen ? '#1565C0' : '#64748B',
+              transition: 'background 0.2s, color 0.2s',
             }}
           >
-            {isOpen
-              ? <X style={{ width: 22, height: 22 }} />
-              : <Menu style={{ width: 22, height: 22 }} />
-            }
+            {isOpen ? <X style={{ width: 22, height: 22 }} /> : <Menu style={{ width: 22, height: 22 }} />}
           </button>
         </div>
 
-        {/* ── Mobile drawer ── */}
+        {/* Mobile drawer */}
         <AnimatePresence>
           {isOpen && (
             <motion.div
@@ -190,18 +170,17 @@ export const Navbar = ({ onNavigate }) => {
               initial={{ opacity: 0, height: 0 }}
               animate={{ opacity: 1, height: 'auto' }}
               exit={{ opacity: 0, height: 0 }}
-              transition={{ duration: 0.25, ease: 'easeInOut' }}
+              transition={{ duration: 0.22, ease: 'easeInOut' }}
+              className="md:hidden overflow-hidden"
               style={{
-                overflow: 'hidden',
                 background: '#fff',
                 borderTop: '1px solid #E2E8F0',
                 boxShadow: '0 8px 24px rgba(0,0,0,0.08)',
               }}
-              className="lg:hidden"
             >
               <div
-                className="section-container"
-                style={{ paddingTop: '1.25rem', paddingBottom: '1.5rem', display: 'flex', flexDirection: 'column', gap: '0.25rem' }}
+                className="section-container flex flex-col"
+                style={{ paddingTop: '0.75rem', paddingBottom: '1.25rem', gap: '0.25rem' }}
               >
                 {NAV_LINKS.map(link => {
                   const isActive = activeId === link.id;
@@ -213,11 +192,11 @@ export const Navbar = ({ onNavigate }) => {
                         textAlign: 'left', width: '100%',
                         background: isActive ? 'rgba(21,101,192,0.06)' : 'none',
                         border: 'none', cursor: 'pointer',
-                        padding: '0.75rem 0.875rem', borderRadius: 10,
+                        padding: '0.875rem 1rem', borderRadius: 10,
                         fontSize: '1rem', fontWeight: 600,
                         color: isActive ? '#1565C0' : '#475569',
-                        transition: 'background 0.15s, color 0.15s',
                         borderLeft: isActive ? '3px solid #D4AF37' : '3px solid transparent',
+                        transition: 'background 0.15s, color 0.15s',
                       }}
                     >
                       {link.name}
@@ -231,12 +210,10 @@ export const Navbar = ({ onNavigate }) => {
                   to="/login"
                   onClick={() => setIsOpen(false)}
                   style={{
-                    textAlign: 'center', fontWeight: 600, fontSize: '0.9rem',
+                    textAlign: 'center', fontWeight: 600, fontSize: '1rem',
                     color: '#1565C0', textDecoration: 'none',
-                    padding: '0.75rem', borderRadius: 10,
+                    padding: '0.875rem', borderRadius: 10,
                     border: '1.5px solid #E2E8F0',
-                    background: '#fff',
-                    transition: 'background 0.15s',
                   }}
                 >
                   Members Login
@@ -245,13 +222,12 @@ export const Navbar = ({ onNavigate }) => {
                 <button
                   onClick={() => handleNav('contact')}
                   style={{
-                    width: '100%', fontWeight: 700, fontSize: '0.9rem', color: '#fff',
+                    width: '100%', fontWeight: 700, fontSize: '1rem', color: '#fff',
                     background: 'linear-gradient(135deg, #1565C0, #1E88E5)',
                     border: 'none', cursor: 'pointer',
                     padding: '0.875rem', borderRadius: 10,
                     marginTop: '0.25rem',
                     boxShadow: '0 2px 8px rgba(21,101,192,0.2)',
-                    transition: 'opacity 0.15s',
                   }}
                 >
                   Get Started
@@ -261,6 +237,21 @@ export const Navbar = ({ onNavigate }) => {
           )}
         </AnimatePresence>
       </nav>
+
+      {/* Backdrop to close on outside click */}
+      <AnimatePresence>
+        {isOpen && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.2 }}
+            onClick={() => setIsOpen(false)}
+            className="md:hidden fixed inset-0 z-40"
+            style={{ background: 'rgba(0,0,0,0.25)', top: 0 }}
+          />
+        )}
+      </AnimatePresence>
     </>
   );
 };
