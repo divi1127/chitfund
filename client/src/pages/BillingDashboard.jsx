@@ -408,7 +408,8 @@ export function BillingDashboard({ toast }) {
                   <div style={{ fontSize: 13, fontWeight: 700, color: "var(--text-primary)", marginTop: 16, textTransform: "uppercase", letterSpacing: "1px" }}>Official Payment Receipt</div>
                 </div>
 
-                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 32, marginBottom: 32 }}>
+                <div className="receipt-detail-grid" style={{ display: "grid", gap: 20, marginBottom: 32 }}>
+                  <style>{`@media (min-width: 640px) { .receipt-detail-grid { grid-template-columns: 1fr 1fr !important; gap: 32px !important; } }`}</style>
                    {/* Member Details */}
                   <div style={{ background: "var(--bg-card)", padding: 20, borderRadius: 12, border: "1px solid var(--border-color)" }}>
                     <div style={{ fontSize: 12, fontWeight: 700, color: "#2563eb", marginBottom: 12, textTransform: "uppercase" }}>Member Details</div>
@@ -512,7 +513,8 @@ function InvoicePreview({ invoice, onClose }) {
         </div>
 
         {/* Invoice Details */}
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 20, marginBottom: 24, paddingBottom: 24, borderBottom: "2px solid #e5e7eb" }}>
+        <div className="invoice-detail-grid" style={{ display: "grid", gap: 16, marginBottom: 24, paddingBottom: 24, borderBottom: "2px solid #e5e7eb" }}>
+          <style>{`@media (min-width: 640px) { .invoice-detail-grid { grid-template-columns: 1fr 1fr !important; gap: 20px !important; } }`}</style>
           <div>
             <div style={{ fontSize: 12, color: "#6b7280", marginBottom: 4 }}>Invoice No</div>
             <div style={{ fontSize: 14, fontWeight: 600, color: "#111" }}>{invoice.invoiceNumber}</div>
@@ -628,7 +630,8 @@ function InvoicePreview({ invoice, onClose }) {
               <span style={{ fontSize: 16, fontWeight: 600, color: "#111" }}>₹{invoice.balance.toLocaleString()}</span>
             </div>
           </div>
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+          <div className="receipt-grid sm-grid-2" style={{ display: "grid", gap: 12 }}>
+            <style>{`@media (min-width: 640px) { .sm-grid-2 { grid-template-columns: 1fr 1fr !important; } }`}</style>
             <div>
               <div style={{ fontSize: 12, color: "#6b7280", marginBottom: 4 }}>Payment Method</div>
               <div style={{ fontSize: 14, fontWeight: 600, color: "#111" }}>{invoice.paymentMethod}</div>
@@ -719,7 +722,8 @@ function InvoicePreview({ invoice, onClose }) {
         </div>
 
         {/* Signatures */}
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 40, marginTop: 40 }}>
+        <div className="signatures-grid" style={{ display: "grid", gap: 24, marginTop: 40 }}>
+          <style>{`@media (min-width: 640px) { .signatures-grid { grid-template-columns: 1fr 1fr !important; gap: 40px !important; } }`}</style>
           <div>
             <div style={{ fontSize: 12, color: "#6b7280", marginBottom: 40 }}>Collector Signature</div>
             <div style={{ height: 2, background: "#e5e7eb" }}></div>

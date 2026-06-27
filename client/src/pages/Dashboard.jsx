@@ -328,7 +328,7 @@ export function Dashboard({ toast }) {
         <StatCard label="Total Amount" value={fmt(collections.reduce((sum, c) => sum + (c.amount || 0), 0))} sub="Collected amount" color="#dc2626" dark={dark} icon={<FiTrendingUp size={22} />} />
       </div>
 
-      <div style={{ display: "grid", gridTemplateColumns: "2fr 1fr", gap: 20, marginBottom: 20 }}>
+      <div className="d-grid d-grid-2-1" style={{ marginBottom: 20 }}>
         {/* Collections chart */}
         <div style={{ background: "var(--bg-card)", border: "1px solid var(--border-color)", borderRadius: 12, padding: 20 }}>
           <div style={{ fontSize: 14, fontWeight: 600, color: "var(--text-primary)", marginBottom: 4 }}>Monthly Collections</div>

@@ -1,1 +1,1 @@
-export { default as logo } from "./HR.png";
+export { default as logo } from "./HRchit.png";

@@ -67,6 +67,7 @@ function AppLayout() {
   const navigate = useNavigate();
   const [theme, setTheme] = useState(() => localStorage.getItem('theme') || 'light');
   const [collapsed, setCollapsed] = useState(false);
+  const [mobileOpen, setMobileOpen] = useState(false);
   const [preview, setPreview] = useState(null);
   const [notificationCount, setNotificationCount] = useState(0);
 
@@ -159,23 +160,53 @@ function AppLayout() {
         collapsed={collapsed}
         setCollapsed={setCollapsed}
         navItems={filteredNavItems}
+        mobileOpen={mobileOpen}
+        onMobileToggle={() => setMobileOpen(false)}
       />
 
       <div
+        className="app-main"
         style={{
           flex: 1,
-          marginLeft: collapsed ? 64 : 240,
+          marginLeft: 0,
           display: "flex",
           flexDirection: "column",
           minHeight: 0,
           transition: "margin-left .25s ease",
         }}
       >
+        <style>{`
+          :root { --sidebar-width: ${collapsed ? '64px' : '240px'}; }
+          @media (min-width: 768px) {
+            .app-main { margin-left: var(--sidebar-width); }
+            .mobile-hamburger { display: none !important; }
+            .mobile-overlay { display: none !important; }
+          }
+          @media (max-width: 767px) {
+            .desktop-user-name { display: none !important; }
+            .header-btn { padding: 6px 8px !important; }
+          }
+          @media (min-width: 640px) {
+            .main-content { padding: 24px !important; }
+          }
+          @media (min-width: 1024px) {
+            .main-content { padding: 28px !important; }
+          }
+          .d-grid { display: grid !important; gap: 20px; }
+          @media (min-width: 768px) {
+            .d-grid-2 { grid-template-columns: 1fr 1fr !important; }
+            .d-grid-2-1 { grid-template-columns: 2fr 1fr !important; }
+          }
+          .d-flex { display: flex; gap: 24px; }
+          @media (max-width: 767px) {
+            .d-flex { flex-direction: column; gap: 16px; }
+          }
+        `}</style>
         <header
           style={{
             background: dark ? "rgba(255,255,255,.04)" : "#fff",
             borderBottom: dark ? "1px solid rgba(255,255,255,.08)" : "1px solid #e2e8f0",
-            padding: "14px 28px",
+            padding: "14px 16px",
             display: "flex",
             justifyContent: "space-between",
             alignItems: "center",
@@ -183,20 +214,38 @@ function AppLayout() {
             top: 0,
             zIndex: 50,
             backdropFilter: "blur(12px)",
+            gap: 8,
           }}
         >
-          <div
-            style={{
-              fontSize: 18,
-              fontWeight: 700,
-              color: dark ? "#f1f5f9" : "#0f172a",
-            }}
-          >
-            {COMPANY.name}
+          <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+            <button
+              onClick={() => setMobileOpen(true)}
+              className="mobile-hamburger"
+              style={{
+                background: "none", border: "none", cursor: "pointer",
+                padding: 4, color: dark ? "#f1f5f9" : "#0f172a", fontSize: 20,
+                display: "flex", alignItems: "center",
+              }}
+            >
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+                <line x1="3" y1="6" x2="21" y2="6" />
+                <line x1="3" y1="12" x2="21" y2="12" />
+                <line x1="3" y1="18" x2="21" y2="18" />
+              </svg>
+            </button>
+            <div
+              style={{
+                fontSize: 18,
+                fontWeight: 700,
+                color: dark ? "#f1f5f9" : "#0f172a",
+              }}
+            >
+              {COMPANY.name}
+            </div>
           </div>
 
-          <div style={{ display: "flex", gap: 12, alignItems: "center" }}>
-            <div style={{ fontSize: 13, color: dark ? "rgba(255,255,255,.5)" : "#64748b" }}>
+          <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
+            <div className="desktop-user-name" style={{ fontSize: 13, color: dark ? "rgba(255,255,255,.5)" : "#64748b" }}>
               {user?.name}
               <span style={{ opacity: 0.5, marginLeft: 8 }}>
                 ({user?.role === "super_admin" ? "Super Admin" : user?.role === "sub_admin" ? "Sub Admin" : "User"})
@@ -206,6 +255,7 @@ function AppLayout() {
 
             <button
               onClick={() => navigate("/notifications")}
+              className="header-btn"
               style={{
                 position: "relative",
                 padding: "8px 12px",
@@ -249,6 +299,7 @@ function AppLayout() {
 
             <button
               onClick={toggleTheme}
+              className="header-btn"
               style={{
                 padding: "8px 14px",
                 borderRadius: 8,
@@ -259,11 +310,12 @@ function AppLayout() {
                 fontSize: 12,
               }}
             >
-              {dark ? " Light" : " Dark"}
+              {dark ? "Light" : "Dark"}
             </button>
 
             <button
               onClick={logout}
+              className="header-btn"
               style={{
                 padding: "8px 16px",
                 borderRadius: 8,
@@ -281,7 +333,7 @@ function AppLayout() {
           </div>
         </header>
 
-        <main style={{ flex: 1, overflowY: "auto", padding: 28 }}>
+        <main style={{ flex: 1, overflowY: "auto", padding: "16px" }} className="main-content">
           <Routes>
             <Route path="/dashboard" element={<RoleBasedDashboard dark={dark} toast={{ add }} />} />
 

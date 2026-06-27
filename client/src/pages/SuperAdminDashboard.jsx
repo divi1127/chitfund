@@ -57,7 +57,7 @@ export function SuperAdminDashboard({ dark, toast }) {
         <StatCard label="Enquiries" value={enquiries?.length || 0} sub="Website leads" color="#0ea5e9" dark={dark} icon={<FiBarChart2 size={22} />} />
       </div>
 
-      <div style={{ display: "grid", gridTemplateColumns: "2fr 1fr", gap: 20, marginBottom: 20 }}>
+      <div className="d-grid d-grid-2-1" style={{ marginBottom: 20 }}>
         <div style={{ background: dark ? "rgba(255,255,255,.05)" : "#fff", border: dark ? "1px solid rgba(255,255,255,.1)" : "1px solid #e5e7eb", borderRadius: 12, padding: 20 }}>
           <div style={{ fontSize: 14, fontWeight: 600, color: dark ? "#f3f4f6" : "#111", marginBottom: 4 }}>Monthly Collections Trend</div>
           <div style={{ fontSize: 12, color: dark ? "rgba(255,255,255,.4)" : "#9ca3af", marginBottom: 16 }}>Jan  Jun 2024</div>
@@ -84,7 +84,7 @@ export function SuperAdminDashboard({ dark, toast }) {
         </div>
       </div>
 
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 20, marginBottom: 20 }}>
+      <div className="d-grid d-grid-2" style={{ marginBottom: 20 }}>
         <div style={{ background: dark ? "rgba(255,255,255,.05)" : "#fff", border: dark ? "1px solid rgba(255,255,255,.1)" : "1px solid #e5e7eb", borderRadius: 12, padding: 20 }}>
           <div style={{ fontSize: 14, fontWeight: 600, color: dark ? "#f3f4f6" : "#111", marginBottom: 14 }}>Recent Collections</div>
           <Table dark={dark} cols={["Receipt", "Member", "Group", "Amount", "Mode", "Status"]}

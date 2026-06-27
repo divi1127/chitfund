@@ -1,7 +1,12 @@
 // Toast notification component
 export function Toast({ toasts, remove }) {
   return (
-    <div style={{ position: "fixed", bottom: 24, right: 24, zIndex: 9999, display: "flex", flexDirection: "column", gap: 10 }}>
+    <div className="toast-wrapper" style={{
+      position: "fixed", bottom: 16, zIndex: 9999,
+      display: "flex", flexDirection: "column", gap: 10,
+      left: 16, right: 16,
+    }}>
+      <style>{`@media (min-width: 640px) { .toast-wrapper { left: auto !important; right: 24px !important; width: auto !important; min-width: 320px; } }`}</style>
       {toasts.map((t) => (
         <div key={t.id} onClick={() => remove(t.id)} style={{
           background: t.type === "success" ? "#14532d" : t.type === "error" ? "#7f1d1d" : "#1e3a5f",

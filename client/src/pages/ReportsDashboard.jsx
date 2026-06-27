@@ -208,7 +208,7 @@ export function ReportsDashboard({ toast }) {
         </div>
 
         {/* Export Options */}
-        <div style={{ display: "flex", gap: 12, justifyContent: "flex-end" }}>
+        <div style={{ display: "flex", gap: 12, justifyContent: "flex-end", flexWrap: "wrap" }}>
           <IconBtn icon={<HiArrowDownTray size={14} />} onClick={() => toast.add("Exporting to Excel...")} color="#10b981" title="Export Excel" />
           <IconBtn icon={<HiArrowDownTray size={14} />} onClick={() => toast.add("Exporting to PDF...")} color="#2563eb" title="Export PDF" />
           <IconBtn icon={<HiPrinter size={14} />} onClick={() => window.print()} color="#d97706" title="Print Report" />

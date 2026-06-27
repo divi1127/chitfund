@@ -196,7 +196,8 @@ export function InvoiceModal({ invoice, onClose, onPaymentSuccess, toast }) {
           )}
 
           {/* Member Details + Scheme/Group — side by side */}
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16, marginBottom: 24 }}>
+          <div className="inv-grid" style={{ display: "grid", gap: 16, marginBottom: 24 }}>
+          <style>{`@media (min-width: 640px) { .inv-grid { grid-template-columns: 1fr 1fr !important; } }`}</style>
             <div style={{ border: "1.5px solid #2563eb", borderRadius: 12, padding: 16, background: "#f8faff" }}>
               <div style={{ fontSize: 11, fontWeight: 700, color: "#2563eb", textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 10 }}>Member Details</div>
               <div style={{ marginBottom: 4 }}><span style={{ fontSize: 11, color: "#64748b" }}>Name</span><div style={{ fontSize: 14, fontWeight: 700, color: "#111" }}>{invoice.memberName}</div></div>
@@ -301,7 +302,8 @@ export function InvoiceModal({ invoice, onClose, onPaymentSuccess, toast }) {
                 )}
 
                 {paymentMethod === "Bank Transfer" && (
-                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+                  <div className="bank-grid" style={{ display: "grid", gap: 12 }}>
+                    <style>{`@media (min-width: 640px) { .bank-grid { grid-template-columns: 1fr 1fr !important; } }`}</style>
                     <div><span style={{ fontSize: 11, color: "#64748b" }}>Bank</span><div style={{ fontSize: 13, fontWeight: 600, color: "#111" }}>{COMPANY.bankName || "State Bank of India"}</div></div>
                     <div><span style={{ fontSize: 11, color: "#64748b" }}>Account Name</span><div style={{ fontSize: 13, fontWeight: 600, color: "#111" }}>{COMPANY.accountName || COMPANY.name}</div></div>
                     <div><span style={{ fontSize: 11, color: "#64748b" }}>Account No.</span><div style={{ fontSize: 13, fontWeight: 600, color: "#111" }}>{COMPANY.accountNumber || "123456789012"}</div></div>

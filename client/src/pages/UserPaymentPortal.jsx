@@ -261,7 +261,7 @@ export function UserPaymentPortal({ toast }) {
             </div>
             
             {/* Legend */}
-            <div style={{ display: "flex", gap: 20, marginTop: 16, fontSize: 11, color: "var(--text-muted)", justifyContent: "center" }}>
+            <div style={{ display: "flex", gap: 16, marginTop: 16, fontSize: 11, color: "var(--text-muted)", justifyContent: "center", flexWrap: "wrap" }}>
               <span><span style={{ color: "#10b981" }}>●</span> Paid</span>
               <span><span style={{ color: "#2563eb" }}>●</span> Due Now</span>
               <span><span style={{ color: "#ef4444" }}>●</span> Overdue</span>

@@ -173,7 +173,7 @@ export function Settings({ toast }) {
         <h3 style={{ fontSize: 16, fontWeight: 600, color: "var(--text-primary)", marginBottom: 20 }}>Application Preferences</h3>
         
         <div style={{ display: "grid", gap: 16 }}>
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
             <div>
               <div style={{ fontSize: 14, fontWeight: 600, color: "var(--text-primary)" }}>Dark Mode</div>
               <div style={{ fontSize: 12, color: "var(--text-muted)" }}>Toggle dark theme</div>
@@ -183,7 +183,7 @@ export function Settings({ toast }) {
             </button>
           </div>
           
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
             <div>
               <div style={{ fontSize: 14, fontWeight: 600, color: "var(--text-primary)" }}>Email Notifications</div>
               <div style={{ fontSize: 12, color: "var(--text-muted)" }}>Receive email alerts</div>

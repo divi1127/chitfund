@@ -193,7 +193,7 @@ export function UserDashboard({ dark, toast }) {
                   <div style={{ background: dark ? "rgba(255,255,255,.1)" : "#e5e7eb", borderRadius: 8, height: 8, marginBottom: 20, overflow: "hidden" }}>
                     <div style={{ width: `${totalMonths > 0 ? (paidCount / totalMonths) * 100 : 0}%`, height: "100%", background: "linear-gradient(90deg, #2563eb, #10b981)", borderRadius: 8, transition: "width 0.5s ease" }} />
                   </div>
-                  <div style={{ display: "flex", gap: 24, padding: "14px 0", borderBottom: "1px solid var(--border-color)", marginBottom: 16 }}>
+                  <div style={{ display: "flex", gap: 16, flexWrap: "wrap", padding: "14px 0", borderBottom: "1px solid var(--border-color)", marginBottom: 16 }}>
                     <div><span style={{ fontSize: 12, color: "var(--text-muted)" }}>Installment </span><span style={{ fontSize: 15, fontWeight: 700 }}>₹{monthlyInstallment.toLocaleString()}/mo</span></div>
                     <div><span style={{ fontSize: 12, color: "var(--text-muted)" }}>Paid </span><span style={{ fontSize: 15, fontWeight: 700, color: "#10b981" }}>{fmt(totalPaid)}</span></div>
                     <div><span style={{ fontSize: 12, color: "var(--text-muted)" }}>Outstanding </span><span style={{ fontSize: 15, fontWeight: 700, color: "#ef4444" }}>{fmt(totalOutstanding)}</span></div>

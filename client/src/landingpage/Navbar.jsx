@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { Menu, X, ArrowRight } from 'lucide-react';
-import logo from '../assets/jod.png';
+import { logo } from '../assets';
 import { Link } from 'react-router-dom';
 import { AnimatePresence, motion } from 'framer-motion';
 
@@ -61,9 +61,9 @@ export const Navbar = ({ onNavigate }) => {
           top: 0, left: 0, right: 0,
           zIndex: 50,
           transition: 'background 0.3s, box-shadow 0.3s, border-color 0.3s',
-          background: isScrolled ? 'rgba(255,255,255,0.98)' : 'rgba(255,255,255,0)',
-          backdropFilter: isScrolled ? 'blur(16px)' : 'none',
-          borderBottom: isScrolled ? '1px solid #E2E8F0' : '1px solid transparent',
+          background: 'rgba(255,255,255,0.98)',
+          backdropFilter: 'blur(16px)',
+          borderBottom: '1px solid #E2E8F0',
           boxShadow: isScrolled ? '0 1px 12px rgba(0,0,0,0.06)' : 'none',
         }}
       >
@@ -87,18 +87,9 @@ export const Navbar = ({ onNavigate }) => {
               flexShrink: 0,
             }}
           >
-            <div
-              style={{
-                width: 36, height: 36, borderRadius: 10,
-                background: 'linear-gradient(135deg, #1565C0, #0D47A1)',
-                display: 'flex', alignItems: 'center', justifyContent: 'center',
-                boxShadow: '0 2px 8px rgba(21,101,192,0.25)',
-              }}
-            >
-              <img src={logo} alt="JOD Chits logo" style={{ width: 20, height: 20, objectFit: 'contain', filter: 'brightness(0) invert(1)' }} />
-            </div>
+            <img src={logo} alt="HR Chits" style={{ height: 40, objectFit: 'contain' }} />
             <span style={{ display: 'flex', flexDirection: 'column', lineHeight: 1 }}>
-              <span style={{ fontSize: '1.125rem', fontWeight: 800, letterSpacing: '0.12em', color: '#1565C0' }}>JOD</span>
+              <span style={{ fontSize: '1.125rem', fontWeight: 800, letterSpacing: '0.12em', color: '#1565C0' }}>HR</span>
               <span style={{ fontSize: '0.55rem', fontWeight: 700, letterSpacing: '0.35em', color: '#64748B', textTransform: 'uppercase' }}>CHITS</span>
             </span>
           </button>

@@ -109,35 +109,23 @@ function NavItem({ id, label, icon, active, collapsed, onNavigate }) {
   );
 }
 
-export function Sidebar({ collapsed, setCollapsed, navItems = [] }) {
+export function Sidebar({ collapsed, setCollapsed, navItems = [], mobileOpen, onMobileToggle }) {
   const navigate = useNavigate();
   const location = useLocation();
 
-  // Determine active id from current path
   const path = location.pathname;
   const active = Object.entries(ROUTES).find(([, p]) => p === path)?.[0] || "dashboard";
 
   const handleNavigate = (id) => {
     const route = ROUTES[id];
-    if (route) navigate(route);
+    if (route) {
+      navigate(route);
+      if (mobileOpen && onMobileToggle) onMobileToggle();
+    }
   };
 
-  return (
-    <div style={{
-      width: collapsed ? 64 : 240,
-      height: "100vh",
-      background: "#0f172a",
-      display: "flex",
-      flexDirection: "column",
-      transition: "width .25s ease",
-      flexShrink: 0,
-      position: "fixed",
-      left: 0,
-      top: 0,
-      zIndex: 100,
-      boxShadow: "2px 0 20px rgba(0,0,0,0.3)",
-    }}>
-      {/* Logo */}
+  const sidebarContent = (
+    <>
       <div style={{
         padding: collapsed ? "20px 12px" : "20px 24px",
         borderBottom: "1px solid rgba(255,255,255,.08)",
@@ -171,7 +159,6 @@ export function Sidebar({ collapsed, setCollapsed, navItems = [] }) {
         )}
       </div>
 
-      {/* Navigation */}
       <div style={{
         flex: 1,
         padding: collapsed ? "16px 6px" : "16px 12px",
@@ -184,7 +171,6 @@ export function Sidebar({ collapsed, setCollapsed, navItems = [] }) {
         ))}
       </div>
 
-      {/* Collapse Toggle */}
       <button
         onClick={() => setCollapsed(!collapsed)}
         style={{
@@ -207,6 +193,61 @@ export function Sidebar({ collapsed, setCollapsed, navItems = [] }) {
       >
         {collapsed ? "→" : "← Collapse"}
       </button>
-    </div>
+    </>
+  );
+
+  return (
+    <>
+      {/* Desktop sidebar */}
+      <div style={{
+        width: collapsed ? 64 : 240,
+        height: "100vh",
+        background: "#0f172a",
+        display: "flex",
+        flexDirection: "column",
+        transition: "width .25s ease",
+        flexShrink: 0,
+        position: "fixed",
+        left: 0,
+        top: 0,
+        zIndex: 100,
+        boxShadow: "2px 0 20px rgba(0,0,0,0.3)",
+      }}
+        className="hidden md:flex"
+      >
+        {sidebarContent}
+      </div>
+
+      {/* Mobile overlay */}
+      {mobileOpen && (
+        <div
+          onClick={() => { if (onMobileToggle) onMobileToggle(); }}
+          style={{
+            position: "fixed", inset: 0, zIndex: 99,
+            background: "rgba(0,0,0,0.5)",
+          }}
+          className="md:hidden"
+        />
+      )}
+
+      <div style={{
+        position: "fixed",
+        left: 0,
+        top: 0,
+        bottom: 0,
+        width: 260,
+        background: "#0f172a",
+        zIndex: 100,
+        display: "flex",
+        flexDirection: "column",
+        transform: mobileOpen ? "translateX(0)" : "translateX(-100%)",
+        transition: "transform .25s ease",
+        boxShadow: mobileOpen ? "2px 0 20px rgba(0,0,0,0.3)" : "none",
+      }}
+        className="md:hidden"
+      >
+        {sidebarContent}
+      </div>
+    </>
   );
 }

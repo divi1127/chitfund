@@ -90,7 +90,7 @@ export function UserProfile({ toast }) {
 
       <div style={{ display: "grid", gap: 24 }}>
         <div style={{ background: "var(--bg-card)", border: "1px solid var(--border-color)", borderRadius: 12, padding: 24 }}>
-          <div style={{ display: "flex", alignItems: "flex-start", gap: 20, marginBottom: 24 }}>
+          <div style={{ display: "flex", alignItems: "flex-start", gap: 20, marginBottom: 24, flexWrap: "wrap" }}>
             <div style={{
               width: 80, height: 80, borderRadius: 16,
               background: "linear-gradient(135deg, #2563eb 0%, #1e40af 100%)",

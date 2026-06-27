@@ -1,6 +1,6 @@
 
 import { Navbar } from './Navbar';
-import { Hero } from './Hero';
+import { Hero, Ticker } from './Hero';
 import { Stats } from './Stats';
 import { HowItWorks } from './HowItWorks';
 import { ChitPlans } from './ChitPlans';
@@ -30,6 +30,7 @@ function Landingpage() {
 
       <main id="main-content" className="relative z-[1]">
         <Hero onNavigate={handleNavigate} />
+        <Ticker />
         <Stats />
         <HowItWorks />
         <ChitPlans />

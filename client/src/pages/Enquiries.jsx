@@ -261,7 +261,7 @@ export function Enquiries({ dark, toast }) {
 
         {/* Pagination */}
         {totalPages > 1 && (
-          <div style={{ display: "flex", justifyContent: "center", alignItems: "center", gap: 8, marginTop: 20 }}>
+          <div style={{ display: "flex", justifyContent: "center", alignItems: "center", gap: 8, marginTop: 20, flexWrap: "wrap" }}>
             <button
               disabled={page === 1}
               onClick={() => setPage((p) => p - 1)}
