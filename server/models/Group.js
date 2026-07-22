@@ -8,7 +8,8 @@ const groupSchema = new mongoose.Schema({
   status: { type: String, enum: ['Active', 'Closed'], default: 'Active' },
   currentInstallment: { type: Number, default: 1 },
   members: [{ type: String }],
-  agentId: { type: String }
+  agentId: { type: String },
+  maxMembers: { type: Number, default: 10 }
 }, { timestamps: true });
 
 export default mongoose.model('Group', groupSchema);

@@ -45,7 +45,7 @@ export const CTA = ({ onNavigate }) => (
             transition={{ duration: 0.35, delay: 0.14 }}
             className="text-base text-white/65 mb-10 max-w-2xl mx-auto leading-relaxed"
           >
-            Join 10,000+ members saving smarter with government-regulated digital chit funds. Earn competitive dividends and access funds when you need them most.
+            Join 1,000+ members saving smarter with government-regulated digital chit funds. Earn competitive dividends and access funds when you need them most.
           </motion.p>
 
           <motion.div

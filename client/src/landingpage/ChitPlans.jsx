@@ -1,41 +1,74 @@
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Check, Flame, Sparkles, Trophy, Gem, X, Shield, ArrowRight, CheckCircle2 } from 'lucide-react';
+import { Check, Flame, Sparkles, Trophy, Gem, Diamond, X, Shield, ArrowRight, CheckCircle2, Star, Zap, Sun } from 'lucide-react';
 
 const plans = [
   {
+    id: 'basic',
+    name: 'Basic',
+    tagline: 'For beginners',
+    monthlyShare: '₹2,500',
+    poolValue: '₹25,000',
+    duration: '10 Months',
+    commission: '1.0%',
+    icon: <Sparkles className="w-5 h-5" />,
+    benefits: ['Perfect for first-time savers', 'Low monthly commitment', 'Transparent monthly bidding', 'Digital receipts & statements'],
+  },
+  {
     id: 'silver',
     name: 'Silver',
-    tagline: 'For individual savers',
-    monthlyShare: '₹10,000',
-    poolValue: '₹2,50,000',
-    duration: '25 Months',
-    commission: '3.0%',
-    icon: <Sparkles className="w-5 h-5" />,
-    benefits: ['Ideal for personal savings goals', 'Transparent monthly bidding', '24-hour payout processing', 'Digital receipts & statements'],
+    tagline: 'For steady savers',
+    monthlyShare: '₹5,000',
+    poolValue: '₹50,000',
+    duration: '10 Months',
+    commission: '1.0%',
+    icon: <Star className="w-5 h-5" />,
+    benefits: ['Ideal for personal savings', 'Higher dividend potential', 'Instant auction access', 'Flexible payment options'],
   },
   {
     id: 'gold',
     name: 'Gold',
     tagline: 'Most popular choice',
-    monthlyShare: '₹25,000',
-    poolValue: '₹10,00,000',
-    duration: '40 Months',
-    commission: '2.5%',
+    monthlyShare: '₹10,000',
+    poolValue: '₹1,00,000',
+    duration: '10 Months',
+    commission: '1.0%',
     icon: <Trophy className="w-5 h-5" />,
     featured: true,
-    benefits: ['Perfect for business goals', 'Optimised dividend ratios', 'Instant auction access', 'Priority withdrawal processing', 'Dedicated support hotline', 'Flexible deposit values'],
+    benefits: ['Perfect for business goals', 'Optimised dividend ratios', 'Priority payout processing', 'Dedicated support', 'Flexible deposit values'],
   },
   {
     id: 'platinum',
     name: 'Platinum',
-    tagline: 'For large investments',
-    monthlyShare: '₹50,000',
-    poolValue: '₹25,00,000',
-    duration: '50 Months',
-    commission: '2.0%',
+    tagline: 'For serious investors',
+    monthlyShare: '₹20,000',
+    poolValue: '₹2,00,000',
+    duration: '10 Months',
+    commission: '1.0%',
     icon: <Gem className="w-5 h-5" />,
-    benefits: ['Tailored corporate schemes', 'Dedicated relationship manager', 'Custom payout schedules', 'Collateral credit eligibility', 'Zero bidding constraints'],
+    benefits: ['Higher savings capacity', 'Premium dividend returns', 'Custom payout schedules', 'Collateral credit eligibility', 'Dedicated relationship manager'],
+  },
+  {
+    id: 'diamond',
+    name: 'Diamond',
+    tagline: 'For wealth builders',
+    monthlyShare: '₹30,000',
+    poolValue: '₹3,00,000',
+    duration: '10 Months',
+    commission: '1.0%',
+    icon: <Diamond className="w-5 h-5" />,
+    benefits: ['Maximum savings potential', 'Top-tier dividend yields', 'Priority auction access', 'Exclusive member benefits', 'Zero bidding constraints', 'Premium support 24/7'],
+  },
+  {
+    id: 'premium',
+    name: 'Premium',
+    tagline: 'For high-value goals',
+    monthlyShare: '₹50,000',
+    poolValue: '₹5,00,000',
+    duration: '10 Months',
+    commission: '1.0%',
+    icon: <Sun className="w-5 h-5" />,
+    benefits: ['Ultimate savings plan', 'Highest dividend earnings', 'Instant payout processing', 'VIP relationship manager', 'Customized investment strategy', 'Exclusive networking events'],
   },
 ];
 
@@ -117,7 +150,7 @@ export const ChitPlans = () => {
           <p className="section-subtitle">Structured mutual credit schemes designed for every savings goal and budget.</p>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-5xl mx-auto items-stretch">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 max-w-6xl mx-auto items-stretch">
           {plans.map((plan, i) => (
             <motion.div
               key={plan.id}

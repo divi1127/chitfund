@@ -9,7 +9,7 @@ const faqs = [
   },
   {
     q: 'How do I pay my monthly installments?',
-    a: 'JOD Chits supports UPI AutoPay, NACH e-mandates, credit/debit cards, and net banking. Payments are fully automated with instant receipts and ledger updates after every transaction.',
+    a: 'NVS CHIT ENTERPRISES supports UPI AutoPay, NACH e-mandates, credit/debit cards, and net banking. Payments are fully automated with instant receipts and ledger updates after every transaction.',
   },
   {
     q: 'How are the monthly auctions conducted?',
@@ -17,7 +17,7 @@ const faqs = [
   },
   {
     q: 'Are my funds safe and legally protected?',
-    a: 'Yes. JOD Chits is registered under the Chit Funds Act 1982, supervised by the State Registrar of Chits. We deposit a 100% bank guarantee collateral with the government before starting any group.',
+    a: 'Yes. NVS CHIT ENTERPRISES is registered under the Chit Funds Act 1982, supervised by the State Registrar of Chits. We deposit a 100% bank guarantee collateral with the government before starting any group.',
   },
   {
     q: 'When and how do I receive the winning bid payout?',

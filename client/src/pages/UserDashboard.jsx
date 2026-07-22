@@ -300,7 +300,7 @@ export function UserDashboard({ dark, toast }) {
       ) : (
         <div style={{ textAlign: "center", padding: 60, background: dark ? "rgba(255,255,255,.05)" : "#fff", border: dark ? "1px solid rgba(255,255,255,.1)" : "1px solid #e5e7eb", borderRadius: 12 }}>
           <FiUser size={48} style={{ margin: "0 auto 16px", display: "block", opacity: 0.3 }} />
-          <div style={{ fontSize: 18, fontWeight: 600, color: dark ? "#f3f4f6" : "#111", marginBottom: 8 }}>Welcome to HR Chits</div>
+          <div style={{ fontSize: 18, fontWeight: 600, color: dark ? "#f3f4f6" : "#111", marginBottom: 8 }}>Welcome to NVS CHIT ENTERPRISES</div>
           <div style={{ fontSize: 13, color: dark ? "rgba(255,255,255,.5)" : "#6b7280", marginBottom: 20 }}>Your member profile is being set up. Please complete your KYC to get started.</div>
           <button onClick={() => window.location.href = "/kyc-verification"} style={{ padding: "12px 24px", borderRadius: 8, border: "none", background: "#2563eb", color: "#fff", cursor: "pointer", fontWeight: 600 }}>Submit KYC</button>
         </div>

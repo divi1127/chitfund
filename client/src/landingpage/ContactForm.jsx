@@ -58,9 +58,9 @@ export const ContactForm = () => {
 
             <div className="space-y-5 flex-1">
               {[
-                { icon: <Phone className="w-4 h-4" />, label: 'Call Us', value: '+91 80 4952 8200', href: 'tel:+918049528200' },
-                { icon: <Mail className="w-4 h-4" />, label: 'Email Us', value: 'advisor@jodchits.com', href: 'mailto:advisor@jodchits.com' },
-                { icon: <Calendar className="w-4 h-4" />, label: 'Office Hours', value: 'Mon–Sat, 9 AM–6:30 PM', href: null },
+                { icon: <Phone className="w-4 h-4" />, label: 'Call Us', value: '96009 4752', href: 'tel:960094752' },
+                { icon: <Mail className="w-4 h-4" />, label: 'Email Us', value: 'nvschit@gmail.com', href: 'mailto:nvschit@gmail.com' },
+                { icon: <Calendar className="w-4 h-4" />, label: 'Office Hours', value: 'Mon–Sat, 9 AM–6 PM', href: null },
               ].map((item, i) => (
                 <div key={i} className="flex items-start gap-3">
                   <div className="w-8 h-8 rounded-lg bg-white/15 flex items-center justify-center shrink-0 mt-0.5">
@@ -84,7 +84,7 @@ export const ContactForm = () => {
               </div>
               <div>
                 <p className="text-xs font-bold text-white">Secured Regulatory Escrow</p>
-                <p className="text-[10px] text-white/50">Reg No: KA-REG/CHIT/839/2026</p>
+                <p className="text-[10px] text-white/50">Reg No: TN-REG/CHIT/2026</p>
               </div>
             </div>
           </motion.div>
@@ -128,9 +128,12 @@ export const ContactForm = () => {
                   <div className="space-y-1.5">
                     <label className="text-xs font-bold uppercase text-text-secondary">Interested Plan</label>
                     <select value={form.plan} onChange={set('plan')} className="input-base">
-                      <option value="silver">Silver — ₹2.5L Pool</option>
-                      <option value="gold">Gold — ₹10L Pool</option>
-                      <option value="platinum">Platinum — ₹25L Pool</option>
+                      <option value="basic">Basic — ₹25K Pool</option>
+                      <option value="silver">Silver — ₹50K Pool</option>
+                      <option value="gold">Gold — ₹1L Pool</option>
+                      <option value="platinum">Platinum — ₹2L Pool</option>
+                      <option value="diamond">Diamond — ₹3L Pool</option>
+                      <option value="premium">Premium — ₹5L Pool</option>
                       <option value="other">Need Advisor Advice</option>
                     </select>
                   </div>

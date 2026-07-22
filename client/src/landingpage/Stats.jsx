@@ -3,10 +3,10 @@ import { motion, useInView } from 'framer-motion';
 import { Users, Landmark, ShieldCheck, Smile } from 'lucide-react';
 
 const stats = [
-  { icon: <Users className="w-5 h-5" />, value: 10000, suffix: '+', label: 'Active Members', sub: 'Across India' },
-  { icon: <Landmark className="w-5 h-5" />, value: 100, suffix: ' Cr+', label: 'Funds Managed', sub: 'Securely Rotating' },
-  { icon: <ShieldCheck className="w-5 h-5" />, value: 500, suffix: '+', label: 'Active Groups', sub: 'Fully Regulated' },
-  { icon: <Smile className="w-5 h-5" />, value: 98, suffix: '%', label: 'Satisfaction Rate', sub: 'Verified Reviews' },
+  { icon: <Users className="w-5 h-5" />, value: 1000, suffix: '+', label: 'Active Members', sub: 'Across Tamil Nadu' },
+  { icon: <Landmark className="w-5 h-5" />, value: 50, suffix: '+', label: 'Chit Groups', sub: 'Actively Running' },
+  { icon: <ShieldCheck className="w-5 h-5" />, value: 100, suffix: '%', label: 'Legal Compliance', sub: 'Chit Act 1982' },
+  { icon: <Smile className="w-5 h-5" />, value: 98, suffix: '%', label: 'Member Satisfaction', sub: 'Verified Reviews' },
 ];
 
 const Counter = ({ value, suffix }) => {

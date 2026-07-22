@@ -8,12 +8,12 @@ import { generateInvoiceNo, generateReceiptNo } from '../utils/idGenerator.js';
 import Collection from '../models/Collection.js';
 
 const COMPANY = {
-  name: 'HR Chits Enterprises',
-  address: '12, Anna Salai, T. Nagar, Chennai – 600 017, Tamil Nadu',
-  phone: '+91 44 2815 6789',
-  email: 'info@hrchits.com',
+  name: 'NVS CHIT ENTERPRISES',
+  address: '1538, North Veli Street, Simmakkal, Madurai – 625001',
+  phone: '96009 4752',
+  email: 'nvschit@gmail.com',
   gstin: '33AABCS1234A1ZQ',
-  website: 'www.hrchits.com'
+  website: 'nvschit.com'
 };
 
 const router = express.Router();

@@ -16,8 +16,17 @@ router.get('/', authenticate, async (req, res) => {
 
     if (req.user.role === 'user') {
       const userMember = await Member.findOne({ memberId: req.user.userId });
-      if (!userMember) return res.json([]);
-      const filtered = collections.filter(c => c.memberId === userMember.id || c.memberId === userMember.memberId);
+      if (!userMember) {
+        const agent = await (await import('../models/Agent.js')).default.findOne({ userId: req.user.userId });
+        if (agent) {
+          const agentCustomers = await (await import('../models/Member.js')).default.find({ agentId: agent.agentId });
+          const customerIds = agentCustomers.map(m => m.memberId);
+          const filtered = collections.filter(c => customerIds.includes(c.memberId));
+          return res.json(filtered);
+        }
+        return res.json([]);
+      }
+      const filtered = collections.filter(c => c.memberId === userMember.memberId);
       return res.json(filtered);
     }
 
@@ -71,20 +80,34 @@ router.post('/', authenticate, authorize('super_admin', 'sub_admin'), async (req
     const data = { ...req.body };
     const receiptNo = await generateReceiptNo();
 
+    const fullAmount = data.fullInstallmentAmount || Number(data.amount);
+    const paidAmount = Number(data.amount);
+    const pendingBal = Math.max(0, fullAmount - paidAmount);
+
     const collectionData = {
       ...data,
       id: data.id || 'C' + Date.now().toString().slice(-6),
-      receiptNo: receiptNo,
-      amount: Number(data.amount),
+      receiptNo,
+      amount: paidAmount,
       installment: Number(data.installment),
-      status: 'Paid'
+      status: pendingBal > 0 ? 'Partially Paid' : 'Paid',
+      fullInstallmentAmount: fullAmount,
+      pendingBalance: pendingBal
     };
+
+    if (pendingBal > 0) {
+      collectionData.partialPayments = [{
+        amount: paidAmount,
+        date: data.date || new Date(),
+        mode: data.mode || 'Cash',
+        receiptNo
+      }];
+    }
 
     const collection = new Collection(collectionData);
     const savedCollection = await collection.save();
-    console.log(`✅ Collections: Created collection ${receiptNo} for ₹${collectionData.amount}`);
 
-    const member = await Member.findOne({ id: data.memberId });
+    const member = await Member.findOne({ $or: [{ id: data.memberId }, { memberId: data.memberId }] });
     const group = await Group.findOne({ id: data.groupId });
     const scheme = group ? await Scheme.findOne({ id: group.schemeId }) : null;
 
@@ -94,7 +117,7 @@ router.post('/', authenticate, authorize('super_admin', 'sub_admin'), async (req
       receiptNumber: receiptNo,
       date: data.date || new Date(),
       time: new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' }),
-      branch: 'Main Branch',
+      branch: 'Madurai HQ',
       collectedBy: req.user.name,
       memberId: member?.memberId || data.memberId,
       memberName: member?.name || '',
@@ -103,36 +126,34 @@ router.post('/', authenticate, authorize('super_admin', 'sub_admin'), async (req
       memberAadhar: member?.aadhaar || '',
       chitName: scheme?.name || '',
       chitGroup: group?.name || '',
-      chitNumber: `CHIT-${scheme?.amount || ''}-001`,
+      chitNumber: `CHIT-${scheme?.amount || ''}`,
       totalChitValue: scheme?.amount || 0,
       monthlyAmount: scheme?.monthlyInstallment || 0,
       duration: scheme?.duration || 0,
       currentMonth: data.installment || 1,
       dueDate: data.date || new Date(),
-      installmentAmount: Number(data.amount),
+      installmentAmount: fullAmount,
       lateFine: 0,
       discount: 0,
       previousDue: 0,
-      totalPayable: Number(data.amount),
-      amountPaid: Number(data.amount),
-      balance: 0,
+      totalPayable: fullAmount,
+      amountPaid: paidAmount,
+      balance: pendingBal,
       paymentMethod: data.mode || 'Cash',
       referenceNumber: data.referenceNumber || '',
-      paidInstallments: 1,
+      paidInstallments: pendingBal > 0 ? 0 : 1,
       remainingInstallments: (scheme?.duration || 0) - (data.installment || 1),
-      totalPaid: Number(data.amount),
-      remainingAmount: (scheme?.amount || 0) - Number(data.amount),
-      status: 'Paid',
-      remarks: 'Payment via collection'
+      totalPaid: paidAmount,
+      remainingAmount: (scheme?.amount || 0) - paidAmount,
+      status: pendingBal > 0 ? 'Partially Paid' : 'Paid',
+      remarks: pendingBal > 0 ? `Partial payment: ₹${paidAmount} paid, ₹${pendingBal} due` : 'Payment via collection'
     };
 
     const invoice = new Invoice(invoiceData);
     await invoice.save();
-    console.log(`✅ Collections: Auto-created invoice ${invoiceNo} for collection ${receiptNo}`);
 
     res.status(201).json(savedCollection);
   } catch (error) {
-    console.error('❌ Collections: Error creating:', error.message);
     res.status(400).json({ message: 'Error creating collection: ' + error.message });
   }
 });
@@ -149,6 +170,42 @@ router.put('/:id', authenticate, authorize('super_admin'), async (req, res) => {
   } catch (error) {
     console.error('❌ Collections: Error updating:', error.message);
     res.status(400).json({ message: 'Error updating collection: ' + error.message });
+  }
+});
+
+// ── Partial Payment ──────────────────────────────────────────────────────
+router.post('/partial-payment', authenticate, authorize('super_admin', 'sub_admin'), async (req, res) => {
+  try {
+    const { collectionId, amount, date, mode } = req.body;
+    if (!collectionId || !amount) {
+      return res.status(400).json({ message: 'Collection ID and amount are required' });
+    }
+
+    const collection = await Collection.findOne({ id: collectionId });
+    if (!collection) return res.status(404).json({ message: 'Collection not found' });
+
+    const partialReceipt = await generateReceiptNo();
+    const newPendingBal = Math.max(0, collection.pendingBalance - Number(amount));
+
+    collection.partialPayments.push({
+      amount: Number(amount),
+      date: date || new Date(),
+      mode: mode || 'Cash',
+      receiptNo: partialReceipt
+    });
+
+    collection.amount += Number(amount);
+    collection.pendingBalance = newPendingBal;
+    collection.status = newPendingBal > 0 ? 'Partially Paid' : 'Paid';
+
+    if (newPendingBal === 0) {
+      collection.fullInstallmentAmount = collection.amount;
+    }
+
+    await collection.save();
+    res.json(collection);
+  } catch (error) {
+    res.status(400).json({ message: 'Error processing partial payment: ' + error.message });
   }
 });
 

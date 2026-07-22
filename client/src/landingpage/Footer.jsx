@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Mail, Phone, MapPin, ArrowRight, CheckCircle2, ChevronRight } from 'lucide-react';
-import logo from '../assets/jod.png';
+import { logo } from '../assets';
 
 export const Footer = ({ onNavigate }) => {
   const year = new Date().getFullYear();
@@ -22,9 +22,9 @@ export const Footer = ({ onNavigate }) => {
       { label: 'Contact', id: 'contact' },
     ],
     'Schemes': [
-      { label: 'Silver — ₹2.5L', id: 'plans' },
-      { label: 'Gold — ₹10L', id: 'plans' },
-      { label: 'Platinum — ₹25L', id: 'plans' },
+      { label: 'Basic — ₹25K', id: 'plans' },
+      { label: 'Standard — ₹1L', id: 'plans' },
+      { label: 'Premium — ₹5L', id: 'plans' },
     ],
   };
 
@@ -39,15 +39,15 @@ export const Footer = ({ onNavigate }) => {
           <div className="sm:col-span-2 lg:col-span-4 space-y-5">
             <button onClick={() => onNavigate('home')} className="flex items-center gap-3 cursor-pointer">
               <div className="w-10 h-10 rounded-xl bg-white/12 flex items-center justify-center">
-                <img src={logo} alt="JOD Chits" className="w-6 h-6 object-contain brightness-0 invert" />
+                <img src={logo} alt="NVS CHIT ENTERPRISES" className="w-6 h-6 object-contain brightness-0 invert" />
               </div>
               <span className="flex flex-col leading-none">
-                <span className="text-lg font-extrabold tracking-widest text-white">JOD</span>
-                <span className="text-[9px] font-bold tracking-[0.35em] text-white/50 uppercase">CHITS</span>
+                <span className="text-lg font-extrabold tracking-widest text-white">NVS</span>
+                <span className="text-[9px] font-bold tracking-[0.35em] text-white/50 uppercase">CHIT ENTERPRISES</span>
               </span>
             </button>
             <p className="text-sm text-white/55 leading-relaxed max-w-xs">
-              Next-generation digital chit fund platform. Transparent, regulated savings and credit under the Chit Funds Act, 1982.
+              Trusted chit fund platform since 2020. Transparent, regulated savings and credit under the Chit Funds Act, 1982.
             </p>
             {/* Newsletter */}
             <div>
@@ -91,15 +91,15 @@ export const Footer = ({ onNavigate }) => {
             <ul className="space-y-3.5">
               <li className="flex items-start gap-3 text-sm text-white/55">
                 <MapPin className="w-4 h-4 text-premium-gold shrink-0 mt-0.5" />
-                <span>JOD Fintech Chambers, Plot 142, Sector 5, HSR Layout, Bengaluru, KA – 560102</span>
+                <span>1538, North Veli Street, Simmakkal, Madurai – 625001</span>
               </li>
               <li className="flex items-center gap-3 text-sm text-white/55">
                 <Phone className="w-4 h-4 text-premium-gold shrink-0" />
-                <span>+91 80 4952 8200</span>
+                <span>96009 4752</span>
               </li>
               <li className="flex items-center gap-3 text-sm text-white/55">
                 <Mail className="w-4 h-4 text-premium-gold shrink-0" />
-                <span>support@jodchits.com</span>
+                <span>nvschit@gmail.com</span>
               </li>
             </ul>
           </div>
@@ -108,7 +108,7 @@ export const Footer = ({ onNavigate }) => {
         <div className="h-px bg-white/8 mb-8" />
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 text-xs text-white/35">
           <div className="space-y-1">
-            <p>© {year} JOD Chit Funds Pvt. Ltd. All rights reserved.</p>
+            <p>© {year} NVS CHIT ENTERPRISES. All rights reserved.</p>
             <p className="text-white/25">Disclaimer: Dividend outcomes depend on member bidding choices.</p>
           </div>
           <div className="flex gap-4">

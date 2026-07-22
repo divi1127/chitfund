@@ -112,7 +112,7 @@ export const InvestmentPlanner = () => {
                 <motion.form key="form" onSubmit={handleSubmit} initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex flex-col h-full space-y-5">
                   <div>
                     <h3 className="text-base font-bold text-text-primary flex items-center gap-2">
-                      <TrendingUp className="w-4 h-4 text-premium-gold" /> Lock In Your Rates
+                      <TrendingUp className="w-4 h-4 text-premium-gold" /> Get a Custom Plan
                     </h3>
                     <p className="text-xs text-text-secondary mt-1">Reserve your spot in the next available group.</p>
                   </div>

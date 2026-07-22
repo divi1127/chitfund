@@ -98,7 +98,7 @@ export const Hero = ({ onNavigate }) => {
               transition={{ duration: 0.5, delay: 0.16 }}
               className="text-lg text-text-secondary leading-relaxed mb-9 max-w-lg"
             >
-              Save systematically, access funds instantly, and earn competitive dividends. HR Chits brings next-gen digital transparency to India's most trusted savings tradition.
+              Save systematically, access funds instantly, and earn competitive dividends. NVS CHIT ENTERPRISES brings next-gen digital transparency to India's most trusted savings tradition.
             </motion.p>
 
             <motion.div

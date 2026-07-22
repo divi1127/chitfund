@@ -99,12 +99,12 @@ function SidebarInner({ collapsed, setCollapsed, navItems, active, onNavigate, s
           fontSize: 14, fontWeight: 800, color: "#fff",
           boxShadow: "0 4px 12px rgba(59,130,246,0.35)",
         }}>
-          HR
+          NVS
         </div>
         {!collapsed && (
           <div style={{ overflow: "hidden" }}>
-            <span style={{ fontSize: 16, fontWeight: 700, color: "#fff", display: "block", lineHeight: 1.2 }}>HR Chits</span>
-            <span style={{ fontSize: 11, color: "rgba(255,255,255,.4)", display: "block", marginTop: 2 }}>Enterprises</span>
+            <span style={{ fontSize: 16, fontWeight: 700, color: "#fff", display: "block", lineHeight: 1.2 }}>NVS CHIT</span>
+            <span style={{ fontSize: 11, color: "rgba(255,255,255,.4)", display: "block", marginTop: 2 }}>ENTERPRISES</span>
           </div>
         )}
       </div>

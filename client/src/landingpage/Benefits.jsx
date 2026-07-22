@@ -11,7 +11,7 @@ const benefits = [
 ];
 
 const comparisons = [
-  { label: 'JOD Chit Dividends', range: '8.5%–11.2% p.a.', pct: 92, highlight: true },
+  { label: 'NVS Chit Dividends', range: '8.5%–11.2% p.a.', pct: 92, highlight: true },
   { label: 'Fixed Deposits', range: '6.0%–7.5% p.a.', pct: 60, highlight: false },
   { label: 'Savings Accounts', range: '3.0%–4.2% p.a.', pct: 32, highlight: false },
 ];

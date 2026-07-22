@@ -415,6 +415,18 @@ function AppLayout() {
               </ProtectedRoute>
             } />
 
+            <Route path="/agents" element={
+              <ProtectedRoute requiredModule="agents">
+                <Members dark={dark} toast={{ add }} setPreview={setPreview} />
+              </ProtectedRoute>
+            } />
+
+            <Route path="/commissions" element={
+              <ProtectedRoute requiredModule="commissions">
+                <Prizes dark={dark} />
+              </ProtectedRoute>
+            } />
+
             <Route path="/enquiries" element={
               <ProtectedRoute requiredModule="enquiries">
                 <Enquiries dark={dark} toast={{ add }} />

@@ -7,6 +7,8 @@ import { ChitPlans } from './ChitPlans';
 import { InvestmentPlanner } from './InvestmentPlanner';
 import { Features } from './Features';
 import { Benefits } from './Benefits';
+import { LegalProcess } from './LegalProcess';
+import { AgreementDetails } from './AgreementDetails';
 import { Testimonials } from './Testimonials';
 import { FAQ } from './FAQ';
 import { ContactForm } from './ContactForm';
@@ -37,6 +39,8 @@ function Landingpage() {
         <InvestmentPlanner />
         <Features />
         <Benefits />
+        <LegalProcess />
+        <AgreementDetails />
         <Testimonials />
         <FAQ />
         <ContactForm />

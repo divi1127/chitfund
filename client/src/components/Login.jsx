@@ -230,7 +230,7 @@ export function Login() {
             {/* Brand */}
             <div style={{ marginBottom: 32 }}>
               <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 20 }}>
-                <img src={logo} alt="HR Chits" style={{ height: 44, objectFit: "contain" }} />
+                <img src={logo} alt="NVS CHIT ENTERPRISES" style={{ height: 44, objectFit: "contain" }} />
                 <div>
                   <h1 style={{ fontSize: 19, fontWeight: 800, color: "#111", margin: 0 }}>
                     {COMPANY.name}
@@ -311,11 +311,12 @@ export function Login() {
               <p style={{ fontSize: 11, color: "#94a3b8", textAlign: "center", marginBottom: 10, fontWeight: 600, letterSpacing: "0.05em", textTransform: "uppercase" }}>
                 Quick Login
               </p>
-              <div style={{ display: "flex", gap: 8 }}>
+              <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
                 {[
                   { label: "Super Admin", id: "ADMIN001", pw: "admin123", color: "#1565C0" },
                   { label: "Sub Admin",   id: "SUB001",   pw: "sub123",   color: "#7c3aed" },
-                  { label: "User",        id: "USER001",  pw: "user123",  color: "#059669" },
+                  { label: "Agent",       id: "2026AG01", pw: "user123",  color: "#059669" },
+                  { label: "Customer",    id: "2026CM01", pw: "user123",  color: "#D4AF37" },
                 ].map((acc) => (
                   <button key={acc.id} type="button"
                     onClick={() => { setUserId(acc.id); setPassword(acc.pw); setError(""); }}
@@ -343,9 +344,9 @@ export function Login() {
 
         {/* ─── Right: Image Panel (lg+) ─── */}
         <div className="login-image-side">
-          <img
+            <img
             src="https://images.unsplash.com/photo-1554224155-6726b3ff858f?w=1200&q=80"
-            alt="HR Chits"
+            alt="NVS CHIT ENTERPRISES"
             style={{ width: "100%", height: "100%", objectFit: "cover", position: "absolute", inset: 0 }}
           />
           <div style={{

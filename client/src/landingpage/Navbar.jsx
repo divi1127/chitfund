@@ -70,10 +70,10 @@ export const Navbar = ({ onNavigate }) => {
             aria-label="Go to home"
             className="flex items-center gap-2.5 bg-transparent border-0 cursor-pointer p-0 shrink-0"
           >
-            <img src={logo} alt="HR Chits" style={{ height: 38, objectFit: 'contain' }} />
+            <img src={logo} alt="NVS CHIT ENTERPRISES" style={{ height: 38, objectFit: 'contain' }} />
             <span className="flex flex-col leading-none">
-              <span style={{ fontSize: '1.125rem', fontWeight: 800, letterSpacing: '0.12em', color: '#1565C0' }}>HR</span>
-              <span style={{ fontSize: '0.55rem', fontWeight: 700, letterSpacing: '0.35em', color: '#64748B', textTransform: 'uppercase' }}>CHITS</span>
+              <span style={{ fontSize: '1.125rem', fontWeight: 800, letterSpacing: '0.12em', color: '#1565C0' }}>NVS</span>
+              <span style={{ fontSize: '0.55rem', fontWeight: 700, letterSpacing: '0.35em', color: '#64748B', textTransform: 'uppercase' }}>CHIT ENTERPRISES</span>
             </span>
           </button>
 
