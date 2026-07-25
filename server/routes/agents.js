@@ -94,7 +94,7 @@ router.put('/:id', authenticate, authorize('super_admin', 'admin'), async (req, 
   }
 });
 
-router.delete('/:id', authenticate, authorize('super_admin'), async (req, res) => {
+router.delete('/:id', authenticate, authorize('super_admin', 'admin'), async (req, res) => {
   try {
     const agent = await Agent.findOneAndDelete({ agentId: req.params.id });
     if (!agent) return res.status(404).json({ message: 'Agent not found' });
@@ -105,6 +105,31 @@ router.delete('/:id', authenticate, authorize('super_admin'), async (req, res) =
     res.json({ message: 'Agent deleted successfully' });
   } catch (error) {
     res.status(500).json({ message: 'Server error deleting agent' });
+  }
+});
+
+// Reset agent password to their DOB (DDMMYYYY)
+router.put('/:id/reset-password', authenticate, authorize('super_admin', 'admin'), async (req, res) => {
+  try {
+    const agent = await Agent.findOne({ agentId: req.params.id });
+    if (!agent) return res.status(404).json({ message: 'Agent not found' });
+
+    const newPassword = agent.dob ? generatePasswordFromDob(agent.dob) : 'welcome@2026';
+
+    // Update Agent record (plaintext — compared directly in agent-login)
+    await Agent.findOneAndUpdate({ agentId: req.params.id }, { password: newPassword });
+
+    // Update the linked User record so main /login also works
+    const userRecord = await User.findOne({ userId: req.params.id });
+    if (userRecord) {
+      userRecord.password = newPassword;
+      userRecord.plainPassword = newPassword;
+      await userRecord.save(); // triggers bcrypt pre-save hook
+    }
+
+    res.json({ message: 'Password reset to DOB successfully', newPassword });
+  } catch (error) {
+    res.status(500).json({ message: 'Error resetting password: ' + error.message });
   }
 });
 
