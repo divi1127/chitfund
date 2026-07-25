@@ -98,6 +98,82 @@ export function SuperAdminDashboard({ dark, toast }) {
         </div>
       </div>
 
+      {/* ── Customer Approval Flow ── */}
+      <div style={{ background: dark ? "rgba(255,255,255,.05)" : "#fff", border: dark ? "1px solid rgba(255,255,255,.1)" : "1px solid #e5e7eb", borderRadius: 12, padding: 20, marginBottom: 20 }}>
+        <div style={{ fontSize: 14, fontWeight: 600, color: dark ? "#f3f4f6" : "#111", marginBottom: 16 }}>
+          Customer Approval Flow
+          <span style={{ fontSize: 11, fontWeight: 400, color: dark ? "rgba(255,255,255,.4)" : "#9ca3af", marginLeft: 8 }}>End-to-end process from hierarchy to activation</span>
+        </div>
+
+        <div style={{ display: "flex", justifyContent: "space-between", gap: 16, flexWrap: "wrap" }}>
+          {/* Hierarchy */}
+          <div style={{ flex: "1 1 200px", minWidth: 160 }}>
+            <div style={{ fontSize: 11, fontWeight: 700, color: "#6b7280", textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: 10 }}>Hierarchy</div>
+            {[
+              { label: "Super Admin", color: "#2563eb" },
+              { label: "Admin", color: "#7c3aed" },
+              { label: "Agent", color: "#f59e0b" },
+            ].map((r, i, arr) => (
+              <div key={r.label}>
+                <div style={{ padding: "10px 14px", borderRadius: 8, background: dark ? "rgba(255,255,255,.06)" : "#f8fafc", border: `2px solid ${r.color}22`, borderLeft: `4px solid ${r.color}`, fontWeight: 600, fontSize: 13, color: dark ? "#f3f4f6" : "#1e293b" }}>
+                  {r.label}
+                </div>
+                {i < arr.length - 1 && (
+                  <div style={{ textAlign: "center", color: "#94a3b8", fontSize: 14, lineHeight: "20px" }}>▼</div>
+                )}
+              </div>
+            ))}
+          </div>
+
+          {/* Agent Steps */}
+          <div style={{ flex: "2 1 280px", minWidth: 200 }}>
+            <div style={{ fontSize: 11, fontWeight: 700, color: "#6b7280", textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: 10 }}>Agent Process</div>
+            {[
+              { label: "Create Customer", desc: "Enter customer details", color: "#2563eb" },
+              { label: "Upload KYC", desc: "Aadhaar, PAN, Photo, etc.", color: "#7c3aed" },
+              { label: "Select Chit Scheme", desc: "Choose a chit plan", color: "#f59e0b" },
+              { label: "Submit for Approval", desc: "Send to Super Admin", color: "#dc2626" },
+            ].map((s, i, arr) => (
+              <div key={s.label}>
+                <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "8px 12px", borderRadius: 8, background: dark ? "rgba(255,255,255,.04)" : "#fff", border: dark ? "1px solid rgba(255,255,255,.08)" : "1px solid #e2e8f0" }}>
+                  <div style={{ width: 22, height: 22, borderRadius: "50%", background: s.color, color: "#fff", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 11, fontWeight: 700, flexShrink: 0 }}>{i + 1}</div>
+                  <div>
+                    <div style={{ fontSize: 13, fontWeight: 600, color: dark ? "#f3f4f6" : "#1e293b" }}>{s.label}</div>
+                    <div style={{ fontSize: 11, color: dark ? "rgba(255,255,255,.4)" : "#94a3b8" }}>{s.desc}</div>
+                  </div>
+                </div>
+                {i < arr.length - 1 && (
+                  <div style={{ textAlign: "center", color: "#94a3b8", fontSize: 12, lineHeight: "18px" }}>▼</div>
+                )}
+              </div>
+            ))}
+            <div style={{ textAlign: "center", color: "#94a3b8", fontSize: 12, lineHeight: "18px" }}>▼</div>
+            <div style={{ padding: "8px 12px", borderRadius: 8, background: "#fef3c7", border: "1px solid #f59e0b", textAlign: "center", fontWeight: 600, fontSize: 12, color: "#92400e" }}>
+              ⏳ Pending Approval
+            </div>
+          </div>
+
+          {/* Super Admin Review */}
+          <div style={{ flex: "1 1 200px", minWidth: 160 }}>
+            <div style={{ fontSize: 11, fontWeight: 700, color: "#6b7280", textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: 10 }}>Super Admin Review</div>
+            <div style={{ textAlign: "center", color: "#94a3b8", fontSize: 14, lineHeight: "20px" }}>▼</div>
+            <div style={{ padding: "10px 14px", borderRadius: 8, background: dark ? "rgba(255,255,255,.06)" : "#f0fdf4", border: "2px solid #22c55e", fontWeight: 600, fontSize: 13, color: dark ? "#bbf7d0" : "#166534", marginBottom: 4 }}>
+              ✅ Approve
+            </div>
+            <div style={{ padding: "10px 14px", borderRadius: 8, background: dark ? "rgba(255,255,255,.06)" : "#fef2f2", border: "2px solid #ef4444", fontWeight: 600, fontSize: 13, color: dark ? "#fca5a5" : "#991b1b", marginBottom: 4 }}>
+              ❌ Reject
+            </div>
+            <div style={{ padding: "10px 14px", borderRadius: 8, background: dark ? "rgba(255,255,255,.06)" : "#fffbeb", border: "2px solid #f59e0b", fontWeight: 600, fontSize: 13, color: dark ? "#fde68a" : "#92400e" }}>
+              ✏️ Request Changes
+            </div>
+            <div style={{ textAlign: "center", color: "#94a3b8", fontSize: 14, lineHeight: "20px" }}>▼</div>
+            <div style={{ padding: "10px 14px", borderRadius: 8, background: "linear-gradient(135deg, #22c55e, #16a34a)", color: "#fff", fontWeight: 700, fontSize: 13, textAlign: "center" }}>
+              Customer becomes Active
+            </div>
+          </div>
+        </div>
+      </div>
+
       <div className="d-grid d-grid-2" style={{ marginBottom: 20 }}>
         <div style={{ background: dark ? "rgba(255,255,255,.05)" : "#fff", border: dark ? "1px solid rgba(255,255,255,.1)" : "1px solid #e5e7eb", borderRadius: 12, padding: 20 }}>
           <div style={{ fontSize: 14, fontWeight: 600, color: dark ? "#f3f4f6" : "#111", marginBottom: 14 }}>Recent Collections</div>
