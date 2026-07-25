@@ -41,6 +41,16 @@ export function SuperAdminDashboard({ dark, toast }) {
   const totalBranches = branches?.length || 0;
   const totalAdmins = users?.filter(u => u.role === 'admin').length || 0;
 
+  const monthlyMap = {};
+  collections.forEach(c => {
+    const d = new Date(c.date);
+    const key = d.getMonth();
+    if (!monthlyMap[key]) monthlyMap[key] = 0;
+    monthlyMap[key] += c.amount || 0;
+  });
+  const monthNames = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+  const chartData = monthNames.map((l, i) => ({ l, v: monthlyMap[i] || 0 }));
+
   const memberById = (id) => members.find((m) => m.memberId === id || m.id === id);
   const groupById = (id) => groups.find((g) => g.id === id);
   const schemeById = (id) => schemes.find((s) => s.id === id);
