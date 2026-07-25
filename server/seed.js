@@ -182,8 +182,8 @@ const seedData = async () => {
 
     const users = await User.create([
       {
-        userId: 'ADMIN001',
-        password: 'admin123',
+        userId: 'NVS@2026',
+        password: 'NVS2026',
         name: 'Super Admin',
         email: 'admin@nvschit.com',
         role: 'super_admin',
@@ -195,43 +195,6 @@ const seedData = async () => {
           'agents', 'commissions',
         ],
         permissions: ['create', 'edit', 'delete', 'view'],
-        status: 'active',
-      },
-      {
-        userId: 'ADM001',
-        password: 'admin123',
-        name: 'Branch Admin',
-        email: 'branch.admin@nvschit.com',
-        role: 'admin',
-        modules: [
-          'dashboard', 'members', 'schemes', 'groups', 'collections',
-          'billing', 'auctions', 'prizes', 'accounting', 'reports',
-          'employees', 'notifications', 'profile', 'payments', 'enquiries',
-          'kyc', 'agents', 'commissions',
-        ],
-        permissions: ['create', 'edit', 'view'],
-        status: 'active',
-        branch: 'BR001',
-        assignedBranch: 'BR001',
-      },
-      {
-        userId: '2026AG01',
-        password: '01011990',
-        name: 'Raja',
-        email: 'raja@nvschit.com',
-        role: 'agent',
-        modules: AGENT_MODULES,
-        permissions: ['create', 'view', 'edit'],
-        status: 'active',
-      },
-      {
-        userId: '2026CM01',
-        password: '15051995',
-        name: 'Kumar',
-        email: 'kumar@nvschit.com',
-        role: 'customer',
-        modules: ['dashboard', 'schemes', 'payments', 'invoices', 'receipts', 'auctions', 'profile', 'notifications', 'support'],
-        permissions: ['view'],
         status: 'active',
       },
     ]);
@@ -250,60 +213,18 @@ const seedData = async () => {
     ]);
     console.log(`Branches created: ${branches.length}`);
 
-    const agents = await Agent.create([
-      {
-        agentId: '2026AG01',
-        userId: '2026AG01',
-        name: 'Raja',
-        phone: '9876543210',
-        email: 'raja@nvschit.com',
-        password: '01011990',
-        dob: new Date('1990-01-01'),
-        address: 'Madurai',
-        aadhaar: '123456789012',
-        status: 'Active',
-        assignedGroups: [],
-        customers: [],
-        commissionRate: 1,
-        modules: AGENT_MODULES,
-      },
-    ]);
-    console.log(`Agents created: ${agents.length}`);
 
-    const members = await Member.create([
-      {
-        id: '2026CM01',
-        memberId: '2026CM01',
-        userId: '2026CM01',
-        name: 'Kumar',
-        phone: '9876543211',
-        email: 'kumar@nvschit.com',
-        password: '15051995',
-        dob: new Date('1995-05-15'),
-        address: 'Madurai',
-        aadhaar: '987654321098',
-        status: 'Active',
-        groups: [],
-        agentId: '2026AG01',
-        modules: MEMBER_MODULES,
-        permissions: ['view'],
-      },
-    ]);
-    console.log(`Members created: ${members.length}`);
 
     console.log('');
     console.log('Data seeded successfully');
     console.log(`  Schemes: ${schemes.length}`);
     console.log(`  Users: ${users.length}`);
     console.log(`  Branches: ${branches.length}`);
-    console.log(`  Agents: ${agents.length}`);
-    console.log(`  Members: ${members.length}`);
+    console.log(`  Agents: 0`);
+    console.log(`  Members: 0`);
     console.log('');
     console.log('Login Credentials:');
-    console.log('  Super Admin: ADMIN001 / admin123');
-    console.log('  Branch Admin: ADM001 / admin123');
-    console.log('  Agent (Raja): 2026AG01 / 01011990');
-    console.log('  Customer (Kumar): 2026CM01 / 15051995');
+    console.log('  Super Admin: NVS@2026 / NVS2026');
 
     process.exit(0);
   } catch (error) {
