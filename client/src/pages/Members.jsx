@@ -33,7 +33,7 @@ export function Members({ toast, setPreview }) {
   const isAdmin = user?.role === "admin";
   const isAgent = user?.role === "agent";
   const isUser = user?.role === 'customer';
-  const canEdit = isSuperAdmin || isAdmin;
+  const canEdit = isSuperAdmin || isAdmin || isAgent;
 
   const myMembers = isAgent
     ? members.filter(m => m.agentId === user.agentId || m.agentId === user.userId)
@@ -91,7 +91,7 @@ export function Members({ toast, setPreview }) {
         toast.add("Member updated!");
       } else {
         const memberId = generateMemberId();
-        await createData("/members", {
+        const payload = {
           ...form,
           id: "M" + Date.now().toString().slice(-6),
           memberId, userId: memberId,
@@ -100,7 +100,9 @@ export function Members({ toast, setPreview }) {
           groups: form.groupId ? [form.groupId] : [],
           modules: ["dashboard","members","schemes","groups","collections","billing","auctions","accounting","profile","payments"],
           permissions: ["view"],
-        });
+        };
+        if (isAgent) payload.agentId = user.agentId || user.userId;
+        await createData("/members", payload);
         toast.add("Member added!");
       }
       resetForm();
@@ -154,7 +156,7 @@ export function Members({ toast, setPreview }) {
       <SectionHeader
         title="Members"
         subtitle={isUser ? "My installment schedule" : "Manage members & installment schedules"}
-        actions={isSuperAdmin ? [<Btn key="a" label="+ Add Member" primary onClick={() => { resetForm(); setShowForm(true); }} />] : []}
+        actions={isSuperAdmin || isAdmin || isAgent ? [<Btn key="a" label="+ Add Member" primary onClick={() => { resetForm(); setShowForm(true); }} />] : []}
       />
 
       {/* ── Add / Edit Form ── */}
