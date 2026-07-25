@@ -22,7 +22,7 @@ export const authenticateToken = async (req, res, next) => {
   try {
     const decoded = jwt.verify(token, JWT_SECRET);
     const user = await User.findById(decoded.id, '-password');
-    if (!user || user.status !== 'active') {
+    if (!user || user.status === 'inactive') {
       return res.status(401).json({ message: 'User not found or inactive' });
     }
     req.user = user;

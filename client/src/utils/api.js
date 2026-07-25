@@ -9,7 +9,14 @@ function getHeaders() {
 
 async function handleResponse(response, endpoint) {
   const data = await response.json();
-  if (!response.ok) throw new Error(data.message || `HTTP ${response.status}`);
+  if (!response.ok) {
+    if (response.status === 401 && !endpoint.includes('/auth/login')) {
+      localStorage.removeItem('user');
+      localStorage.removeItem('token');
+      window.location.href = '/login';
+    }
+    throw new Error(data.message || `HTTP ${response.status}`);
+  }
   return data;
 }
 
