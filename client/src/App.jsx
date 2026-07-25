@@ -27,6 +27,7 @@ import { AdminDashboard } from "./pages/AdminDashboard";
 import { AgentDashboard } from "./pages/AgentDashboard";
 import { CustomerDashboard } from "./pages/CustomerDashboard";
 import { Members } from "./pages/Members";
+import { Agents } from "./pages/Agents";
 import { Schemes } from "./pages/Schemes";
 import { Groups } from "./pages/Groups";
 import { Collections } from "./pages/Collections";
@@ -426,7 +427,7 @@ function AppLayout() {
 
             <Route path="/agents" element={
               <ProtectedRoute requiredModule="agents">
-                <Members dark={dark} toast={{ add }} setPreview={setPreview} />
+                <Agents toast={{ add }} />
               </ProtectedRoute>
             } />
 

@@ -9,8 +9,9 @@ import { Input } from "../components/Input";
 import { PaymentModal } from "../components/PaymentModal";
 import { fmt, genId } from "../utils/helpers";
 import { IconBtn } from "../components/IconBtn";
-import { HiPencil, HiTrash, HiBookOpen, HiChevronDown, HiChevronUp } from "react-icons/hi2";
+import { HiPencil, HiTrash, HiBookOpen, HiChevronDown, HiChevronUp, HiIdentification } from "react-icons/hi2";
 import { useAuth } from "../contexts/AuthContext";
+import { IDCardModal } from "../components/IDCardModal";
 
 export function Members({ toast, setPreview }) {
   const { user } = useAuth();
@@ -24,7 +25,8 @@ export function Members({ toast, setPreview }) {
   const [editingMember, setEditingMember] = useState(null);
   const [expandedMember, setExpandedMember] = useState(null); // member id with schedule open
   const [payTarget, setPayTarget] = useState(null); // { member, group, scheme, installment }
-  const [form, setForm] = useState({ name: "", phone: "", email: "", address: "", pan: "", aadhaar: "", groupId: "" });
+  const [printingEntity, setPrintingEntity] = useState(null);
+  const [form, setForm] = useState({ name: "", phone: "", email: "", address: "", pan: "", aadhaar: "", groupId: "", photo: "" });
   const [errors, setErrors] = useState({});
 
   const isSuperAdmin = user?.role === "super_admin";
@@ -110,8 +112,16 @@ export function Members({ toast, setPreview }) {
 
   const resetForm = () => {
     setShowForm(false); setEditingMember(null);
-    setForm({ name: "", phone: "", email: "", address: "", pan: "", aadhaar: "", groupId: "" });
+    setForm({ name: "", phone: "", email: "", address: "", pan: "", aadhaar: "", groupId: "", photo: "" });
     setErrors({});
+  };
+
+  const handlePhotoUpload = (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (ev) => setForm({ ...form, photo: ev.target.result });
+    reader.readAsDataURL(file);
   };
 
   const handleDelete = async (id) => {
@@ -152,6 +162,20 @@ export function Members({ toast, setPreview }) {
         <div style={{ background: "#f8fafc", border: "1px solid #e5e7eb", borderRadius: 12, padding: 24, marginBottom: 24 }}>
           <div style={{ fontWeight: 700, fontSize: 15, marginBottom: 16 }}>{editingMember ? "Edit Member" : "New Member"}</div>
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(200px,1fr))", gap: "12px 20px" }}>
+            <div style={{ gridColumn: "1/-1", display: "flex", gap: 16, alignItems: "center", background: "#fff", padding: 12, borderRadius: 8, border: "1px dashed #cbd5e1" }}>
+              {form.photo ? (
+                <img src={form.photo} alt="Avatar" style={{ width: 64, height: 64, borderRadius: "50%", objectFit: "cover", border: "2px solid #e2e8f0" }} />
+              ) : (
+                <div style={{ width: 64, height: 64, borderRadius: "50%", background: "#f1f5f9", display: "flex", alignItems: "center", justifyContent: "center", color: "#94a3b8", fontSize: 12 }}>No img</div>
+              )}
+              <div>
+                <label style={{ fontSize: 13, fontWeight: 600, color: "#2563eb", cursor: "pointer" }}>
+                  Upload Photo
+                  <input type="file" accept="image/*" onChange={handlePhotoUpload} style={{ display: "none" }} />
+                </label>
+                <div style={{ fontSize: 11, color: "#64748b", marginTop: 2 }}>Square photos work best. (Max 2MB)</div>
+              </div>
+            </div>
             {[["Full Name *", "name"], ["Phone *", "phone"], ["Email", "email"], ["PAN *", "pan"], ["Aadhaar *", "aadhaar"]].map(([lbl, key]) => (
               <div key={key}>
                 <label style={{ fontSize: 12, fontWeight: 600, color: "#374151", display: "block", marginBottom: 4 }}>{lbl}</label>
@@ -220,8 +244,9 @@ export function Members({ toast, setPreview }) {
                     Schedule {isExpanded ? <HiChevronUp size={14} /> : <HiChevronDown size={14} />}
                   </button>
                 )}
+                <IconBtn icon={<HiIdentification size={14} />} onClick={() => setPrintingEntity(member)} color="#0ea5e9" title="Print ID" />
                 <IconBtn icon={<HiBookOpen size={14} />} onClick={() => handleLedger(member)} color="#d97706" title="Ledger" />
-                {canEdit && <IconBtn icon={<HiPencil size={14} />} onClick={() => { setEditingMember(member); setForm({ name: member.name, phone: member.phone, email: member.email || "", address: member.address || "", pan: member.pan || "", aadhaar: member.aadhaar || "", groupId: "" }); setShowForm(true); }} color="#2563eb" title="Edit" />}
+                {canEdit && <IconBtn icon={<HiPencil size={14} />} onClick={() => { setEditingMember(member); setForm({ name: member.name, phone: member.phone, email: member.email || "", address: member.address || "", pan: member.pan || "", aadhaar: member.aadhaar || "", groupId: "", photo: member.photo || "" }); setShowForm(true); }} color="#2563eb" title="Edit" />}
                 {canEdit && <IconBtn icon={<HiTrash size={14} />} onClick={() => handleDelete(member.id)} color="#dc2626" title="Delete" />}
               </div>
             </div>
@@ -334,6 +359,14 @@ export function Members({ toast, setPreview }) {
           installment={payTarget.installment}
           onClose={() => setPayTarget(null)}
           onSuccess={() => { setPayTarget(null); reloadCollections(); reloadMembers(); }}
+        />
+      )}
+
+      {printingEntity && (
+        <IDCardModal
+          entity={printingEntity}
+          type="Member"
+          onClose={() => setPrintingEntity(null)}
         />
       )}
     </div>

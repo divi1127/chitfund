@@ -32,7 +32,7 @@ router.get('/:id', authenticate, async (req, res) => {
 
 router.post('/', authenticate, authorize('super_admin', 'admin'), async (req, res) => {
   try {
-    const { name, phone, email, address, aadhaar, pan, dob } = req.body;
+    const { name, phone, email, address, aadhaar, pan, dob, photo } = req.body;
 
     if (!name || !phone || !address || !aadhaar) {
       return res.status(400).json({ message: 'Name, phone, address, and aadhaar are required' });
@@ -49,6 +49,7 @@ router.post('/', authenticate, authorize('super_admin', 'admin'), async (req, re
       address, aadhaar,
       pan: pan || '',
       dob: dob || null,
+      photo: photo || '',
       password: autoPassword,
       modules: AGENT_MODULES,
       permissions: ['create', 'view']
