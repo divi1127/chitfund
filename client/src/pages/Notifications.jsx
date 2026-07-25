@@ -13,7 +13,7 @@ export function Notifications({ dark, toast }) {
   const [showSendForm, setShowSendForm] = useState(false);
   const [sendForm, setSendForm] = useState({ title: "", message: "", type: "info", recipientType: "all" });
 
-  const canSend = user?.role === "super_admin" || user?.role === "sub_admin";
+  const canSend = user?.role === "super_admin" || user?.role === "admin";
 
   const fetchNotifications = async () => {
     try {
@@ -107,7 +107,7 @@ export function Notifications({ dark, toast }) {
             ]} />
             <Input label="Recipients" value={sendForm.recipientType} onChange={v => setSendForm({ ...sendForm, recipientType: v })} dark={dark} options={[
               { value: "all", label: "All Users" }, { value: "super_admin", label: "Super Admin" },
-              { value: "sub_admin", label: "Sub Admins" }, { value: "user", label: "Users" }
+              { value: "admin", label: "Admins" }, { value: "agent", label: "Agents" }
             ]} />
           </div>
           <div style={{ marginTop: 12 }}>

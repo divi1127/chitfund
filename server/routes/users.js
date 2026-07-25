@@ -6,16 +6,16 @@ import { logAudit } from '../utils/audit.js';
 
 const router = express.Router();
 
-router.get('/', authenticateToken, requireRole('super_admin', 'sub_admin'), async (req, res) => {
+router.get('/', authenticateToken, requireRole('super_admin', 'admin'), async (req, res) => {
   try {
     let filter = {};
-    if (req.user.role === 'sub_admin') {
-      filter = { role: 'user', $or: [{ branch: req.user.branch }, { assignedBranch: req.user.branch }] };
+    if (req.user.role === 'admin') {
+      filter = { role: 'agent', $or: [{ branch: req.user.branch }, { assignedBranch: req.user.branch }] };
     }
     const users = await User.find(filter, '-password');
     res.json(users);
   } catch (error) {
-    console.error('❌ Users: Error fetching users:', error.message);
+    console.error(' Users: Error fetching users:', error.message);
     res.status(500).json({ message: 'Server error fetching users' });
   }
 });
@@ -24,10 +24,10 @@ router.get('/:id', authenticateToken, async (req, res) => {
   try {
     const user = await User.findById(req.params.id, '-password');
     if (!user) return res.status(404).json({ message: 'User not found' });
-    if (req.user.role === 'user' && req.user.id !== req.params.id) {
+    if ((req.user.role === 'agent' || req.user.role === 'customer') && req.user.id !== req.params.id) {
       return res.status(403).json({ message: 'Access denied' });
     }
-    if (req.user.role === 'sub_admin' && user.role !== 'user') {
+    if (req.user.role === 'admin' && user.role !== 'agent') {
       return res.status(403).json({ message: 'Access denied' });
     }
     res.json(user);
@@ -37,7 +37,7 @@ router.get('/:id', authenticateToken, async (req, res) => {
   }
 });
 
-router.post('/', authenticateToken, requireRole('super_admin', 'sub_admin'), async (req, res) => {
+router.post('/', authenticateToken, requireRole('super_admin', 'admin'), async (req, res) => {
   try {
     const { userId, password, name, email, phone, role, modules, permissions, branch, assignedBranch } = req.body;
 
@@ -46,11 +46,11 @@ router.post('/', authenticateToken, requireRole('super_admin', 'sub_admin'), asy
       return res.status(400).json({ message: 'User ID, password, name, and email are required' });
     }
 
-    if (req.user.role === 'sub_admin' && (role === 'super_admin' || role === 'sub_admin')) {
-      return res.status(403).json({ message: 'Sub Admins cannot create admin accounts' });
+    if (req.user.role === 'admin' && (role === 'super_admin' || role === 'admin')) {
+      return res.status(403).json({ message: 'Admins cannot create other admin accounts' });
     }
 
-    if (req.user.role === 'sub_admin') {
+    if (req.user.role === 'admin') {
       const userBranch = req.user.branch || req.user.assignedBranch;
       if (assignedBranch && assignedBranch !== userBranch) {
         return res.status(403).json({ message: 'You can only assign users to your branch' });
@@ -65,7 +65,7 @@ router.post('/', authenticateToken, requireRole('super_admin', 'sub_admin'), asy
 
     const newUser = new User({
       userId, password, name, email, phone,
-      role: role || 'user',
+      role: role || 'agent',
       modules: modules || [],
       permissions: permissions || [],
       branch: branch || assignedBranch,
@@ -84,13 +84,13 @@ router.post('/', authenticateToken, requireRole('super_admin', 'sub_admin'), asy
   }
 });
 
-router.put('/:id', authenticateToken, requireRole('super_admin', 'sub_admin'), async (req, res) => {
+router.put('/:id', authenticateToken, requireRole('super_admin', 'admin'), async (req, res) => {
   try {
     const user = await User.findById(req.params.id);
     if (!user) return res.status(404).json({ message: 'User not found' });
 
-    if (req.user.role === 'sub_admin' && user.role !== 'user') {
-      return res.status(403).json({ message: 'Sub Admins can only edit regular users' });
+    if (req.user.role === 'admin' && user.role !== 'agent') {
+      return res.status(403).json({ message: 'Admins can only edit agents' });
     }
 
     const { name, email, phone, role, modules, permissions, status, branch, assignedBranch, password } = req.body;
@@ -108,7 +108,7 @@ router.put('/:id', authenticateToken, requireRole('super_admin', 'sub_admin'), a
     if (password) updateData.password = password;
     updateData.updatedAt = Date.now();
 
-    if (req.user.role === 'sub_admin' && updateData.branch) {
+    if (req.user.role === 'admin' && updateData.branch) {
       const userBranch = req.user.branch || req.user.assignedBranch;
       if (updateData.branch !== userBranch) {
         return res.status(403).json({ message: 'You can only assign users to your branch' });

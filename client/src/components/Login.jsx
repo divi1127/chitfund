@@ -2,9 +2,10 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../contexts/AuthContext";
 import { COMPANY } from "../utils/constants";
-import { loginUser } from "../utils/api";
 import { ArrowLeft, ShieldCheck, TrendingUp, Users } from "lucide-react";
 import { logo } from "../assets";
+
+const API_BASE = import.meta.env.VITE_API_BASE || "https://chitfund-cxnp.onrender.com/api";
 
 function ChangePasswordModal({ userId, token, onClose, onSuccess }) {
   const [currentPassword, setCurrentPassword] = useState("");
@@ -125,7 +126,13 @@ export function Login() {
     setError("");
     setLoading(true);
     try {
-      const data = await loginUser(userId.trim(), password.trim());
+      const response = await fetch(`${API_BASE}/auth/login`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ userId: userId.trim(), password: password.trim() }),
+      });
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.message || "Login failed");
       login(data.user);
     } catch (err) {
       setError(err.message);
@@ -314,9 +321,9 @@ export function Login() {
               <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
                 {[
                   { label: "Super Admin", id: "ADMIN001", pw: "admin123", color: "#1565C0" },
-                  { label: "Sub Admin",   id: "SUB001",   pw: "sub123",   color: "#7c3aed" },
-                  { label: "Agent",       id: "2026AG01", pw: "user123",  color: "#059669" },
-                  { label: "Customer",    id: "2026CM01", pw: "user123",  color: "#D4AF37" },
+                  { label: "Admin",       id: "ADM001",   pw: "admin123", color: "#7c3aed" },
+                  { label: "Agent",       id: "2026AG01", pw: "01011990",  color: "#059669" },
+                  { label: "Customer",    id: "2026CM01", pw: "15051995",  color: "#D4AF37" },
                 ].map((acc) => (
                   <button key={acc.id} type="button"
                     onClick={() => { setUserId(acc.id); setPassword(acc.pw); setError(""); }}
@@ -336,7 +343,11 @@ export function Login() {
               </div>
             </div>
 
-            <p style={{ marginTop: 24, fontSize: 12, color: "#94a3b8", textAlign: "center" }}>
+            <div style={{ marginTop: 16, textAlign: "center", display: "flex", justifyContent: "center", gap: 12 }}>
+              <button onClick={() => navigate("/agent-login")} style={{ background: "none", border: "none", color: "#059669", fontSize: 12, fontWeight: 600, cursor: "pointer", textDecoration: "underline" }}>Agent Login</button>
+              <button onClick={() => navigate("/customer-login")} style={{ background: "none", border: "none", color: "#D4AF37", fontSize: 12, fontWeight: 600, cursor: "pointer", textDecoration: "underline" }}>Customer Login</button>
+            </div>
+            <p style={{ marginTop: 16, fontSize: 12, color: "#94a3b8", textAlign: "center" }}>
               &copy; {new Date().getFullYear()} {COMPANY.name}. All rights reserved.
             </p>
           </div>

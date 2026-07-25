@@ -23,12 +23,15 @@ router.get('/', authenticate, async (req, res) => {
       };
     });
 
-    if (req.user.role === 'user') {
+    if (req.user.role === 'agent') {
       const agent = await Agent.findOne({ userId: req.user.userId });
       if (agent) {
         const filtered = groupsWithScheme.filter(g => g.agentId === agent.agentId);
         return res.json(filtered);
       }
+      return res.json([]);
+    }
+    if (req.user.role === 'customer') {
       const userMember = await Member.findOne({ memberId: req.user.userId });
       if (userMember && userMember.groups) {
         const filtered = groupsWithScheme.filter(g => userMember.groups.includes(g.id));
@@ -113,7 +116,7 @@ router.put('/:id', authenticate, authorize('super_admin'), async (req, res) => {
   }
 });
 
-router.post('/:id/add-member', authenticate, authorize('super_admin', 'sub_admin'), async (req, res) => {
+router.post('/:id/add-member', authenticate, authorize('super_admin', 'admin', 'agent'), async (req, res) => {
   try {
     const { memberId } = req.body;
     if (!memberId) return res.status(400).json({ message: 'Member ID is required' });

@@ -56,14 +56,16 @@ export function UserProfile({ toast }) {
 
   const roleLabels = {
     super_admin: "Super Administrator",
-    sub_admin: "Sub Administrator",
-    user: "User"
+    admin: "Admin",
+    agent: "Agent",
+    customer: "Customer"
   };
 
   const roleColors = {
     super_admin: "purple",
-    sub_admin: "blue",
-    user: "gray"
+    admin: "blue",
+    agent: "green",
+    customer: "gray"
   };
 
   const moduleLabels = {

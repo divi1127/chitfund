@@ -40,6 +40,9 @@ export const ROUTES = {
   settings: "/settings",
   profile: "/profile",
   payments: "/payments",
+  invoices: "/invoices",
+  receipts: "/receipts",
+  support: "/support",
   addMembers: "/add-members",
   agents: "/agents",
   commissions: "/commissions",
@@ -47,6 +50,12 @@ export const ROUTES = {
   enquiries: "/enquiries",
   auditLogs: "/audit-logs",
   kyc: "/kyc-verification",
+  platformSettings: "/platform-settings",
+  invoiceSettings: "/invoice-settings",
+  receiptSettings: "/receipt-settings",
+  notificationSettings: "/notification-settings",
+  rolePermissions: "/role-permissions",
+  backupRestore: "/backup-restore",
 };
 
 export const ROUTE_TO_ID = Object.fromEntries(
@@ -55,7 +64,7 @@ export const ROUTE_TO_ID = Object.fromEntries(
 
 export const NAV_ITEMS = [
   { id: "dashboard", label: "Dashboard", icon: "dashboard" },
-  { id: "members", label: "Members", icon: "members" },
+  { id: "members", label: "Members/Customers", icon: "members" },
   { id: "schemes", label: "Chit Schemes", icon: "schemes" },
   { id: "groups", label: "Groups", icon: "groups" },
   { id: "collections", label: "Collections", icon: "collections" },
@@ -70,10 +79,19 @@ export const NAV_ITEMS = [
   { id: "settings", label: "Settings", icon: "settings" },
   { id: "profile", label: "My Profile", icon: "profile" },
   { id: "payments", label: "My Payments", icon: "payments" },
+  { id: "invoices", label: "Invoices", icon: "collections" },
+  { id: "receipts", label: "Receipts", icon: "collections" },
+  { id: "support", label: "Support", icon: "notifications" },
   { id: "enquiries", label: "Enquiries", icon: "enquiries" },
   { id: "agents", label: "Agents", icon: "members" },
   { id: "commissions", label: "Commissions", icon: "prizes" },
-  { id: "user-management", label: "User Management", icon: "members" },
+  { id: "user-management", label: "Admin Management", icon: "members" },
   { id: "audit-logs", label: "Audit Logs", icon: "reports" },
   { id: "kyc", label: "KYC Verification", icon: "profile" },
+  { id: "platform-settings", label: "Company Settings", icon: "settings" },
+  { id: "invoice-settings", label: "Invoice Settings", icon: "collections" },
+  { id: "receipt-settings", label: "Receipt Settings", icon: "collections" },
+  { id: "notification-settings", label: "Notification Settings", icon: "notifications" },
+  { id: "role-permissions", label: "Role Permissions", icon: "members" },
+  { id: "backup-restore", label: "Backup & Restore", icon: "reports" },
 ];

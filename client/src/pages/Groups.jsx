@@ -19,7 +19,7 @@ export function Groups({ toast }) {
   const { data: members } = useData('/members');
 
   const isUser = user?.role === 'user';
-  const canEdit = user?.role === 'super_admin' || user?.role === 'sub_admin';
+  const canEdit = user?.role === 'super_admin' || user?.role === 'admin';
   // user sees only their groups
   const userMember = isUser ? members.find(m => m.memberId === user.userId || m.email === user.email) : null;
   const userGroupIds = userMember?.groups || [];

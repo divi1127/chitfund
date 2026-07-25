@@ -35,12 +35,12 @@ export function Auctions({ toast, setPreview }) {
   const [selectedSchemeId, setSelectedSchemeId] = useState("");
 
   const isSuperAdmin = user?.role === "super_admin";
-  const isUser = user?.role === "user";
+  const isCustomer = user?.role === "customer";
 
-  // User: only auctions for their group
-  const userMember = isUser ? members.find(m => m.memberId === user.userId || m.email === user.email) : null;
+  // Customer: only auctions for their group
+  const userMember = isCustomer ? members.find(m => m.memberId === user.memberId || m.memberId === user.userId) : null;
   const userGroupIds = userMember?.groups || [];
-  const visibleAuctions = isUser ? auctions.filter(a => a.winnerId === userMember?.userId || a.winnerId === userMember?.memberId) : auctions;
+  const visibleAuctions = isCustomer ? auctions.filter(a => a.winnerId === userMember?.memberId) : auctions;
 
   const groupById = (id) => groups.find((g) => g.id === id);
   const schemeById = (id) => schemes.find((s) => s.id === id);

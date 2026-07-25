@@ -11,7 +11,7 @@ const router = express.Router();
 
 const AGENT_MODULES = ['dashboard', 'members', 'schemes', 'groups', 'collections', 'profile'];
 
-router.get('/', authenticate, authorize('super_admin', 'sub_admin'), async (req, res) => {
+router.get('/', authenticate, authorize('super_admin', 'admin'), async (req, res) => {
   try {
     const agents = await Agent.find();
     res.json(agents);
@@ -30,7 +30,7 @@ router.get('/:id', authenticate, async (req, res) => {
   }
 });
 
-router.post('/', authenticate, authorize('super_admin', 'sub_admin'), async (req, res) => {
+router.post('/', authenticate, authorize('super_admin', 'admin'), async (req, res) => {
   try {
     const { name, phone, email, address, aadhaar, pan, dob } = req.body;
 
@@ -64,7 +64,7 @@ router.post('/', authenticate, authorize('super_admin', 'sub_admin'), async (req
         plainPassword: autoPassword,
         name, email: email || `${agentId}@nvschit.com`,
         password: autoPassword,
-        role: 'user',
+        role: 'agent',
         modules: AGENT_MODULES,
         permissions: ['create', 'view']
       });
@@ -77,7 +77,7 @@ router.post('/', authenticate, authorize('super_admin', 'sub_admin'), async (req
   }
 });
 
-router.put('/:id', authenticate, authorize('super_admin', 'sub_admin'), async (req, res) => {
+router.put('/:id', authenticate, authorize('super_admin', 'admin'), async (req, res) => {
   try {
     const existing = await Agent.findOne({ agentId: req.params.id });
     if (!existing) return res.status(404).json({ message: 'Agent not found' });

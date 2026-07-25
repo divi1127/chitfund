@@ -14,20 +14,23 @@ router.get('/', authenticate, async (req, res) => {
     console.log(`📋 Collections: Fetching all collections (requested by ${req.user.userId})`);
     const collections = await Collection.find();
 
-    if (req.user.role === 'user') {
-      const userMember = await Member.findOne({ memberId: req.user.userId });
-      if (!userMember) {
-        const agent = await (await import('../models/Agent.js')).default.findOne({ userId: req.user.userId });
-        if (agent) {
-          const agentCustomers = await (await import('../models/Member.js')).default.find({ agentId: agent.agentId });
-          const customerIds = agentCustomers.map(m => m.memberId);
-          const filtered = collections.filter(c => customerIds.includes(c.memberId));
-          return res.json(filtered);
-        }
-        return res.json([]);
+    if (req.user.role === 'agent') {
+      const agent = await Agent.findOne({ userId: req.user.userId });
+      if (agent) {
+        const agentCustomers = await Member.find({ agentId: agent.agentId });
+        const customerIds = agentCustomers.map(m => m.memberId);
+        const filtered = collections.filter(c => customerIds.includes(c.memberId));
+        return res.json(filtered);
       }
-      const filtered = collections.filter(c => c.memberId === userMember.memberId);
-      return res.json(filtered);
+      return res.json([]);
+    }
+    if (req.user.role === 'customer') {
+      const userMember = await Member.findOne({ memberId: req.user.userId });
+      if (userMember) {
+        const filtered = collections.filter(c => c.memberId === userMember.memberId);
+        return res.json(filtered);
+      }
+      return res.json([]);
     }
 
     res.json(collections);
@@ -75,7 +78,7 @@ router.get('/monthly/:year/:month', authenticate, async (req, res) => {
   }
 });
 
-router.post('/', authenticate, authorize('super_admin', 'sub_admin'), async (req, res) => {
+router.post('/', authenticate, authorize('super_admin', 'admin', 'agent'), async (req, res) => {
   try {
     const data = { ...req.body };
     const receiptNo = await generateReceiptNo();
@@ -174,7 +177,7 @@ router.put('/:id', authenticate, authorize('super_admin'), async (req, res) => {
 });
 
 // ── Partial Payment ──────────────────────────────────────────────────────
-router.post('/partial-payment', authenticate, authorize('super_admin', 'sub_admin'), async (req, res) => {
+router.post('/partial-payment', authenticate, authorize('super_admin', 'admin'), async (req, res) => {
   try {
     const { collectionId, amount, date, mode } = req.body;
     if (!collectionId || !amount) {
@@ -293,7 +296,7 @@ router.post('/member-payment', authenticate, async (req, res) => {
 });
 
 // ── Admin approve cash payment ──────────────────────────────────────────────
-router.put('/:id/approve', authenticate, authorize('super_admin', 'sub_admin'), async (req, res) => {
+router.put('/:id/approve', authenticate, authorize('super_admin', 'admin'), async (req, res) => {
   try {
     const collection = await Collection.findOneAndUpdate(
       { id: req.params.id, status: 'Pending' },

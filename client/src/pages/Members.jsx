@@ -28,22 +28,14 @@ export function Members({ toast, setPreview }) {
   const [errors, setErrors] = useState({});
 
   const isSuperAdmin = user?.role === "super_admin";
-  const isSubAdmin = user?.role === "sub_admin";
-  const canEdit = isSuperAdmin;
-  const isUser = user?.role === "user";
+  const isAdmin = user?.role === "admin";
+  const isAgent = user?.role === "agent";
+  const canEdit = isSuperAdmin || isAdmin;
 
-  const generateMemberId = () => {
-    const yr = String(new Date().getFullYear()).slice(-2);
-    const prefix = `HRCHIT${yr}`;
-    const max = members
-      .filter(m => m.memberId?.startsWith(prefix))
-      .reduce((n, m) => Math.max(n, parseInt(m.memberId.slice(prefix.length), 10) || 0), 0);
-    return `${prefix}${String(max + 1).padStart(3, "0")}`;
-  };
-
-  const myMembers = isUser
-    ? members.filter(m => m.memberId === user.userId || m.email === user.email)
-    : members;
+  const myMembers = isAgent
+    ? members.filter(m => m.agentId === user.agentId || m.agentId === user.userId)
+    : isSuperAdmin || isAdmin ? members
+    : members.filter(m => m.memberId === user.memberId || m.memberId === user.userId);
 
   const filtered = myMembers.filter(
     m => m.name?.toLowerCase().includes(search.toLowerCase()) || m.phone?.includes(search)

@@ -4,15 +4,19 @@ const AuthContext = createContext(null);
 
 const ROLE_PERMISSIONS = {
   super_admin: {
-    navItems: ["dashboard", "members", "schemes", "groups", "collections", "billing", "auctions", "prizes", "accounting", "reports", "employees", "branches", "notifications", "settings", "profile", "enquiries", "user-management", "audit-logs", "kyc"],
+    navItems: ["dashboard", "branches", "user-management", "agents", "members", "schemes", "groups", "collections", "billing", "auctions", "prizes", "accounting", "reports", "notifications", "platform-settings", "invoice-settings", "receipt-settings", "notification-settings", "role-permissions", "audit-logs", "backup-restore", "profile", "enquiries", "kyc"],
     permissions: ["create", "edit", "delete", "view", "approve", "reject", "configure", "export"],
   },
-  sub_admin: {
-    navItems: ["dashboard", "members", "schemes", "groups", "collections", "billing", "auctions", "reports", "notifications", "profile", "kyc", "enquiries"],
-    permissions: ["create", "edit", "view"],
+  admin: {
+    navItems: ["dashboard", "agents", "members", "schemes", "groups", "collections", "billing", "auctions", "reports", "notifications", "profile", "kyc", "enquiries"],
+    permissions: ["create", "edit", "view", "approve"],
   },
-  user: {
-    navItems: ["dashboard", "profile", "payments", "notifications", "enquiries"],
+  agent: {
+    navItems: ["dashboard", "members", "collections", "commissions", "profile", "notifications"],
+    permissions: ["create", "view", "edit"],
+  },
+  customer: {
+    navItems: ["dashboard", "schemes", "payments", "invoices", "receipts", "auctions", "profile", "notifications", "support"],
     permissions: ["view"],
   },
 };

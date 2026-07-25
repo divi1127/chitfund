@@ -302,7 +302,7 @@ export function Dashboard({ toast }) {
     );
   }
 
-  // Admin dashboard (super_admin, sub_admin)
+  // Admin dashboard (super_admin, admin)
   // Calculate monthly collections for current month
   const currentMonth = new Date().getMonth();
   const currentYear = new Date().getFullYear();

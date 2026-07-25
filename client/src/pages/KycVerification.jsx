@@ -15,7 +15,7 @@ export function KycVerification({ dark, toast }) {
   const [reviewingKyc, setReviewingKyc] = useState(null);
   const [rejectionReason, setRejectionReason] = useState("");
 
-  const canReview = user?.role === "super_admin" || user?.role === "sub_admin";
+  const canReview = user?.role === "super_admin" || user?.role === "admin";
 
   const fetchKyc = async () => {
     try {

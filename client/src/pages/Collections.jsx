@@ -26,14 +26,13 @@ export function Collections({ toast, setPreview }) {
   const [errors, setErrors] = useState({});
 
   const isSuperAdmin = user?.role === "super_admin";
-  const isSubAdmin = user?.role === "sub_admin";
+  const isAdmin = user?.role === "admin";
   const canEdit = isSuperAdmin;
-  const canApprove = isSuperAdmin || isSubAdmin;
+  const canApprove = isSuperAdmin || isAdmin;
 
-  const filteredCollections = user?.role === "user"
+  const filteredCollections = user?.role === "customer"
     ? collections.filter(c => {
-        const m = members.find(m => m.id === c.memberId);
-        return m && (m.memberId === user.userId || m.email === user.email);
+        return c.memberId === user.memberId || c.memberId === user.userId;
       })
     : collections;
 
@@ -116,7 +115,7 @@ export function Collections({ toast, setPreview }) {
     <div>
       <SectionHeader
         title="Monthly Collections"
-        subtitle={user?.role === "user" ? "My Collection History" : "Record and manage installment collections"}
+        subtitle={user?.role === "customer" ? "My Collection History" : "Record and manage installment collections"}
         actions={user?.role !== "user" ? [<Btn key="add" label="+ Record Collection" primary onClick={() => { setEditingCollection(null); setForm({ memberId: "", groupId: "", amount: "", mode: "", date: new Date().toISOString().split("T")[0], installment: "" }); setShowForm(true); }} />] : []}
       />
 

@@ -22,9 +22,19 @@ router.get('/', authenticate, async (req, res) => {
   try {
     console.log(`📋 Invoices: Fetching all invoices (requested by ${req.user.userId})`);
     
-    if (req.user.role === 'user') {
+    if (req.user.role === 'customer') {
       const invoices = await Invoice.find({ memberId: req.user.userId }).sort({ createdAt: -1 });
       return res.json(invoices);
+    }
+    if (req.user.role === 'agent') {
+      const agent = await Agent.findOne({ userId: req.user.userId });
+      if (agent) {
+        const agentCustomers = await Member.find({ agentId: agent.agentId });
+        const customerIds = agentCustomers.map(m => m.memberId);
+        const invoices = await Invoice.find({ memberId: { $in: customerIds } }).sort({ createdAt: -1 });
+        return res.json(invoices);
+      }
+      return res.json([]);
     }
     
     const invoices = await Invoice.find().sort({ createdAt: -1 });
@@ -145,7 +155,7 @@ router.get('/:id', authenticate, async (req, res) => {
   }
 });
 
-router.post('/', authenticate, authorize('super_admin', 'sub_admin', 'user'), async (req, res) => {
+router.post('/', authenticate, authorize('super_admin', 'admin', 'agent', 'customer'), async (req, res) => {
   try {
     const invNo = req.body.invoiceNumber || await generateInvoiceNo();
     const invoiceData = {
@@ -193,7 +203,7 @@ router.put('/:id', authenticate, async (req, res) => {
   }
 });
 
-router.patch('/:id/approve', authenticate, authorize('super_admin', 'sub_admin'), async (req, res) => {
+router.patch('/:id/approve', authenticate, authorize('super_admin', 'admin'), async (req, res) => {
   try {
     const invoice = await Invoice.findById(req.params.id);
     if (!invoice) {
@@ -233,7 +243,7 @@ router.patch('/:id/approve', authenticate, authorize('super_admin', 'sub_admin')
   }
 });
 
-router.patch('/:id/reject', authenticate, authorize('super_admin', 'sub_admin'), async (req, res) => {
+router.patch('/:id/reject', authenticate, authorize('super_admin', 'admin'), async (req, res) => {
   try {
     const { reason } = req.body;
     const invoice = await Invoice.findById(req.params.id);

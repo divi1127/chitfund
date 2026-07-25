@@ -10,11 +10,11 @@ router.get('/', authenticateToken, async (req, res) => {
   try {
     let filter = {};
     if (req.query.status) filter.status = req.query.status;
-    if (req.user.role === 'user') {
+    if (req.user.role === 'customer') {
       if (!req.user.userId) return res.json([]);
       filter.memberId = req.user.userId;
     }
-    if (req.user.role === 'sub_admin' && req.user.branch) {
+    if (req.user.role === 'admin' && req.user.branch) {
       filter.branch = req.user.branch;
     }
     const kycRecords = await KYC.find(filter).sort({ submittedAt: -1 });
@@ -28,7 +28,7 @@ router.get('/:id', authenticateToken, async (req, res) => {
   try {
     const kyc = await KYC.findById(req.params.id);
     if (!kyc) return res.status(404).json({ message: 'KYC record not found' });
-    if (req.user.role === 'user' && kyc.memberId !== req.user.userId) {
+    if (req.user.role === 'customer' && kyc.memberId !== req.user.userId) {
       return res.status(403).json({ message: 'Access denied' });
     }
     res.json(kyc);
@@ -56,7 +56,7 @@ router.post('/', authenticateToken, async (req, res) => {
   }
 });
 
-router.put('/:id/review', authenticateToken, requireRole('super_admin', 'sub_admin'), async (req, res) => {
+router.put('/:id/review', authenticateToken, requireRole('super_admin', 'admin'), async (req, res) => {
   try {
     const { status, rejectionReason } = req.body;
     if (!['approved', 'rejected'].includes(status)) {

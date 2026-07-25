@@ -110,7 +110,7 @@ export function AuditLogs({ dark, toast }) {
           rows={logs.map((log, i) => [
             new Date(log.timestamp).toLocaleString(),
             `${log.userName} (${log.userId})`,
-            <Badge key={i} text={log.userRole} color={log.userRole === 'super_admin' ? 'purple' : log.userRole === 'sub_admin' ? 'blue' : 'gray'} />,
+            <Badge key={i} text={log.userRole === 'super_admin' ? 'Super Admin' : log.userRole === 'admin' ? 'Admin' : log.userRole === 'agent' ? 'Agent' : 'Customer'} color={            log.userRole === 'super_admin' ? 'purple' : log.userRole === 'admin' ? 'blue' : 'gray'} />,
             <Badge key={i} text={log.action} color={actionColors[log.action] || 'gray'} />,
             log.resource,
             <Badge key={i} text={log.status} color={log.status === 'success' ? 'green' : 'red'} />,

@@ -14,6 +14,8 @@ const agentSchema = new mongoose.Schema({
   password: { type: String, required: true },
   joined: { type: Date, default: Date.now },
   status: { type: String, enum: ['Active', 'Inactive'], default: 'Active' },
+  adminId: { type: String, default: '' },
+  branch: { type: String, default: '' },
   assignedGroups: [{ type: String }],
   customers: [{ type: String }],
   commissionRate: { type: Number, default: 1 },

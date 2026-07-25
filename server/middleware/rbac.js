@@ -72,7 +72,15 @@ export const requireOwnData = (userIdParam = 'userId') => {
     if (!req.user) {
       return res.status(401).json({ message: 'Authentication required' });
     }
-    if (req.user.role === 'super_admin' || req.user.role === 'sub_admin') {
+    if (req.user.role === 'super_admin' || req.user.role === 'admin') {
+      return next();
+    }
+    if (req.user.role === 'agent') {
+      const targetUserId = req.params[userIdParam] || req.body[userIdParam] || req.query[userIdParam];
+      const agent = awaitOrCatch(targetUserId, req.user);
+      if (targetUserId && targetUserId !== req.user.userId) {
+        return res.status(403).json({ message: 'Access denied. Agents can only access their own data.' });
+      }
       return next();
     }
     const targetUserId = req.params[userIdParam] || req.body[userIdParam] || req.query[userIdParam];
@@ -82,3 +90,7 @@ export const requireOwnData = (userIdParam = 'userId') => {
     next();
   };
 };
+
+async function awaitOrCatch(targetUserId, user) {
+  if (targetUserId && targetUserId !== user.userId) return;
+}

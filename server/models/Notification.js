@@ -4,7 +4,7 @@ const notificationSchema = new mongoose.Schema({
   title: { type: String, required: true },
   message: { type: String, required: true },
   type: { type: String, enum: ['info', 'warning', 'success', 'error'], default: 'info' },
-  recipientType: { type: String, enum: ['all', 'super_admin', 'sub_admin', 'user', 'specific'], default: 'all' },
+  recipientType: { type: String, enum: ['all', 'super_admin', 'admin', 'agent', 'customer', 'specific'], default: 'all' },
   recipientIds: [{ type: String }],
   createdBy: { type: String, required: true },
   createdAt: { type: Date, default: Date.now },

@@ -14,8 +14,9 @@ const ALL_PERMISSIONS = ["create", "edit", "delete", "view"];
 
 const ROLE_OPTIONS = [
   { value: "super_admin", label: "Super Admin" },
-  { value: "sub_admin", label: "Sub Admin" },
-  { value: "user", label: "User" },
+  { value: "admin", label: "Admin" },
+  { value: "agent", label: "Agent" },
+  { value: "customer", label: "Customer" },
 ];
 
 export function UserManagement({ dark, toast }) {
@@ -225,7 +226,7 @@ export function UserManagement({ dark, toast }) {
           u.userId,
           u.name,
           u.email,
-          <Badge key={u._id} text={u.role === "super_admin" ? "Super Admin" : u.role === "sub_admin" ? "Sub Admin" : "User"} color={u.role === "super_admin" ? "purple" : u.role === "sub_admin" ? "blue" : "gray"} />,
+           <Badge key={u._id} text={u.role === "super_admin" ? "Super Admin" : u.role === "admin" ? "Admin" : u.role === "agent" ? "Agent" : u.role === "customer" ? "Customer" : "Agent"} color={u.role === "super_admin" ? "purple" : u.role === "admin" ? "blue" : u.role === "agent" ? "green" : u.role === "customer" ? "gray" : "gray"} />,
           u.role === "super_admin" ? "All" : `${u.modules?.length || 0} modules`,
           u.branch || u.assignedBranch || " ",
           <Badge key={u._id} text={u.status} color={u.status === "active" ? "green" : "red"} />,

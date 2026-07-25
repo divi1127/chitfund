@@ -9,19 +9,27 @@ const router = express.Router();
 router.get('/', authenticateToken, async (req, res) => {
   try {
     let filter = {};
-    if (req.user.role === 'user') {
+    if (req.user.role === 'customer') {
       filter = {
         $or: [
           { recipientType: 'all' },
-          { recipientType: 'user' },
+          { recipientType: 'customer' },
           { recipientIds: req.user.userId }
         ]
       };
-    } else if (req.user.role === 'sub_admin') {
+    } else if (req.user.role === 'agent') {
       filter = {
         $or: [
           { recipientType: 'all' },
-          { recipientType: 'sub_admin' },
+          { recipientType: 'agent' },
+          { recipientIds: req.user.userId }
+        ]
+      };
+    } else if (req.user.role === 'admin') {
+      filter = {
+        $or: [
+          { recipientType: 'all' },
+          { recipientType: 'admin' },
           { recipientType: 'super_admin' },
           { recipientIds: req.user.userId }
         ]
@@ -35,7 +43,7 @@ router.get('/', authenticateToken, async (req, res) => {
   }
 });
 
-router.post('/', authenticateToken, requireRole('super_admin', 'sub_admin'), async (req, res) => {
+router.post('/', authenticateToken, requireRole('super_admin', 'admin'), async (req, res) => {
   try {
     const { title, message, type, recipientType, recipientIds, link } = req.body;
     if (!title || !message) {
@@ -73,11 +81,11 @@ router.put('/:id/read', authenticateToken, async (req, res) => {
 router.put('/read-all', authenticateToken, async (req, res) => {
   try {
     let filter = {};
-    if (req.user.role === 'user') {
+    if (req.user.role === 'customer' || req.user.role === 'agent') {
       filter = {
         $or: [
           { recipientType: 'all' },
-          { recipientType: 'user' },
+          { recipientType: req.user.role },
           { recipientIds: req.user.userId }
         ]
       };

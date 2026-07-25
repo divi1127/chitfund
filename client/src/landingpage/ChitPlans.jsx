@@ -70,6 +70,17 @@ const plans = [
     icon: <Sun className="w-5 h-5" />,
     benefits: ['Ultimate savings plan', 'Highest dividend earnings', 'Instant payout processing', 'VIP relationship manager', 'Customized investment strategy', 'Exclusive networking events'],
   },
+  {
+    id: 'enterprise',
+    name: 'Enterprise',
+    tagline: 'For business growth',
+    monthlyShare: '₹1,00,000',
+    poolValue: '₹10,00,000',
+    duration: '10 Months',
+    commission: '1.0%',
+    icon: <Gem className="w-5 h-5" />,
+    benefits: ['Maximum savings potential', 'Top-tier dividend yields', 'Priority auction access', 'Exclusive member benefits', 'Premium support 24/7', 'Dedicated relationship manager'],
+  },
 ];
 
 const Modal = ({ plan, onClose }) => {

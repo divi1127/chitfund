@@ -21,14 +21,14 @@ export function Schemes({ dark, toast }) {
   const [form, setForm] = useState({ name: "", amount: "", duration: "", members: "", monthlyInstallment: "", commission: "", monthlyAmounts: [] });
   const [errors, setErrors] = useState({});
 
-  const isUser = user?.role === "user";
-  const canEdit = user?.role === "super_admin" || user?.role === "sub_admin";
+  const isCustomer = user?.role === "customer";
+  const canEdit = user?.role === "super_admin" || user?.role === "admin";
 
-  // User: only see scheme linked to their group
-  const userMember = isUser ? members.find(m => m.memberId === user.userId || m.email === user.email) : null;
+  // Customer: only see scheme linked to their group
+  const userMember = isCustomer ? members.find(m => m.memberId === user.memberId || m.memberId === user.userId) : null;
   const userGroupIds = userMember?.groups || [];
   const userSchemeIds = groups.filter(g => userGroupIds.includes(g.id)).map(g => g.schemeId);
-  const visibleSchemes = isUser ? schemes.filter(s => userSchemeIds.includes(s.id)) : schemes;
+  const visibleSchemes = isCustomer ? schemes.filter(s => userSchemeIds.includes(s.id)) : schemes;
 
   const statStyle = (color) => ({
     background: dark ? "rgba(255,255,255,.05)" : "#fff",

@@ -12,6 +12,8 @@ import { PreviewDocument } from "./components/PreviewDocument";
 import { Sidebar } from "./components/Sidebar";
 import { ScrollToTop } from "./components/ScrollToTop";
 import { Login } from "./components/Login"
+import { AgentLogin } from "./components/AgentLogin"
+import { CustomerLogin } from "./components/CustomerLogin"
 import { useToast } from "./hooks/useToast";
 import { AuthProvider, useAuth } from "./contexts/AuthContext";
 
@@ -21,8 +23,9 @@ import { fetchData } from "./utils/api";
 import Landingpage from "./landingpage/Landingpage";
 
 import { SuperAdminDashboard } from "./pages/SuperAdminDashboard";
-import { SubAdminDashboard } from "./pages/SubAdminDashboard";
-import { UserDashboard } from "./pages/UserDashboard";
+import { AdminDashboard } from "./pages/AdminDashboard";
+import { AgentDashboard } from "./pages/AgentDashboard";
+import { CustomerDashboard } from "./pages/CustomerDashboard";
 import { Members } from "./pages/Members";
 import { Schemes } from "./pages/Schemes";
 import { Groups } from "./pages/Groups";
@@ -43,6 +46,9 @@ import { Enquiries } from "./pages/Enquiries";
 import { UserManagement } from "./pages/UserManagement";
 import { AuditLogs } from "./pages/AuditLogs";
 import { KycVerification } from "./pages/KycVerification";
+import { Invoices } from "./pages/Invoices";
+import { Receipts } from "./pages/Receipts";
+import { Support } from "./pages/Support";
 
 function ProtectedRoute({ children, requiredRole, requiredModule }) {
   const { user, hasModuleAccess } = useAuth();
@@ -59,8 +65,9 @@ function ProtectedRoute({ children, requiredRole, requiredModule }) {
 function RoleBasedDashboard({ dark, toast }) {
   const { user } = useAuth();
   if (user?.role === "super_admin") return <SuperAdminDashboard dark={dark} toast={toast} />;
-  if (user?.role === "sub_admin") return <SubAdminDashboard dark={dark} toast={toast} />;
-  return <UserDashboard dark={dark} toast={toast} />;
+  if (user?.role === "admin") return <AdminDashboard dark={dark} toast={toast} />;
+  if (user?.role === "agent") return <AgentDashboard dark={dark} toast={toast} />;
+  return <CustomerDashboard dark={dark} toast={toast} />;
 }
 
 function AppLayout() {
@@ -136,6 +143,8 @@ function AppLayout() {
     return (
       <Routes>
         <Route path="/login" element={<Login />} />
+        <Route path="/agent-login" element={<AgentLogin />} />
+        <Route path="/customer-login" element={<CustomerLogin />} />
         <Route path="/" element={<Landingpage />} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
@@ -238,7 +247,7 @@ function AppLayout() {
             <div className="desktop-user-name" style={{ fontSize: 13, color: dark ? "rgba(255,255,255,.5)" : "#64748b", whiteSpace: "nowrap" }}>
               {user?.name}
               <span style={{ opacity: 0.5, marginLeft: 8 }}>
-                ({user?.role === "super_admin" ? "Super Admin" : user?.role === "sub_admin" ? "Sub Admin" : "User"})
+                ({user?.role === "super_admin" ? "Super Admin" : user?.role === "admin" ? "Admin" : user?.role === "agent" ? "Agent" : "Customer"})
               </span>
             </div>
 
@@ -434,7 +443,7 @@ function AppLayout() {
             } />
 
             <Route path="/user-management" element={
-              <ProtectedRoute requiredRole={["super_admin", "sub_admin"]}>
+              <ProtectedRoute requiredRole={["super_admin", "admin"]}>
                 <UserManagement dark={dark} toast={{ add }} />
               </ProtectedRoute>
             } />
@@ -448,6 +457,60 @@ function AppLayout() {
             <Route path="/kyc-verification" element={
               <ProtectedRoute requiredModule="kyc">
                 <KycVerification dark={dark} toast={{ add }} />
+              </ProtectedRoute>
+            } />
+
+            <Route path="/invoices" element={
+              <ProtectedRoute requiredModule="invoices">
+                <Invoices dark={dark} toast={{ add }} />
+              </ProtectedRoute>
+            } />
+
+            <Route path="/receipts" element={
+              <ProtectedRoute requiredModule="receipts">
+                <Receipts dark={dark} toast={{ add }} />
+              </ProtectedRoute>
+            } />
+
+            <Route path="/support" element={
+              <ProtectedRoute requiredModule="support">
+                <Support dark={dark} toast={{ add }} />
+              </ProtectedRoute>
+            } />
+
+            <Route path="/platform-settings" element={
+              <ProtectedRoute requiredRole={["super_admin"]}>
+                <PlatformSettings dark={dark} toast={{ add }} />
+              </ProtectedRoute>
+            } />
+
+            <Route path="/invoice-settings" element={
+              <ProtectedRoute requiredRole={["super_admin"]}>
+                <Settings dark={dark} toast={{ add }} />
+              </ProtectedRoute>
+            } />
+
+            <Route path="/receipt-settings" element={
+              <ProtectedRoute requiredRole={["super_admin"]}>
+                <Settings dark={dark} toast={{ add }} />
+              </ProtectedRoute>
+            } />
+
+            <Route path="/notification-settings" element={
+              <ProtectedRoute requiredRole={["super_admin"]}>
+                <Settings dark={dark} toast={{ add }} />
+              </ProtectedRoute>
+            } />
+
+            <Route path="/role-permissions" element={
+              <ProtectedRoute requiredRole={["super_admin"]}>
+                <Settings dark={dark} toast={{ add }} />
+              </ProtectedRoute>
+            } />
+
+            <Route path="/backup-restore" element={
+              <ProtectedRoute requiredRole={["super_admin"]}>
+                <Settings dark={dark} toast={{ add }} />
               </ProtectedRoute>
             } />
 

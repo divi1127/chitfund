@@ -5,7 +5,7 @@ import { StatCard } from "../components/StatCard";
 import { Table } from "../components/Table";
 import { Badge } from "../components/Badge";
 import { fmt, today } from "../utils/helpers";
-import { FiDollarSign, FiUsers, FiFolder, FiFileText, FiBarChart2, FiTag, FiClock, FiTrendingUp, FiShield, FiCheckCircle, FiAlertCircle } from "react-icons/fi";
+import { FiDollarSign, FiUsers, FiFolder, FiFileText, FiBarChart2, FiTag, FiTrendingUp, FiCheckCircle, FiAlertCircle, FiHome, FiUserCheck, FiBriefcase } from "react-icons/fi";
 
 export function SuperAdminDashboard({ dark, toast }) {
   const { data: members } = useData('/members');
@@ -17,12 +17,9 @@ export function SuperAdminDashboard({ dark, toast }) {
   const { data: enquiries } = useData('/enquiries');
   const { data: kyc } = useData('/kyc');
   const { data: auditStats } = useData('/audit-logs/stats');
-  const [showKycPanel, setShowKycPanel] = useState(false);
-
-  const chartData = [
-    { l: "Jan", v: 180000 }, { l: "Feb", v: 220000 }, { l: "Mar", v: 195000 },
-    { l: "Apr", v: 260000 }, { l: "May", v: 310000 }, { l: "Jun", v: 285000 },
-  ];
+  const { data: branches } = useData('/branches');
+  const { data: agents } = useData('/agents');
+  const { data: users } = useData('/users');
 
   const currentMonth = new Date().getMonth();
   const currentYear = new Date().getFullYear();
@@ -32,13 +29,19 @@ export function SuperAdminDashboard({ dark, toast }) {
   });
   const monthlyCollectionsAmount = monthlyCollections.reduce((sum, c) => sum + (c.amount || 0), 0);
   const totalCollected = collections.reduce((sum, c) => sum + (c.amount || 0), 0);
+  const pendingCollections = collections.filter(c => c.status === 'Pending' || c.status === 'Partially Paid');
+  const pendingAmount = pendingCollections.reduce((sum, c) => sum + (c.pendingBalance || c.amount || 0), 0);
   const pendingKyc = Array.isArray(kyc) ? kyc.filter(k => k.status === 'pending').length : 0;
   const totalKyc = Array.isArray(kyc) ? kyc.length : 0;
   const activeMembers = members.filter(m => m.status === 'Active').length;
   const activeGroups = groups.filter(g => g.status === 'Active').length;
   const activeSchemes = schemes.filter(s => s.status === 'Active').length;
+  const completedSchemes = schemes.filter(s => s.status === 'Closed').length;
+  const totalRevenue = invoices.reduce((sum, inv) => sum + (inv.amountPaid || 0), 0);
+  const totalBranches = branches?.length || 0;
+  const totalAdmins = users?.filter(u => u.role === 'admin').length || 0;
 
-  const memberById = (id) => members.find((m) => m.id === id);
+  const memberById = (id) => members.find((m) => m.memberId === id || m.id === id);
   const groupById = (id) => groups.find((g) => g.id === id);
   const schemeById = (id) => schemes.find((s) => s.id === id);
 
@@ -46,15 +49,16 @@ export function SuperAdminDashboard({ dark, toast }) {
     <div>
       <SectionHeader title="Super Admin Dashboard" subtitle={`Full system overview  ${today()}`} dark={dark} />
 
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(200px,1fr))", gap: 16, marginBottom: 28 }}>
-        <StatCard label="Monthly Collections" value={fmt(monthlyCollectionsAmount)} sub={`Current month collections`} color="#10b981" dark={dark} icon={<FiDollarSign size={22} />} />
-        <StatCard label="Total Collected" value={fmt(totalCollected)} sub="All time collections" color="#2563eb" dark={dark} icon={<FiTrendingUp size={22} />} />
-        <StatCard label="Active Members" value={activeMembers} sub={`${members.length} total members`} color="#d97706" dark={dark} icon={<FiUsers size={22} />} />
-        <StatCard label="Active Groups" value={activeGroups} sub={`${groups.length} total groups`} color="#16a34a" dark={dark} icon={<FiFolder size={22} />} />
-        <StatCard label="Active Schemes" value={activeSchemes} sub={`${schemes.length} total schemes`} color="#7c3aed" dark={dark} icon={<FiFileText size={22} />} />
-        <StatCard label="Auctions" value={auctions.length} sub={`${auctions.filter(a => a.status === 'Scheduled').length} scheduled`} color="#f59e0b" dark={dark} icon={<FiTag size={22} />} />
-        <StatCard label="Pending KYC" value={pendingKyc} sub={`${totalKyc} total submissions`} color={pendingKyc > 0 ? "#dc2626" : "#10b981"} dark={dark} icon={<FiAlertCircle size={22} />} />
-        <StatCard label="Enquiries" value={enquiries?.length || 0} sub="Website leads" color="#0ea5e9" dark={dark} icon={<FiBarChart2 size={22} />} />
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(180px,1fr))", gap: 16, marginBottom: 28 }}>
+        <StatCard label="Total Branches" value={totalBranches} sub="Registered branches" color="#2563eb" dark={dark} icon={<FiHome size={22} />} />
+        <StatCard label="Total Admins" value={totalAdmins} sub="Branch admins" color="#7c3aed" dark={dark} icon={<FiUserCheck size={22} />} />
+        <StatCard label="Total Agents" value={agents?.length || 0} sub="Field agents" color="#f59e0b" dark={dark} icon={<FiBriefcase size={22} />} />
+        <StatCard label="Total Customers" value={members.length} sub="Registered members" color="#d97706" dark={dark} icon={<FiUsers size={22} />} />
+        <StatCard label="Running Schemes" value={activeSchemes} sub={`${schemes.length} total schemes`} color="#10b981" dark={dark} icon={<FiFileText size={22} />} />
+        <StatCard label="Completed Schemes" value={completedSchemes} sub="Closed schemes" color="#16a34a" dark={dark} icon={<FiCheckCircle size={22} />} />
+        <StatCard label="Monthly Collection" value={fmt(monthlyCollectionsAmount)} sub="Current month" color="#3b82f6" dark={dark} icon={<FiDollarSign size={22} />} />
+        <StatCard label="Pending Collection" value={fmt(pendingAmount)} sub={`${pendingCollections.length} pending`} color="#ef4444" dark={dark} icon={<FiAlertCircle size={22} />} />
+        <StatCard label="Total Revenue" value={fmt(totalRevenue)} sub="All time revenue" color="#059669" dark={dark} icon={<FiTrendingUp size={22} />} />
       </div>
 
       <div className="d-grid d-grid-2-1" style={{ marginBottom: 20 }}>

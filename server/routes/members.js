@@ -16,12 +16,15 @@ router.get('/', authenticate, async (req, res) => {
   try {
     const members = await Member.find();
     
-    if (req.user.role === 'user') {
+    if (req.user.role === 'agent') {
       const agent = await Agent.findOne({ userId: req.user.userId });
       if (agent) {
         const filtered = members.filter(m => m.agentId === agent.agentId);
         return res.json(filtered);
       }
+      return res.json([]);
+    }
+    if (req.user.role === 'customer') {
       const filtered = members.filter(m => m.memberId === req.user.userId);
       return res.json(filtered);
     }
@@ -42,7 +45,7 @@ router.get('/:id', authenticate, async (req, res) => {
   }
 });
 
-router.post('/', authenticate, authorize('super_admin', 'sub_admin'), async (req, res) => {
+router.post('/', authenticate, authorize('super_admin', 'admin', 'agent'), async (req, res) => {
   try {
     const { name, phone, email, address, aadhaar, pan, dob, photo, groupId, agentId } = req.body;
 
@@ -109,7 +112,7 @@ router.post('/', authenticate, authorize('super_admin', 'sub_admin'), async (req
         name,
         email: email || `${memberId}@nvschit.com`,
         password: autoPassword,
-        role: 'user',
+        role: 'customer',
         modules: CUSTOMER_MODULES,
         permissions: ['view']
       });
@@ -181,7 +184,7 @@ router.post('/', authenticate, authorize('super_admin', 'sub_admin'), async (req
   }
 });
 
-router.put('/:id', authenticate, authorize('super_admin', 'sub_admin'), async (req, res) => {
+router.put('/:id', authenticate, authorize('super_admin', 'admin', 'agent'), async (req, res) => {
   try {
     const existing = await Member.findOne({ $or: [{ id: req.params.id }, { memberId: req.params.id }] });
     if (!existing) return res.status(404).json({ message: 'Member not found' });

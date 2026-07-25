@@ -112,19 +112,24 @@ export const Navbar = ({ onNavigate }) => {
               );
             })}
 
-            <Link
-              to="/login"
-              style={{
-                fontSize: '0.875rem', fontWeight: 600,
-                color: '#64748B', textDecoration: 'none',
-                padding: '0.5rem 0.875rem', borderRadius: 8,
-                transition: 'color 0.2s, background 0.2s',
-              }}
-              onMouseEnter={e => { e.currentTarget.style.color = '#1565C0'; e.currentTarget.style.background = 'rgba(21,101,192,0.06)'; }}
-              onMouseLeave={e => { e.currentTarget.style.color = '#64748B'; e.currentTarget.style.background = 'transparent'; }}
-            >
-              Login
-            </Link>
+            <div style={{ position: 'relative', display: 'inline-block' }} className="login-dropdown">
+              <button style={{ fontSize: '0.875rem', fontWeight: 600, color: '#64748B', background: 'none', border: 'none', cursor: 'pointer', padding: '0.5rem 0.875rem', borderRadius: 8, transition: 'color 0.2s, background 0.2s' }}
+                onMouseEnter={e => { e.currentTarget.style.color = '#1565C0'; e.currentTarget.style.background = 'rgba(21,101,192,0.06)'; }}
+                onMouseLeave={e => { e.currentTarget.style.color = '#64748B'; e.currentTarget.style.background = 'transparent'; }}
+              >Login ▾</button>
+              <div className="login-dropdown-content" style={{ position: 'absolute', top: '100%', right: 0, background: '#fff', borderRadius: 10, boxShadow: '0 10px 40px rgba(0,0,0,0.12)', border: '1px solid #e2e8f0', minWidth: 180, padding: 6, display: 'none', zIndex: 100 }}>
+                <Link to="/login" style={{ display: 'block', padding: '8px 14px', borderRadius: 6, fontSize: 13, fontWeight: 600, color: '#1565C0', textDecoration: 'none' }}
+                  onMouseEnter={e => e.currentTarget.style.background = 'rgba(21,101,192,0.06)'}
+                  onMouseLeave={e => e.currentTarget.style.background = 'transparent'}>Admin Login</Link>
+                <Link to="/agent-login" style={{ display: 'block', padding: '8px 14px', borderRadius: 6, fontSize: 13, fontWeight: 600, color: '#059669', textDecoration: 'none' }}
+                  onMouseEnter={e => e.currentTarget.style.background = 'rgba(5,150,105,0.06)'}
+                  onMouseLeave={e => e.currentTarget.style.background = 'transparent'}>Agent Login</Link>
+                <Link to="/customer-login" style={{ display: 'block', padding: '8px 14px', borderRadius: 6, fontSize: 13, fontWeight: 600, color: '#D4AF37', textDecoration: 'none' }}
+                  onMouseEnter={e => e.currentTarget.style.background = 'rgba(212,175,55,0.06)'}
+                  onMouseLeave={e => e.currentTarget.style.background = 'transparent'}>Customer Login</Link>
+              </div>
+              <style>{`.login-dropdown:hover .login-dropdown-content { display: block !important; }`}</style>
+            </div>
 
             <button
               onClick={() => handleNav('contact')}
@@ -206,18 +211,9 @@ export const Navbar = ({ onNavigate }) => {
 
                 <div style={{ height: 1, background: '#E2E8F0', margin: '0.5rem 0' }} />
 
-                <Link
-                  to="/login"
-                  onClick={() => setIsOpen(false)}
-                  style={{
-                    textAlign: 'center', fontWeight: 600, fontSize: '1rem',
-                    color: '#1565C0', textDecoration: 'none',
-                    padding: '0.875rem', borderRadius: 10,
-                    border: '1.5px solid #E2E8F0',
-                  }}
-                >
-                  Members Login
-                </Link>
+                <Link to="/login" onClick={() => setIsOpen(false)} style={{ textAlign: 'center', fontWeight: 600, fontSize: '0.9rem', color: '#1565C0', textDecoration: 'none', padding: '0.75rem', borderRadius: 8, border: '1.5px solid #E2E8F0', display: 'block', marginBottom: 4 }}>Admin Login</Link>
+                <Link to="/agent-login" onClick={() => setIsOpen(false)} style={{ textAlign: 'center', fontWeight: 600, fontSize: '0.9rem', color: '#059669', textDecoration: 'none', padding: '0.75rem', borderRadius: 8, border: '1.5px solid #E2E8F0', display: 'block', marginBottom: 4 }}>Agent Login</Link>
+                <Link to="/customer-login" onClick={() => setIsOpen(false)} style={{ textAlign: 'center', fontWeight: 600, fontSize: '0.9rem', color: '#D4AF37', textDecoration: 'none', padding: '0.75rem', borderRadius: 8, border: '1.5px solid #E2E8F0', display: 'block' }}>Customer Login</Link>
 
                 <button
                   onClick={() => handleNav('contact')}

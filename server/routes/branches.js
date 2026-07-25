@@ -29,7 +29,7 @@ router.get('/:id', authenticate, async (req, res) => {
   }
 });
 
-router.post('/', authenticate, authorize('super_admin'), async (req, res) => {
+router.post('/', authenticate, authorize('super_admin', 'admin'), async (req, res) => {
   try {
     const branch = new Branch(req.body);
     const saved = await branch.save();

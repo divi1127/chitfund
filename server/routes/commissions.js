@@ -11,7 +11,7 @@ const router = express.Router();
 router.get('/', authenticate, async (req, res) => {
   try {
     let filter = {};
-    if (req.user.role === 'user') {
+    if (req.user.role === 'agent') {
       const agent = await Agent.findOne({ userId: req.user.userId });
       if (agent) filter = { agentId: agent.agentId };
     }
@@ -22,7 +22,7 @@ router.get('/', authenticate, async (req, res) => {
   }
 });
 
-router.post('/calculate', authenticate, authorize('super_admin', 'sub_admin'), async (req, res) => {
+router.post('/calculate', authenticate, authorize('super_admin', 'admin'), async (req, res) => {
   try {
     const { month, year } = req.body;
     if (!month || !year) {
