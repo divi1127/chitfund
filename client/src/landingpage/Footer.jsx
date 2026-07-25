@@ -39,7 +39,7 @@ export const Footer = ({ onNavigate }) => {
           <div className="sm:col-span-2 lg:col-span-4 space-y-5">
             <button onClick={() => onNavigate('home')} className="flex items-center gap-3 cursor-pointer">
               <div className="w-10 h-10 rounded-xl bg-white/12 flex items-center justify-center">
-                <img src={logo} alt="NVS CHIT ENTERPRISES" className="w-6 h-6 object-contain brightness-0 invert" />
+                <img src={logo} alt="NVS CHIT ENTERPRISES" className="w-10 h-10 object-contain brightness-0 invert" />
               </div>
               <span className="flex flex-col leading-none">
                 <span className="text-lg font-extrabold tracking-widest text-white">NVS</span>

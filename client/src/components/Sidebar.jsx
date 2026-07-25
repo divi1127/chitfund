@@ -93,7 +93,7 @@ function SidebarInner({ collapsed, setCollapsed, navItems, active, onNavigate, s
           justifyContent: collapsed ? "center" : "flex-start",
         }}
       >
-        <img src={logo} alt="NVS CHIT ENTERPRISES" style={{ width: 38, height: 38, borderRadius: 10, objectFit: "contain", flexShrink: 0 }} />
+        <img src={logo} alt="NVS CHIT ENTERPRISES" style={{ width: 48, height: 48, borderRadius: 10, objectFit: "contain", flexShrink: 0 }} />
         {!collapsed && (
           <div style={{ overflow: "hidden" }}>
             <span style={{ fontSize: 16, fontWeight: 700, color: "#fff", display: "block", lineHeight: 1.2 }}>NVS CHIT</span>

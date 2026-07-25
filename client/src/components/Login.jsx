@@ -230,7 +230,7 @@ export function Login() {
             {/* Brand */}
             <div style={{ marginBottom: 32 }}>
               <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 20 }}>
-                <img src={logo} alt="NVS CHIT ENTERPRISES" style={{ height: 44, objectFit: "contain" }} />
+                <img src={logo} alt="NVS CHIT ENTERPRISES" style={{ height: 56, objectFit: "contain" }} />
                 <div>
                   <h1 style={{ fontSize: 19, fontWeight: 800, color: "#111", margin: 0 }}>
                     {COMPANY.name}
