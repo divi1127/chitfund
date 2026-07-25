@@ -93,13 +93,16 @@ function AppLayout() {
     if (!user) return;
     const loadCount = async () => {
       try {
-        const res = await fetch('/api/notifications', {
+        const API_BASE = import.meta.env.VITE_API_BASE || "https://chitfund-cxnp.onrender.com/api";
+        const res = await fetch(`${API_BASE}/notifications`, {
           headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
         });
         if (res.ok) {
           const data = await res.json();
           const count = data.unreadCount || 0;
           setNotificationCount(count);
+        } else if (res.status === 401) {
+          logout();
         }
       } catch (e) { /* ignore */ }
     };

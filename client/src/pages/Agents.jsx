@@ -97,7 +97,8 @@ export function Agents({ toast }) {
     if (!confirm(`Reset password for ${agent.name} to their DOB?`)) return;
     try {
       const token = localStorage.getItem("token");
-      const res = await fetch(`/api/agents/${agent.agentId}/reset-password`, {
+      const API_BASE = import.meta.env.VITE_API_BASE || "https://chitfund-cxnp.onrender.com/api";
+      const res = await fetch(`${API_BASE}/agents/${agent.agentId}/reset-password`, {
         method: "PUT",
         headers: { Authorization: `Bearer ${token}` }
       });
