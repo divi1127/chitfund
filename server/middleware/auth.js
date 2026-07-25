@@ -28,18 +28,18 @@ export const authenticateToken = async (req, res, next) => {
     req.user = user;
     next();
   } catch (error) {
-    return res.status(403).json({ message: 'Invalid or expired token' });
+    return res.status(401).json({ message: 'Invalid or expired token' });
   }
 };
 
 export const authenticate = authenticateToken;
 
-export const authorize = (roles) => {
+export const authorize = (...roles) => {
   return (req, res, next) => {
     if (!req.user) {
       return res.status(401).json({ message: 'Authentication required' });
     }
-    if (roles && !roles.includes(req.user.role)) {
+    if (roles.length > 0 && !roles.includes(req.user.role)) {
       return res.status(403).json({ message: 'Access denied. Insufficient permissions.' });
     }
     next();
