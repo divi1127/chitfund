@@ -180,7 +180,7 @@ const seedData = async () => {
     ]);
     console.log(`Schemes created: ${schemes.length}`);
 
-    const users = await User.insertMany([
+    const users = await User.create([
       {
         userId: 'ADMIN001',
         password: 'admin123',
@@ -250,7 +250,7 @@ const seedData = async () => {
     ]);
     console.log(`Branches created: ${branches.length}`);
 
-    const agents = await Agent.insertMany([
+    const agents = await Agent.create([
       {
         agentId: '2026AG01',
         userId: '2026AG01',
@@ -270,7 +270,7 @@ const seedData = async () => {
     ]);
     console.log(`Agents created: ${agents.length}`);
 
-    const members = await Member.insertMany([
+    const members = await Member.create([
       {
         id: '2026CM01',
         memberId: '2026CM01',
