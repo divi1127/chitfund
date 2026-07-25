@@ -127,13 +127,18 @@ export function IDCardModal({ entity, type = "Member", onClose }) {
               <div style={{ fontSize: 16, fontWeight: 800, color: "#0f172a", marginBottom: 2 }}>{entity.name}</div>
               <div style={{ fontSize: 10, fontWeight: 700, color: badge.color, background: badge.bg, padding: "2px 8px", borderRadius: 4, marginBottom: 8, letterSpacing: 0.5 }}>{badge.text}</div>
               
-              <div style={{ fontSize: 9, color: "#64748b", display: "grid", gap: 4, width: "100%", gridTemplateColumns: isPortrait ? "1fr" : "auto 1fr" }}>
+              <div style={{ fontSize: 9, color: "#64748b", display: "grid", gap: 4, width: "100%", gridTemplateColumns: isPortrait ? "auto 1fr" : "auto 1fr" }}>
                 <div style={{ fontWeight: 600, color: "#94a3b8" }}>ID:</div>
                 <div style={{ fontWeight: 700, color: "#334155" }}>{entity.agentId || entity.memberId || entity.id}</div>
-                
+
+                <div style={{ fontWeight: 600, color: "#94a3b8" }}>DOB:</div>
+                <div style={{ fontWeight: 600, color: "#475569" }}>
+                  {entity.dob ? new Date(entity.dob).toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" }) : "—"}
+                </div>
+
                 <div style={{ fontWeight: 600, color: "#94a3b8" }}>Ph:</div>
                 <div style={{ fontWeight: 600, color: "#475569" }}>{entity.phone}</div>
-                
+
                 <div style={{ fontWeight: 600, color: "#94a3b8" }}>Aadhaar:</div>
                 <div style={{ fontWeight: 600, color: "#475569" }}>{entity.aadhaar || "—"}</div>
               </div>

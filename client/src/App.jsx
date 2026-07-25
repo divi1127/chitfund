@@ -504,8 +504,8 @@ function AppLayout() {
             } />
 
             <Route path="/role-permissions" element={
-              <ProtectedRoute requiredRole={["super_admin"]}>
-                <Settings dark={dark} toast={{ add }} />
+              <ProtectedRoute requiredRole={["super_admin", "admin"]}>
+                <UserManagement dark={dark} toast={{ add }} />
               </ProtectedRoute>
             } />
 

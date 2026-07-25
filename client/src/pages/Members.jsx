@@ -26,7 +26,7 @@ export function Members({ toast, setPreview }) {
   const [expandedMember, setExpandedMember] = useState(null); // member id with schedule open
   const [payTarget, setPayTarget] = useState(null); // { member, group, scheme, installment }
   const [printingEntity, setPrintingEntity] = useState(null);
-  const [form, setForm] = useState({ name: "", phone: "", email: "", address: "", pan: "", aadhaar: "", groupId: "", photo: "" });
+  const [form, setForm] = useState({ name: "", phone: "", email: "", address: "", pan: "", aadhaar: "", groupId: "", photo: "", dob: "" });
   const [errors, setErrors] = useState({});
 
   const isSuperAdmin = user?.role === "super_admin";
@@ -112,7 +112,7 @@ export function Members({ toast, setPreview }) {
 
   const resetForm = () => {
     setShowForm(false); setEditingMember(null);
-    setForm({ name: "", phone: "", email: "", address: "", pan: "", aadhaar: "", groupId: "", photo: "" });
+    setForm({ name: "", phone: "", email: "", address: "", pan: "", aadhaar: "", groupId: "", photo: "", dob: "" });
     setErrors({});
   };
 
@@ -176,10 +176,10 @@ export function Members({ toast, setPreview }) {
                 <div style={{ fontSize: 11, color: "#64748b", marginTop: 2 }}>Square photos work best. (Max 2MB)</div>
               </div>
             </div>
-            {[["Full Name *", "name"], ["Phone *", "phone"], ["Email", "email"], ["PAN *", "pan"], ["Aadhaar *", "aadhaar"]].map(([lbl, key]) => (
+            {[["Full Name *", "name"], ["Phone *", "phone"], ["Email", "email"], ["PAN *", "pan"], ["Aadhaar *", "aadhaar"], ["DOB", "dob"]].map(([lbl, key]) => (
               <div key={key}>
                 <label style={{ fontSize: 12, fontWeight: 600, color: "#374151", display: "block", marginBottom: 4 }}>{lbl}</label>
-                <input style={inp} value={form[key]} onChange={e => setForm({ ...form, [key]: e.target.value })} />
+                <input type={key === "dob" ? "date" : "text"} style={inp} value={form[key]} onChange={e => setForm({ ...form, [key]: e.target.value })} />
                 {errors[key] && <div style={{ color: "#dc2626", fontSize: 11, marginTop: 3 }}>{errors[key]}</div>}
               </div>
             ))}
@@ -226,6 +226,7 @@ export function Members({ toast, setPreview }) {
                 <div style={{ fontWeight: 700, fontSize: 14, color: "#0f172a" }}>{member.name}</div>
                 <div style={{ fontSize: 12, color: "#64748b", marginTop: 2 }}>
                   {member.memberId} · {member.phone}
+                  {member.dob && <span style={{ marginLeft: 8, color: "#94a3b8" }}>DOB: {new Date(member.dob).toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" })}</span>}
                   {group && <span style={{ marginLeft: 8, color: "#7c3aed", fontWeight: 600 }}>{group.name}</span>}
                 </div>
               </div>
@@ -246,7 +247,7 @@ export function Members({ toast, setPreview }) {
                 )}
                 <IconBtn icon={<HiIdentification size={14} />} onClick={() => setPrintingEntity(member)} color="#0ea5e9" title="Print ID" />
                 <IconBtn icon={<HiBookOpen size={14} />} onClick={() => handleLedger(member)} color="#d97706" title="Ledger" />
-                {canEdit && <IconBtn icon={<HiPencil size={14} />} onClick={() => { setEditingMember(member); setForm({ name: member.name, phone: member.phone, email: member.email || "", address: member.address || "", pan: member.pan || "", aadhaar: member.aadhaar || "", groupId: "", photo: member.photo || "" }); setShowForm(true); }} color="#2563eb" title="Edit" />}
+                {canEdit && <IconBtn icon={<HiPencil size={14} />} onClick={() => { setEditingMember(member); setForm({ name: member.name, phone: member.phone, email: member.email || "", address: member.address || "", pan: member.pan || "", aadhaar: member.aadhaar || "", groupId: "", photo: member.photo || "", dob: member.dob || "" }); setShowForm(true); }} color="#2563eb" title="Edit" />}
                 {canEdit && <IconBtn icon={<HiTrash size={14} />} onClick={() => handleDelete(member.id)} color="#dc2626" title="Delete" />}
               </div>
             </div>

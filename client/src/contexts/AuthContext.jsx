@@ -8,7 +8,7 @@ const ROLE_PERMISSIONS = {
     permissions: ["create", "edit", "delete", "view", "approve", "reject", "configure", "export"],
   },
   admin: {
-    navItems: ["dashboard", "agents", "members", "schemes", "groups", "collections", "billing", "auctions", "reports", "notifications", "profile", "kyc", "enquiries"],
+    navItems: ["dashboard", "agents", "members", "schemes", "groups", "collections", "billing", "auctions", "reports", "notifications", "profile", "kyc", "enquiries", "user-management", "audit-logs", "role-permissions"],
     permissions: ["create", "edit", "view", "approve"],
   },
   agent: {

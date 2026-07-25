@@ -14,8 +14,8 @@ export function AuditLogs({ dark, toast }) {
   const [filter, setFilter] = useState({ action: "", resource: "", userId: "" });
   const [stats, setStats] = useState(null);
 
-  if (user?.role !== "super_admin") {
-    return <div style={{ textAlign: "center", padding: 60, color: "#dc2626" }}>Access denied. Only Super Admins can view audit logs.</div>;
+  if (user?.role !== "super_admin" && user?.role !== "admin") {
+    return <div style={{ textAlign: "center", padding: 60, color: "#dc2626" }}>Access denied. Only Admins can view audit logs.</div>;
   }
 
   const fetchLogs = async () => {

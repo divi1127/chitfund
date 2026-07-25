@@ -5,7 +5,7 @@ import { requireRole } from '../middleware/rbac.js';
 
 const router = express.Router();
 
-router.get('/', authenticateToken, requireRole('super_admin'), async (req, res) => {
+router.get('/', authenticateToken, requireRole('super_admin', 'admin'), async (req, res) => {
   try {
     const { page = 1, limit = 50, action, resource, userId, startDate, endDate } = req.query;
     const filter = {};
@@ -30,7 +30,7 @@ router.get('/', authenticateToken, requireRole('super_admin'), async (req, res) 
   }
 });
 
-router.get('/stats', authenticateToken, requireRole('super_admin'), async (req, res) => {
+router.get('/stats', authenticateToken, requireRole('super_admin', 'admin'), async (req, res) => {
   try {
     const totalLogs = await AuditLog.countDocuments();
     const uniqueUsers = await AuditLog.distinct('userId');
