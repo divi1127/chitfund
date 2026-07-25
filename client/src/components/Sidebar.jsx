@@ -1,5 +1,6 @@
 import { useNavigate, useLocation } from "react-router-dom";
 import { ROUTES } from "../utils/constants";
+import { logo } from "../assets";
 import {
   HiHome, HiUserGroup, HiDocumentText, HiSquares2X2, HiCreditCard,
   HiCurrencyRupee, HiScale, HiTrophy, HiPresentationChartBar,
@@ -92,15 +93,7 @@ function SidebarInner({ collapsed, setCollapsed, navItems, active, onNavigate, s
           justifyContent: collapsed ? "center" : "flex-start",
         }}
       >
-        <div style={{
-          width: 38, height: 38, borderRadius: 10, flexShrink: 0,
-          background: "linear-gradient(135deg, #3b82f6, #1d4ed8)",
-          display: "flex", alignItems: "center", justifyContent: "center",
-          fontSize: 14, fontWeight: 800, color: "#fff",
-          boxShadow: "0 4px 12px rgba(59,130,246,0.35)",
-        }}>
-          NVS
-        </div>
+        <img src={logo} alt="NVS CHIT ENTERPRISES" style={{ width: 38, height: 38, borderRadius: 10, objectFit: "contain", flexShrink: 0 }} />
         {!collapsed && (
           <div style={{ overflow: "hidden" }}>
             <span style={{ fontSize: 16, fontWeight: 700, color: "#fff", display: "block", lineHeight: 1.2 }}>NVS CHIT</span>
