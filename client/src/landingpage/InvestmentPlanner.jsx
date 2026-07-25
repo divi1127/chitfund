@@ -1,10 +1,12 @@
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Calculator, TrendingUp, Shield, ArrowRight, CheckCircle2 } from 'lucide-react';
+import { useLanguage } from '../context/LanguageContext';
 
 const fmt = (v) => '₹' + v.toLocaleString('en-IN');
 
 export const InvestmentPlanner = () => {
+  const { language } = useLanguage();
   const [monthly, setMonthly] = useState(20000);
   const [months, setMonths] = useState(30);
   const [form, setForm] = useState({ name: '', phone: '', email: '' });
@@ -31,24 +33,24 @@ export const InvestmentPlanner = () => {
         <div className="section-header">
           <div className="section-badge">
             <Calculator className="w-3.5 h-3.5 text-premium-gold" />
-            <span>Investment Planner</span>
+            <span>{language === 'en' ? 'Investment Planner' : 'முதலீட்டு திட்டமிடுப்பவர்'}</span>
           </div>
-          <h2 className="section-title">Calculate Your <span className="text-gradient-gold">Returns</span></h2>
-          <p className="section-subtitle">Adjust the sliders to estimate your dividends and maturity value before committing.</p>
+          <h2 className="section-title">{language === 'en' ? 'Calculate Your' : 'உங்கள்'}{' '}<span className="text-gradient-gold">{language === 'en' ? 'Returns' : 'வருமானத்தை கணக்கிடுங்கள்'}</span></h2>
+          <p className="section-subtitle">{language === 'en' ? 'Adjust the sliders to estimate your dividends and maturity value before committing.' : 'உம்முடைய ஈவுத்தொகை மற்றும் முதிர்வு மதிப்பை மதிப்பிட ஸ்லைடர்களை சரிசெய்யுங்கள்.'}</p>
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 max-w-5xl mx-auto">
           {/* Calculator */}
           <div className="lg:col-span-7 bg-white border border-border-light rounded-2xl p-8 shadow-sm">
             <div className="flex items-center justify-between mb-8">
-              <span className="text-sm font-bold text-text-secondary uppercase tracking-wider">Live Yield Estimator</span>
+              <span className="text-sm font-bold text-text-secondary uppercase tracking-wider">{language === 'en' ? 'Live Yield Estimator' : 'நேரடி வருமான மதிப்பீடு'}</span>
               <span className="text-xs font-semibold text-success bg-success/8 border border-success/15 px-3 py-1 rounded-full">Avg. 9.8% p.a.</span>
             </div>
 
             <div className="space-y-8">
               <div>
                 <div className="flex justify-between items-baseline mb-3">
-                  <label className="text-sm font-semibold text-text-secondary">Monthly Contribution</label>
+                <label className="text-sm font-semibold text-text-secondary">{language === 'en' ? 'Monthly Contribution' : 'மாதாந்திர முதலீட்டு'}</label>
                   <span className="text-xl font-extrabold text-gradient-gold">{fmt(monthly)}</span>
                 </div>
                 <input
@@ -63,8 +65,8 @@ export const InvestmentPlanner = () => {
 
               <div>
                 <div className="flex justify-between items-baseline mb-3">
-                  <label className="text-sm font-semibold text-text-secondary">Plan Duration</label>
-                  <span className="text-xl font-extrabold text-primary-blue">{months} Months</span>
+                  <label className="text-sm font-semibold text-text-secondary">{language === 'en' ? 'Plan Duration' : 'திட்ட காலம்'}</label>
+                  <span className="text-xl font-extrabold text-primary-blue">{months} {language === 'en' ? 'Months' : 'மாதங்கள்'}</span>
                 </div>
                 <input
                   type="range" min="20" max="50" step="5" value={months}
@@ -79,10 +81,10 @@ export const InvestmentPlanner = () => {
 
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mt-8 pt-8 border-t border-border-light">
               {[
-                { label: 'Principal', value: fmt(principal), color: 'text-text-primary' },
-                { label: 'Est. Dividends', value: '+' + fmt(dividends), color: 'text-success' },
-                { label: 'Maturity', value: fmt(maturity), color: 'text-gradient-gold' },
-                { label: 'Net Monthly', value: fmt(netMonthly), color: 'text-primary-blue' },
+                { label: language === 'en' ? 'Principal' : 'மூலதன்', value: fmt(principal), color: 'text-text-primary' },
+                { label: language === 'en' ? 'Est. Dividends' : 'கணிக்கப்பட்ட ஈவுத்தொகை', value: '+' + fmt(dividends), color: 'text-success' },
+                { label: language === 'en' ? 'Maturity' : 'முதிவு மதிப்பு', value: fmt(maturity), color: 'text-gradient-gold' },
+                { label: language === 'en' ? 'Net Monthly' : 'நிகர மாதாந்திரம்', value: fmt(netMonthly), color: 'text-primary-blue' },
               ].map((item) => (
                 <div key={item.label} className="bg-bg-main border border-border-light rounded-xl p-4 hover:border-premium-gold/30 transition-colors">
                   <p className="text-[10px] uppercase font-semibold text-text-secondary mb-1">{item.label}</p>

@@ -1,8 +1,9 @@
 import { useState, useEffect, useCallback } from 'react';
-import { Menu, X, ArrowRight } from 'lucide-react';
+import { Menu, X, ArrowRight, Globe } from 'lucide-react';
 import { logo } from '../assets';
 import { Link } from 'react-router-dom';
 import { AnimatePresence, motion } from 'framer-motion';
+import { useLanguage } from '../context/LanguageContext';
 
 const NAV_LINKS = [
   { name: 'Home',     id: 'home'     },
@@ -13,6 +14,7 @@ const NAV_LINKS = [
 ];
 
 export const Navbar = ({ onNavigate }) => {
+  const { language, toggleLanguage, t } = useLanguage();
   const [isOpen, setIsOpen]         = useState(false);
   const [isScrolled, setIsScrolled] = useState(false);
   const [activeId, setActiveId]     = useState('home');
@@ -47,7 +49,7 @@ export const Navbar = ({ onNavigate }) => {
 
   return (
     <>
-      <a href="#main-content" className="skip-link">Skip to main content</a>
+      <a href="#main-content" className="skip-link">{t('skip_link')}</a>
 
       <nav
         role="navigation"
@@ -70,10 +72,10 @@ export const Navbar = ({ onNavigate }) => {
             aria-label="Go to home"
             className="flex items-center gap-2.5 bg-transparent border-0 cursor-pointer p-0 shrink-0"
           >
-            <img src={logo} alt="NVS CHIT ENTERPRISES" style={{ height: 48, objectFit: 'contain' }} />
+            <img src={logo} alt="NVS CHIT ENTERPRISES" style={{ height: 72, objectFit: 'contain' }} />
             <span className="flex flex-col leading-none">
-              <span style={{ fontSize: '1.125rem', fontWeight: 800, letterSpacing: '0.12em', color: '#1565C0' }}>NVS</span>
-              <span style={{ fontSize: '0.55rem', fontWeight: 700, letterSpacing: '0.35em', color: '#64748B', textTransform: 'uppercase' }}>CHIT ENTERPRISES</span>
+              <span style={{ fontSize: '1.5rem', fontWeight: 800, letterSpacing: '0.12em', color: '#1565C0' }}>NVS</span>
+              <span style={{ fontSize: '0.65rem', fontWeight: 700, letterSpacing: '0.35em', color: '#64748B', textTransform: 'uppercase' }}>CHIT ENTERPRISES</span>
             </span>
           </button>
 
@@ -98,7 +100,7 @@ export const Navbar = ({ onNavigate }) => {
                   onMouseEnter={e => { if (!isActive) e.currentTarget.style.color = '#1E293B'; }}
                   onMouseLeave={e => { if (!isActive) e.currentTarget.style.color = '#64748B'; }}
                 >
-                  {link.name}
+                  {t(`nav_${link.id}`)}
                   <span
                     style={{
                       position: 'absolute', bottom: 0, left: '50%', transform: 'translateX(-50%)',
@@ -112,24 +114,33 @@ export const Navbar = ({ onNavigate }) => {
               );
             })}
 
-            <div style={{ position: 'relative', display: 'inline-block' }} className="login-dropdown">
-              <button style={{ fontSize: '0.875rem', fontWeight: 600, color: '#64748B', background: 'none', border: 'none', cursor: 'pointer', padding: '0.5rem 0.875rem', borderRadius: 8, transition: 'color 0.2s, background 0.2s' }}
-                onMouseEnter={e => { e.currentTarget.style.color = '#1565C0'; e.currentTarget.style.background = 'rgba(21,101,192,0.06)'; }}
-                onMouseLeave={e => { e.currentTarget.style.color = '#64748B'; e.currentTarget.style.background = 'transparent'; }}
-              >Login ▾</button>
-              <div className="login-dropdown-content" style={{ position: 'absolute', top: '100%', right: 0, background: '#fff', borderRadius: 10, boxShadow: '0 10px 40px rgba(0,0,0,0.12)', border: '1px solid #e2e8f0', minWidth: 180, padding: 6, display: 'none', zIndex: 100 }}>
-                <Link to="/login" style={{ display: 'block', padding: '8px 14px', borderRadius: 6, fontSize: 13, fontWeight: 600, color: '#1565C0', textDecoration: 'none' }}
-                  onMouseEnter={e => e.currentTarget.style.background = 'rgba(21,101,192,0.06)'}
-                  onMouseLeave={e => e.currentTarget.style.background = 'transparent'}>Admin Login</Link>
-                <Link to="/agent-login" style={{ display: 'block', padding: '8px 14px', borderRadius: 6, fontSize: 13, fontWeight: 600, color: '#059669', textDecoration: 'none' }}
-                  onMouseEnter={e => e.currentTarget.style.background = 'rgba(5,150,105,0.06)'}
-                  onMouseLeave={e => e.currentTarget.style.background = 'transparent'}>Agent Login</Link>
-                <Link to="/customer-login" style={{ display: 'block', padding: '8px 14px', borderRadius: 6, fontSize: 13, fontWeight: 600, color: '#D4AF37', textDecoration: 'none' }}
-                  onMouseEnter={e => e.currentTarget.style.background = 'rgba(212,175,55,0.06)'}
-                  onMouseLeave={e => e.currentTarget.style.background = 'transparent'}>Customer Login</Link>
-              </div>
-              <style>{`.login-dropdown:hover .login-dropdown-content { display: block !important; }`}</style>
-            </div>
+            <Link
+              to="/login"
+              style={{
+                fontSize: '0.875rem', fontWeight: 600,
+                color: '#64748B', textDecoration: 'none',
+                padding: '0.5rem 0.875rem', borderRadius: 8,
+                transition: 'color 0.2s, background 0.2s',
+              }}
+              onMouseEnter={e => { e.currentTarget.style.color = '#1565C0'; e.currentTarget.style.background = 'rgba(21,101,192,0.06)'; }}
+              onMouseLeave={e => { e.currentTarget.style.color = '#64748B'; e.currentTarget.style.background = 'transparent'; }}
+            >
+              Login
+            </Link>
+
+            <button
+               onClick={toggleLanguage}
+               className="inline-flex items-center gap-1.5 shrink-0"
+               style={{
+                 fontWeight: 600, fontSize: '0.85rem', color: '#1565C0',
+                 background: 'rgba(21,101,192,0.08)',
+                 border: 'none', cursor: 'pointer',
+                 padding: '0.45rem 0.75rem', borderRadius: 8,
+                 transition: 'background 0.2s', marginRight: '6px'
+               }}
+            >
+              <Globe style={{ width: 14, height: 14 }} /> {language === 'en' ? 'தமிழ்' : 'EN'}
+            </button>
 
             <button
               onClick={() => handleNav('contact')}
@@ -145,7 +156,7 @@ export const Navbar = ({ onNavigate }) => {
               onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-1px)'; e.currentTarget.style.boxShadow = '0 6px 18px rgba(21,101,192,0.3)'; }}
               onMouseLeave={e => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = '0 2px 8px rgba(21,101,192,0.2)'; }}
             >
-              Get Started <ArrowRight style={{ width: 14, height: 14 }} />
+              {t('get_started')} <ArrowRight style={{ width: 14, height: 14 }} />
             </button>
           </div>
 
@@ -204,16 +215,27 @@ export const Navbar = ({ onNavigate }) => {
                         transition: 'background 0.15s, color 0.15s',
                       }}
                     >
-                      {link.name}
+                      {t(`nav_${link.id}`)}
                     </button>
                   );
                 })}
 
                 <div style={{ height: 1, background: '#E2E8F0', margin: '0.5rem 0' }} />
 
-                <Link to="/login" onClick={() => setIsOpen(false)} style={{ textAlign: 'center', fontWeight: 600, fontSize: '0.9rem', color: '#1565C0', textDecoration: 'none', padding: '0.75rem', borderRadius: 8, border: '1.5px solid #E2E8F0', display: 'block', marginBottom: 4 }}>Admin Login</Link>
-                <Link to="/agent-login" onClick={() => setIsOpen(false)} style={{ textAlign: 'center', fontWeight: 600, fontSize: '0.9rem', color: '#059669', textDecoration: 'none', padding: '0.75rem', borderRadius: 8, border: '1.5px solid #E2E8F0', display: 'block', marginBottom: 4 }}>Agent Login</Link>
-                <Link to="/customer-login" onClick={() => setIsOpen(false)} style={{ textAlign: 'center', fontWeight: 600, fontSize: '0.9rem', color: '#D4AF37', textDecoration: 'none', padding: '0.75rem', borderRadius: 8, border: '1.5px solid #E2E8F0', display: 'block' }}>Customer Login</Link>
+                <Link to="/login" onClick={() => setIsOpen(false)} style={{ textAlign: 'center', fontWeight: 600, fontSize: '0.9rem', color: '#1565C0', textDecoration: 'none', padding: '0.75rem', borderRadius: 8, border: '1.5px solid #E2E8F0', display: 'block' }}>Login</Link>
+
+                <button
+                   onClick={toggleLanguage}
+                   style={{
+                     width: '100%', fontWeight: 700, fontSize: '0.9rem', color: '#1565C0',
+                     background: 'rgba(21,101,192,0.1)',
+                     border: 'none', cursor: 'pointer',
+                     padding: '0.75rem', borderRadius: 10,
+                     marginTop: '0.25rem', marginBottom: '0.25rem'
+                   }}
+                >
+                  <Globe style={{ width: 14, height: 14, display: 'inline', marginRight: 4 }} /> {language === 'en' ? 'தமிழில் படிக்க' : 'Read in English'}
+                </button>
 
                 <button
                   onClick={() => handleNav('contact')}
@@ -226,7 +248,7 @@ export const Navbar = ({ onNavigate }) => {
                     boxShadow: '0 2px 8px rgba(21,101,192,0.2)',
                   }}
                 >
-                  Get Started
+                  {t('get_started')}
                 </button>
               </div>
             </motion.div>

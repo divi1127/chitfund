@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Check, Flame, Sparkles, Trophy, Gem, Diamond, X, Shield, ArrowRight, CheckCircle2, Star, Zap, Sun } from 'lucide-react';
+import { useLanguage } from '../context/LanguageContext';
 
 const plans = [
   {
@@ -150,15 +151,16 @@ const Modal = ({ plan, onClose }) => {
 };
 
 export const ChitPlans = () => {
+  const { language } = useLanguage();
   const [selected, setSelected] = useState(null);
 
   return (
     <section id="plans" className="section-padding bg-white">
       <div className="section-container">
         <div className="section-header">
-          <div className="section-badge"><span>Investment Plans</span></div>
-          <h2 className="section-title">Choose Your <span className="text-gradient-gold">Chit Scheme</span></h2>
-          <p className="section-subtitle">Structured mutual credit schemes designed for every savings goal and budget.</p>
+          <div className="section-badge"><span>{language === 'en' ? 'Investment Plans' : 'முதலீட்டு திட்டங்கள்'}</span></div>
+          <h2 className="section-title">{language === 'en' ? 'Choose Your' : 'உங்கள்'}{' '}<span className="text-gradient-gold">{language === 'en' ? 'Chit Scheme' : 'சீட்டு திட்டத்தை தேர்வு செய்யுங்கள்'}</span></h2>
+          <p className="section-subtitle">{language === 'en' ? 'Structured mutual credit schemes designed for every savings goal and budget.' : 'ஒவ்வொரு சேமிப்பு இலக்கு மற்றும் பட்ஜெட்டுக்காக வடிவமைக்கப்பட்ட கட்டமைக்கப்பட்ட பரஸ்பர கடன் திட்டங்கள்.'}</p>
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 max-w-6xl mx-auto items-stretch">
@@ -181,7 +183,7 @@ export const ChitPlans = () => {
                 {/* Most Popular badge — only Gold, inside padding */}
                 {plan.featured && (
                   <div className="inline-flex items-center gap-1.5 bg-premium-gold/25 border border-premium-gold/50 text-premium-gold text-[10px] font-extrabold px-3 py-1.5 uppercase tracking-widest rounded-full mb-6 self-start">
-                    <Flame className="w-3 h-3 fill-current" /> Most Popular
+                    <Flame className="w-3 h-3 fill-current" /> {language === 'en' ? 'Most Popular' : 'மிகவும் பிரபலமானது'}
                   </div>
                 )}
 
@@ -204,7 +206,7 @@ export const ChitPlans = () => {
                 }`}>{plan.poolValue}</p>
                 <p className={`text-xs mt-1 ${
                   plan.featured ? 'text-white/45' : 'text-text-secondary'
-                }`}>Chit Value Pool</p>
+                }`}>{language === 'en' ? 'Chit Value Pool' : 'சீட்டு மதிப்பு குளம்'}</p>
 
                 {/* Divider */}
                 <div className={`h-px my-6 ${
@@ -214,10 +216,10 @@ export const ChitPlans = () => {
                 {/* Stats grid */}
                 <div className="grid grid-cols-2 gap-x-4 gap-y-4 mb-6">
                   {[
-                    { label: 'Monthly Share', value: plan.monthlyShare },
-                    { label: 'Duration', value: plan.duration },
-                    { label: 'Commission', value: plan.commission },
-                    { label: 'Max Members', value: plan.duration.split(' ')[0] },
+                    { label: language === 'en' ? 'Monthly Share' : 'மாத பங்கு', value: plan.monthlyShare },
+                    { label: language === 'en' ? 'Duration' : 'காலம்', value: plan.duration },
+                    { label: language === 'en' ? 'Commission' : 'கமிஷன்', value: plan.commission },
+                    { label: language === 'en' ? 'Max Members' : 'உறுப்பினர்கள்', value: plan.duration.split(' ')[0] },
                   ].map((item) => (
                     <div key={item.label}>
                       <p className={`text-[10px] uppercase font-bold tracking-wider ${
@@ -260,7 +262,7 @@ export const ChitPlans = () => {
                       : 'border-2 border-primary-blue text-primary-blue hover:bg-primary-blue hover:text-white'
                   }`}
                 >
-                  Join {plan.name} Scheme
+                  {language === 'en' ? `Join ${plan.name} Scheme` : `${plan.name} திட்டத்தில் சேருங்கள்`}
                 </button>
               </div>
             </motion.div>

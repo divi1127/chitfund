@@ -1,44 +1,75 @@
 import { motion } from 'framer-motion';
 import { CreditCard, FileCheck, Gavel, LayoutDashboard, CalendarDays, BellRing, Fingerprint, LineChart } from 'lucide-react';
+import { useLanguage } from '../context/LanguageContext';
 
-const features = [
-  { title: 'Secure Payments', desc: 'UPI, net banking, and cards with bank-grade encryption.', icon: <CreditCard className="w-5 h-5" /> },
-  { title: 'Digital Receipts', desc: 'Instant receipts and ledger links after every transaction.', icon: <FileCheck className="w-5 h-5" /> },
-  { title: 'Live Auctions', desc: 'Bid in real-time or set auto-bids from your dashboard.', icon: <Gavel className="w-5 h-5" /> },
-  { title: 'Member Dashboard', desc: 'Track dividends, bids, and savings in one visual panel.', icon: <LayoutDashboard className="w-5 h-5" /> },
-  { title: 'Smart Reminders', desc: 'Automated WhatsApp, email and push notifications.', icon: <CalendarDays className="w-5 h-5" /> },
-  { title: 'Real-Time Alerts', desc: 'Instant updates for auctions, payouts, and dividends.', icon: <BellRing className="w-5 h-5" /> },
-  { title: 'Paperless KYC', desc: 'Quick digital onboarding with secure e-agreements.', icon: <Fingerprint className="w-5 h-5" /> },
-  { title: 'Analytics & Reports', desc: 'Download dividend sheets, tax statements, and yield tables.', icon: <LineChart className="w-5 h-5" /> },
+const iconColors = [
+  'from-blue-500 to-blue-700',
+  'from-violet-500 to-violet-700',
+  'from-orange-500 to-orange-700',
+  'from-teal-500 to-teal-700',
+  'from-green-500 to-green-700',
+  'from-red-500 to-red-700',
+  'from-indigo-500 to-indigo-700',
+  'from-amber-500 to-yellow-600',
 ];
 
-export const Features = () => (
-  <section id="features" className="section-padding bg-white">
-    <div className="section-container">
-      <div className="section-header">
-        <div className="section-badge"><span>Platform Features</span></div>
-        <h2 className="section-title">Everything You Need for <span className="text-gradient-gold">Smart Saving</span></h2>
-        <p className="section-subtitle">Next-gen tools keeping your chit investments secure, transparent, and effortless.</p>
-      </div>
+const icons = [
+  <CreditCard className="w-5 h-5" />,
+  <FileCheck className="w-5 h-5" />,
+  <Gavel className="w-5 h-5" />,
+  <LayoutDashboard className="w-5 h-5" />,
+  <CalendarDays className="w-5 h-5" />,
+  <BellRing className="w-5 h-5" />,
+  <Fingerprint className="w-5 h-5" />,
+  <LineChart className="w-5 h-5" />,
+];
 
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-5">
-        {features.map((f, i) => (
-          <motion.div
-            key={i}
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            transition={{ duration: 0.35, delay: i * 0.05 }}
-            className="group bg-white border border-border-light rounded-2xl p-5 sm:p-6 hover:border-premium-gold/40 hover:shadow-xl hover:shadow-primary-blue/4 hover:-translate-y-1 transition-all cursor-default"
-          >
-            <div className="w-10 h-10 rounded-xl bg-primary-blue/8 text-primary-blue flex items-center justify-center mb-4 group-hover:bg-gradient-to-br group-hover:from-premium-gold group-hover:to-gold-600 group-hover:text-white transition-all duration-300">
-              {f.icon}
-            </div>
-            <h3 className="text-sm font-bold text-text-primary mb-1.5 group-hover:text-primary-blue transition-colors">{f.title}</h3>
-            <p className="text-xs text-text-secondary leading-relaxed">{f.desc}</p>
-          </motion.div>
-        ))}
+export const Features = () => {
+  const { t } = useLanguage();
+  const features = [
+    { titleKey: 'feat1_title', descKey: 'feat1_desc' },
+    { titleKey: 'feat2_title', descKey: 'feat2_desc' },
+    { titleKey: 'feat3_title', descKey: 'feat3_desc' },
+    { titleKey: 'feat4_title', descKey: 'feat4_desc' },
+    { titleKey: 'feat5_title', descKey: 'feat5_desc' },
+    { titleKey: 'feat6_title', descKey: 'feat6_desc' },
+    { titleKey: 'feat7_title', descKey: 'feat7_desc' },
+    { titleKey: 'feat8_title', descKey: 'feat8_desc' },
+  ];
+
+  return (
+    <section id="features" className="section-padding bg-white">
+      <div className="section-container">
+        <div className="section-header">
+          <div className="section-badge"><span>{t('feat_badge')}</span></div>
+          <h2 className="section-title">
+            {t('feat_title')}{' '}
+            <span className="text-gradient-gold">{t('feat_title_highlight')}</span>
+          </h2>
+          <p className="section-subtitle">{t('feat_subtitle')}</p>
+        </div>
+
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-5">
+          {features.map((f, i) => (
+            <motion.div
+              key={i}
+              initial={{ opacity: 0, y: 24 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ duration: 0.35, delay: i * 0.06 }}
+              className="group relative bg-white border border-border-light rounded-2xl p-5 sm:p-6 hover:border-premium-gold/40 hover:shadow-xl hover:shadow-primary-blue/6 hover:-translate-y-1.5 transition-all duration-300 cursor-default overflow-hidden"
+            >
+              {/* Hover gradient overlay */}
+              <div className={`absolute inset-0 bg-gradient-to-br ${iconColors[i]} opacity-0 group-hover:opacity-[0.03] transition-opacity duration-300`} />
+              <div className={`w-12 h-12 rounded-2xl bg-gradient-to-br ${iconColors[i]} text-white flex items-center justify-center mb-4 shadow-md shadow-blue-500/15 group-hover:scale-110 transition-transform duration-300`}>
+                {icons[i]}
+              </div>
+              <h3 className="text-sm font-bold text-text-primary mb-1.5 group-hover:text-primary-blue transition-colors">{t(f.titleKey)}</h3>
+              <p className="text-xs text-text-secondary leading-relaxed">{t(f.descKey)}</p>
+            </motion.div>
+          ))}
+        </div>
       </div>
-    </div>
-  </section>
-);
+    </section>
+  );
+};

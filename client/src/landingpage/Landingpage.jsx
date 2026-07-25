@@ -1,5 +1,5 @@
-
 import { Navbar } from './Navbar';
+import { LanguageProvider } from '../context/LanguageContext';
 import { Hero, Ticker } from './Hero';
 import { Stats } from './Stats';
 import { HowItWorks } from './HowItWorks';
@@ -27,7 +27,8 @@ function Landingpage() {
   };
 
   return (
-    <div className="relative bg-bg-main text-text-primary flex flex-col overflow-x-hidden">
+    <LanguageProvider>
+      <div className="relative bg-bg-main text-text-primary flex flex-col overflow-x-hidden">
       <Navbar onNavigate={handleNavigate} />
 
       <main id="main-content" className="relative z-[1]">
@@ -47,8 +48,9 @@ function Landingpage() {
         <CTA onNavigate={handleNavigate} />
       </main>
 
-      <Footer onNavigate={handleNavigate} />
-    </div>
+        <Footer onNavigate={handleNavigate} />
+      </div>
+    </LanguageProvider>
   );
 }
 

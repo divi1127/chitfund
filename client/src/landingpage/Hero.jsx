@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { motion } from 'framer-motion';
 import { ArrowRight } from 'lucide-react';
+import { useLanguage } from '../context/LanguageContext';
 
 const slides = [
   {
@@ -20,28 +21,31 @@ const slides = [
   },
 ];
 
-const ticker = [
-  { label: 'Active Members', value: '10,000+' },
-  { label: 'Funds Managed', value: '₹100 Cr+' },
-  { label: 'Active Groups', value: '500+' },
-  { label: 'Avg. Dividend Yield', value: '9.8% p.a.' },
-  { label: 'Satisfaction Rate', value: '98%' },
-];
-
-export const Ticker = () => (
+export const Ticker = () => {
+  const { t } = useLanguage();
+  const ticker = [
+    { labelKey: 'ticker_active_members', value: '1,000+' },
+    { labelKey: 'ticker_funds_managed', value: '₹10 Cr+' },
+    { labelKey: 'ticker_active_groups', value: '50+' },
+    { labelKey: 'ticker_avg_dividend', value: '9.8% p.a.' },
+    { labelKey: 'ticker_satisfaction', value: '98%' },
+  ];
+  return (
   <div className="bg-primary-blue/4 border-y border-primary-blue/8 py-3 overflow-hidden">
     <div className="flex gap-16 animate-[ticker_20s_linear_infinite] whitespace-nowrap w-max">
       {[...ticker, ...ticker].map((item, i) => (
         <span key={i} className="text-sm font-semibold text-text-secondary inline-flex items-center gap-2">
           <span className="w-1.5 h-1.5 rounded-full bg-premium-gold" />
-          {item.label}: <span className="text-primary-blue">{item.value}</span>
+          {t(item.labelKey)}: <span className="text-primary-blue">{item.value}</span>
         </span>
       ))}
     </div>
   </div>
-);
+  );
+};
 
 export const Hero = ({ onNavigate }) => {
+  const { t } = useLanguage();
   const [current, setCurrent] = useState(0);
   const [isHovered, setIsHovered] = useState(false);
   const [loaded, setLoaded] = useState(false);
@@ -82,10 +86,10 @@ export const Hero = ({ onNavigate }) => {
               transition={{ duration: 0.5, delay: 0.08 }}
               className="text-[2.2rem] sm:text-[3rem] lg:text-[3.5rem] xl:text-[4rem] font-extrabold leading-[1.08] tracking-tight text-text-primary mb-6 mt-10"
             >
-              Grow Your Wealth with{' '}
-              <span className="text-gradient-blue">Trusted</span>{' '}
+              {t('hero_title_1')}{' '}
+              <span className="text-gradient-blue">{t('hero_title_2')}</span>{' '}
               <span className="relative text-gradient-gold">
-                Chit Funds
+                {t('hero_title_3')}
                 <svg className="absolute -bottom-1 left-0 w-full" height="6" viewBox="0 0 200 6" fill="none" preserveAspectRatio="none">
                   <path d="M0 5 Q100 0 200 5" stroke="#D4AF37" strokeWidth="2.5" strokeLinecap="round" fill="none" />
                 </svg>
@@ -98,7 +102,7 @@ export const Hero = ({ onNavigate }) => {
               transition={{ duration: 0.5, delay: 0.16 }}
               className="text-lg text-text-secondary leading-relaxed mb-9 max-w-lg"
             >
-              Save systematically, access funds instantly, and earn competitive dividends. NVS CHIT ENTERPRISES brings next-gen digital transparency to India's most trusted savings tradition.
+              {t('hero_subtitle')}
             </motion.p>
 
             <motion.div
@@ -111,13 +115,13 @@ export const Hero = ({ onNavigate }) => {
                 onClick={() => onNavigate('contact')}
                 className="btn-primary px-8 py-3.5 text-base shadow-lg shadow-premium-gold/20"
               >
-                Start Saving Today <ArrowRight className="w-5 h-5" />
+                {t('btn_start_saving')} <ArrowRight className="w-5 h-5" />
               </button>
               <button
                 onClick={() => onNavigate('plans')}
                 className="btn-secondary px-7 py-3.5 text-base"
               >
-                View Plans
+                {t('btn_view_plans')}
               </button>
             </motion.div>
           </div>

@@ -1,30 +1,22 @@
-import { useState } from 'react';
-import { Mail, Phone, MapPin, ArrowRight, CheckCircle2, ChevronRight } from 'lucide-react';
+import { Mail, Phone, MapPin, ChevronRight } from 'lucide-react';
 import { logo } from '../assets';
+import { useLanguage } from '../context/LanguageContext';
 
 export const Footer = ({ onNavigate }) => {
+  const { t } = useLanguage();
   const year = new Date().getFullYear();
-  const [email, setEmail] = useState('');
-  const [subscribed, setSubscribed] = useState(false);
-
-  const handleSubscribe = (e) => {
-    e.preventDefault();
-    if (email) { setSubscribed(true); setTimeout(() => { setSubscribed(false); setEmail(''); }, 3000); }
-  };
-
   const links = {
-    'Quick Links': [
-      { label: 'Home', id: 'home' },
-      { label: 'Plans', id: 'plans' },
-      { label: 'Features', id: 'features' },
-      { label: 'About', id: 'about' },
-      { label: 'FAQ', id: 'faq' },
-      { label: 'Contact', id: 'contact' },
+    [t('footer_links')]: [
+      { label: t('nav_home'), id: 'home' },
+      { label: t('nav_plans'), id: 'plans' },
+      { label: t('nav_features'), id: 'features' },
+      { label: t('nav_faq'), id: 'faq' },
+      { label: t('nav_contact'), id: 'contact' },
     ],
-    'Schemes': [
-      { label: 'Basic — ₹25K', id: 'plans' },
-      { label: 'Standard — ₹1L', id: 'plans' },
-      { label: 'Premium — ₹5L', id: 'plans' },
+    [t('footer_schemes')]: [
+      { label: t('footer_scheme1'), id: 'plans' },
+      { label: t('footer_scheme2'), id: 'plans' },
+      { label: t('footer_scheme3'), id: 'plans' },
     ],
   };
 
@@ -32,37 +24,24 @@ export const Footer = ({ onNavigate }) => {
     <footer className="bg-dark-blue pt-16 pb-8 relative overflow-hidden">
       <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-premium-gold/25 to-transparent" />
       <div className="absolute bottom-0 left-0 w-96 h-96 bg-premium-gold/4 rounded-full blur-[120px] pointer-events-none" />
+      <div className="absolute top-1/2 right-0 w-64 h-64 bg-primary-blue/20 rounded-full blur-[100px] pointer-events-none" />
 
       <div className="section-container relative z-10">
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-12 gap-10 mb-14">
           {/* Brand */}
           <div className="sm:col-span-2 lg:col-span-4 space-y-5">
             <button onClick={() => onNavigate('home')} className="flex items-center gap-3 cursor-pointer">
-              <div className="w-10 h-10 rounded-xl bg-white/12 flex items-center justify-center">
-                <img src={logo} alt="NVS CHIT ENTERPRISES" className="w-10 h-10 object-contain brightness-0 invert" />
+              <div className="w-12 h-12 rounded-xl bg-white/12 border border-white/10 flex items-center justify-center">
+                <img src={logo} alt="NVS CHIT ENTERPRISES" className="w-10 h-10 object-contain" />
               </div>
               <span className="flex flex-col leading-none">
-                <span className="text-lg font-extrabold tracking-widest text-white">NVS</span>
+                <span className="text-xl font-extrabold tracking-widest text-white">NVS</span>
                 <span className="text-[9px] font-bold tracking-[0.35em] text-white/50 uppercase">CHIT ENTERPRISES</span>
               </span>
             </button>
             <p className="text-sm text-white/55 leading-relaxed max-w-xs">
-              Trusted chit fund platform since 2020. Transparent, regulated savings and credit under the Chit Funds Act, 1982.
+              {t('footer_desc')}
             </p>
-            {/* Newsletter */}
-            <div>
-              <p className="text-xs font-bold uppercase tracking-wider text-white/50 mb-2.5">Newsletter</p>
-              <form onSubmit={handleSubscribe} className="flex gap-2">
-                <input
-                  type="email" value={email} onChange={(e) => setEmail(e.target.value)}
-                  placeholder="your@email.com" required
-                  className="flex-1 bg-white/10 border border-white/15 rounded-xl px-3.5 py-2.5 text-sm text-white placeholder-white/35 outline-none focus:border-premium-gold/40 transition-colors"
-                />
-                <button type="submit" disabled={subscribed} className="w-10 h-10 rounded-xl bg-gradient-gold flex items-center justify-center text-white shrink-0 hover:shadow-lg hover:shadow-premium-gold/20 transition-all disabled:opacity-70">
-                  {subscribed ? <CheckCircle2 className="w-4 h-4" /> : <ArrowRight className="w-4 h-4" />}
-                </button>
-              </form>
-            </div>
           </div>
 
           {/* Nav links */}
@@ -87,7 +66,7 @@ export const Footer = ({ onNavigate }) => {
 
           {/* Contact */}
           <div className="lg:col-span-4 space-y-4">
-            <h4 className="text-xs font-bold text-white uppercase tracking-wider">Get In Touch</h4>
+            <h4 className="text-xs font-bold text-white uppercase tracking-wider">{t('footer_contact')}</h4>
             <ul className="space-y-3.5">
               <li className="flex items-start gap-3 text-sm text-white/55">
                 <MapPin className="w-4 h-4 text-premium-gold shrink-0 mt-0.5" />
@@ -95,11 +74,11 @@ export const Footer = ({ onNavigate }) => {
               </li>
               <li className="flex items-center gap-3 text-sm text-white/55">
                 <Phone className="w-4 h-4 text-premium-gold shrink-0" />
-                <span>96009 4752</span>
+                <a href="tel:9600924752" className="hover:text-premium-gold transition-colors">96009 24752</a>
               </li>
               <li className="flex items-center gap-3 text-sm text-white/55">
                 <Mail className="w-4 h-4 text-premium-gold shrink-0" />
-                <span>nvschit@gmail.com</span>
+                <a href="mailto:nvschit@gmail.com" className="hover:text-premium-gold transition-colors">nvschit@gmail.com</a>
               </li>
             </ul>
           </div>
@@ -108,11 +87,11 @@ export const Footer = ({ onNavigate }) => {
         <div className="h-px bg-white/8 mb-8" />
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 text-xs text-white/35">
           <div className="space-y-1">
-            <p>© {year} NVS CHIT ENTERPRISES. All rights reserved.</p>
-            <p className="text-white/25">Disclaimer: Dividend outcomes depend on member bidding choices.</p>
+            <p>© {year} NVS CHIT ENTERPRISES. {t('footer_rights')}</p>
+            <p className="text-white/25">{t('footer_disclaimer')}</p>
           </div>
           <div className="flex gap-4">
-            {['Privacy Policy', 'Terms of Service', 'Regulatory Filings'].map((label) => (
+            {[t('footer_privacy'), t('footer_terms'), t('footer_filings')].map((label) => (
               <a key={label} href="#" className="hover:text-premium-gold transition-colors">{label}</a>
             ))}
           </div>
