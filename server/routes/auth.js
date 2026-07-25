@@ -18,10 +18,14 @@ router.post('/login', async (req, res) => {
 
     console.log(` Login attempt: userId=${userId}`);
 
-    const user = await User.findOne({ userId, status: 'active' });
+    const user = await User.findOne({ userId });
 
     if (!user) {
       return res.status(401).json({ message: 'Invalid credentials' });
+    }
+
+    if (user.status === 'inactive') {
+      return res.status(401).json({ message: 'User account is inactive' });
     }
 
     const isPasswordValid = await bcrypt.compare(password, user.password);
@@ -96,9 +100,14 @@ router.post('/agent-login', async (req, res) => {
       return res.status(401).json({ message: 'Invalid Agent ID format' });
     }
 
-    const agent = await Agent.findOne({ agentId: userId, status: 'Active' });
+    const agent = await Agent.findOne({ agentId: userId });
+    
     if (!agent) {
-      return res.status(401).json({ message: 'Agent not found or inactive' });
+      return res.status(401).json({ message: 'Agent not found' });
+    }
+
+    if (agent.status === 'Inactive') {
+      return res.status(401).json({ message: 'Agent is inactive' });
     }
 
     if (agent.password !== password) {
@@ -148,9 +157,14 @@ router.post('/customer-login', async (req, res) => {
       return res.status(401).json({ message: 'Invalid Customer ID format' });
     }
 
-    const customer = await Member.findOne({ memberId: userId, status: 'Active' });
+    const customer = await Member.findOne({ memberId: userId });
+    
     if (!customer) {
-      return res.status(401).json({ message: 'Customer not found or inactive' });
+      return res.status(401).json({ message: 'Customer not found' });
+    }
+
+    if (customer.status === 'Inactive') {
+      return res.status(401).json({ message: 'Customer is inactive' });
     }
 
     if (customer.password !== password) {
