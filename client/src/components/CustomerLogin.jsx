@@ -33,7 +33,7 @@ export function CustomerLogin() {
       });
       const data = await response.json();
       if (!response.ok) throw new Error(data.message || "Login failed");
-      login(data.user);
+      login(data.user, data.user.token);
     } catch (err) {
       setError(err.message);
     } finally {
