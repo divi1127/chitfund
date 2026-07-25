@@ -28,7 +28,7 @@ export function BillingDashboard({ toast }) {
   const [selectedInvoiceForReceipt, setSelectedInvoiceForReceipt] = useState(null);
   
   // Filter members based on logged-in user role and search term
-  const roleFilteredMembers = user?.role === 'user' 
+  const roleFilteredMembers = user?.role === 'customer' 
     ? members.filter(m => m.memberId === user.userId || m.email === user.email)
     : members;
   
@@ -39,7 +39,7 @@ export function BillingDashboard({ toast }) {
   );
   
   // Filter invoices based on logged-in user role
-  const filteredInvoices = user?.role === 'user' 
+  const filteredInvoices = user?.role === 'customer' 
     ? invoices.filter(inv => inv.memberId === user.userId || inv.memberName === user.name)
     : invoices;
 

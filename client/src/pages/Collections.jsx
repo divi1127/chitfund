@@ -116,11 +116,11 @@ export function Collections({ toast, setPreview }) {
       <SectionHeader
         title="Monthly Collections"
         subtitle={user?.role === "customer" ? "My Collection History" : "Record and manage installment collections"}
-        actions={user?.role !== "user" ? [<Btn key="add" label="+ Record Collection" primary onClick={() => { setEditingCollection(null); setForm({ memberId: "", groupId: "", amount: "", mode: "", date: new Date().toISOString().split("T")[0], installment: "" }); setShowForm(true); }} />] : []}
+        actions={user?.role !== "customer" ? [<Btn key="add" label="+ Record Collection" primary onClick={() => { setEditingCollection(null); setForm({ memberId: "", groupId: "", amount: "", mode: "", date: new Date().toISOString().split("T")[0], installment: "" }); setShowForm(true); }} />] : []}
       />
 
       {/* Stats */}
-      {user?.role !== "user" && (
+      {user?.role !== "customer" && (
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(180px,1fr))", gap: 16, marginBottom: 24 }}>
           <StatCard label="Total Collections" value={filteredCollections.length} sub="All time" color="blue" icon={<FiBarChart2 size={22} />} />
           <StatCard label="This Month" value={thisMonthCollections.length} sub="Current month" color="green" icon={<FiCalendar size={22} />} />
@@ -173,14 +173,14 @@ export function Collections({ toast, setPreview }) {
       )}
 
       {/* Search */}
-      {user?.role !== "user" && (
+      {user?.role !== "customer" && (
         <div style={{ background: "#fff", border: "1px solid #e5e7eb", borderRadius: 12, padding: 16, marginBottom: 20 }}>
           <Input label="Search by Member, Group or Receipt" value={searchTerm} onChange={setSearchTerm} placeholder="Type to filter..." />
         </div>
       )}
 
       {/* Add/Edit Form */}
-      {showForm && user?.role !== "user" && (
+      {showForm && user?.role !== "customer" && (
         <div style={{ background: "#f8fafc", border: "1px solid #e5e7eb", borderRadius: 12, padding: 24, marginBottom: 24 }}>
           <div style={{ fontSize: 15, fontWeight: 600, marginBottom: 16 }}>{editingCollection ? "Edit Collection" : "Record Collection"}</div>
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(200px,1fr))", gap: "0 20px" }}>

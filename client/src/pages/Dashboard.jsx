@@ -130,7 +130,7 @@ export function Dashboard({ toast }) {
   const groupById = (id) => groups.find((g) => g.id === id);
 
   // Regular user/member dashboard
-  if (user?.role === 'user' && userMember) {
+  if (user?.role === 'customer' && userMember) {
     return (
       <>
         <div>

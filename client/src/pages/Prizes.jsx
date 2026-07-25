@@ -12,7 +12,7 @@ export function Prizes() {
   const { data: members } = useData('/members');
   const { data: groups } = useData('/groups');
 
-  const isUser = user?.role === 'user';
+  const isUser = user?.role === 'customer';
   const userMember = isUser ? members.find(m => m.memberId === user.userId || m.email === user.email) : null;
   const userGroupIds = userMember?.groups || [];
 

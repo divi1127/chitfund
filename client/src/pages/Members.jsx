@@ -30,6 +30,7 @@ export function Members({ toast, setPreview }) {
   const isSuperAdmin = user?.role === "super_admin";
   const isAdmin = user?.role === "admin";
   const isAgent = user?.role === "agent";
+  const isUser = user?.role === 'customer';
   const canEdit = isSuperAdmin || isAdmin;
 
   const myMembers = isAgent

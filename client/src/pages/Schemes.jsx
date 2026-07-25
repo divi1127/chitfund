@@ -111,7 +111,7 @@ export function Schemes({ dark, toast }) {
     <div>
       <SectionHeader
         title="Chit Schemes"
-        subtitle={isUser ? "Your enrolled scheme details" : "Manage chit fund scheme configurations"}
+        subtitle={isCustomer ? "Your enrolled scheme details" : "Manage chit fund scheme configurations"}
         dark={dark}
         actions={canEdit ? [<Btn key="a" label="+ New Scheme" primary onClick={() => { setEditingScheme(null); setForm({ name: "", amount: "", duration: "", members: "", monthlyInstallment: "", commission: "", monthlyAmounts: [] }); setShowForm(true); }} />] : []}
       />
@@ -175,7 +175,7 @@ export function Schemes({ dark, toast }) {
       )}
 
       {/* Stats — only for admins */}
-      {!isUser && (
+      {!isCustomer && (
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(160px,1fr))", gap: 12, marginBottom: 24 }}>
           <div style={statStyle("#3b82f6")}><div style={{ fontSize: 11, color: "#6b7280", fontWeight: 600, marginBottom: 4 }}>Total Schemes</div><div style={{ fontSize: 24, fontWeight: 800, color: "#3b82f6" }}>{schemes.length}</div></div>
           <div style={statStyle("#10b981")}><div style={{ fontSize: 11, color: "#6b7280", fontWeight: 600, marginBottom: 4 }}>Active</div><div style={{ fontSize: 24, fontWeight: 800, color: "#10b981" }}>{schemes.filter(s => s.status === "Active").length}</div></div>
@@ -185,7 +185,7 @@ export function Schemes({ dark, toast }) {
       )}
 
       {/* Search/filter — only for admins */}
-      {!isUser && (
+      {!isCustomer && (
         <div style={{ display: "flex", gap: 12, marginBottom: 18, flexWrap: "wrap" }}>
           <input type="text" value={search} onChange={e => setSearch(e.target.value)} placeholder="Search schemes..." style={{ ...inp, maxWidth: 280 }} />
           <select value={statusFilter} onChange={e => setStatusFilter(e.target.value)} style={{ ...inp, maxWidth: 150 }}>
@@ -197,7 +197,7 @@ export function Schemes({ dark, toast }) {
       )}
 
       {/* User: card view of their scheme */}
-      {isUser && filtered.length > 0 && (
+      {isCustomer && filtered.length > 0 && (
         <div style={{ display: "grid", gap: 20 }}>
           {filtered.map(s => (
             <div key={s.id} style={{ background: "#fff", border: "1px solid #e5e7eb", borderRadius: 14, padding: 24 }}>
@@ -248,12 +248,12 @@ export function Schemes({ dark, toast }) {
         </div>
       )}
 
-      {isUser && filtered.length === 0 && (
+      {isCustomer && filtered.length === 0 && (
         <div style={{ textAlign: "center", padding: 60, color: "#94a3b8" }}>No scheme assigned to your account yet.</div>
       )}
 
       {/* Admin: table view */}
-      {!isUser && (
+      {!isCustomer && (
         <div style={{ background: "#fff", border: "1px solid #e5e7eb", borderRadius: 12, overflow: "hidden" }}>
           <Table dark={dark} cols={["Scheme Name","Chit Value","Duration","Members","Monthly Installment","Commission","Status","Actions"]}
             rows={filtered.map(s => [

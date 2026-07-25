@@ -248,9 +248,9 @@ export function Auctions({ toast, setPreview }) {
   return (
     <div>
       <SectionHeader title="Auction Management"
-        subtitle={isUser ? "Your group's auction history" : "Manage and conduct chit auctions"} />
+        subtitle={isCustomer ? "Your group's auction history" : "Manage and conduct chit auctions"} />
 
-      {!isUser && (
+      {!isCustomer && (
         <div style={{ display: "flex", gap: 16, alignItems: "flex-end", marginBottom: 24, flexWrap: "wrap" }}>
           <div style={{ minWidth: 220 }}>
             <Input label="Select Scheme" value={selectedSchemeId} onChange={v => { setSelectedSchemeId(v); setSelectedGroupId(""); }}
@@ -447,17 +447,17 @@ export function Auctions({ toast, setPreview }) {
         </div>
       )}
 
-      {!selectedGroupId && !isUser ? (
+      {!selectedGroupId && !isCustomer ? (
         <div style={{ textAlign: "center", padding: 60, color: "var(--text-muted)" }}>
           <HiPlay size={40} style={{ margin: "0 auto 12px", display: "block", opacity: 0.3 }} />
           <div style={{ fontSize: 15, marginBottom: 4 }}>Select a group above to view auction details</div>
           <div style={{ fontSize: 13 }}>Choose a group to see all monthly installments and conduct auctions.</div>
         </div>
       ) : (
-      <Table cols={["Conduct ID", "Group", "Date", "Installment", "Auction Amount", "Winning Bid", "Winner", "Status", ...(isUser ? [] : ["Actions"])]}
+      <Table cols={["Conduct ID", "Group", "Date", "Installment", "Auction Amount", "Winning Bid", "Winner", "Status", ...(isCustomer ? [] : ["Actions"])]}
         rows={(() => {
           const rows = [];
-          const targetGroups = isUser
+          const targetGroups = isCustomer
             ? groups.filter(g => g.status === 'Active' && g.schemeId && userGroupIds.includes(g.id))
             : groups.filter(g => g.id === selectedGroupId && g.status === 'Active' && g.schemeId);
 
@@ -485,7 +485,7 @@ export function Auctions({ toast, setPreview }) {
                   existingAuction.winnerId ? `${winnerMember?.name || ""} (${existingAuction.winnerId})` : "—",
                   <Badge key={existingAuction.id} text={existingAuction.status} color={existingAuction.status === "Completed" ? "green" : existingAuction.status === "Scheduled" ? "blue" : "yellow"} />,
                 ];
-                if (!isUser) row.push(
+                if (!isCustomer) row.push(
                   <div key={existingAuction.id} style={{ display: "flex", gap: 6 }}>
                     {existingAuction.status === "Scheduled" && isSuperAdmin && <IconBtn icon={<HiPlay size={14} />} onClick={() => handleConductAuction(existingAuction)} color="#d97706" title="Conduct" />}
                     <IconBtn icon={<HiReceiptRefund size={14} />} onClick={() => handleGenerateReceipt(existingAuction)} color="#7c3aed" title="Receipt" />
@@ -495,7 +495,7 @@ export function Auctions({ toast, setPreview }) {
                 );
                 rows.push(row);
               } else {
-                if (isUser) return;
+                if (isCustomer) return;
                 if (!g.members?.length) return;
                 rows.push([
                   <span key={key + 'cid'} style={{ color: "var(--text-muted)", fontSize: 12 }}>—</span>,
