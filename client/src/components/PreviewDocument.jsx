@@ -51,33 +51,56 @@ export function PreviewDocument({ doc, onClose }) {
 
       {/* A4 Document */}
       <div style={{ background: "#fff", width: "100%", maxWidth: 860, minHeight: 1100, padding: 48, borderRadius: 4, boxShadow: "0 10px 40px rgba(0,0,0,0.4)" }}>
-        <div style={{ borderBottom: "2px solid #1e3a5f", paddingBottom: 16, marginBottom: 24 }}>
-          <h1 style={{ fontSize: 28, fontWeight: 700, color: "#1e3a5f", margin: 0 }}>{doc.title}</h1>
-          <div style={{ fontSize: 14, color: "#6b7280", marginTop: 8 }}>Document No: {doc.docNo}</div>
+        {/* Header Block */}
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", borderBottom: "2px solid #1e3a5f", paddingBottom: 16, marginBottom: 24 }}>
+          <div>
+            <h1 style={{ fontSize: 32, fontWeight: 800, color: "#1565C0", margin: "0 0 4px 0", letterSpacing: "-0.5px" }}>NVS CHIT ENTERPRISES</h1>
+            <div style={{ fontSize: 13, color: "#475569" }}>1538, North Veli Street, Simmakkal</div>
+            <div style={{ fontSize: 13, color: "#475569" }}>Madurai – 625001</div>
+            <div style={{ fontSize: 13, color: "#475569", marginTop: 4 }}>Phone: 96009 4752 | Email: nvschit@gmail.com</div>
+          </div>
+          <div style={{ textAlign: "right" }}>
+            <h2 style={{ fontSize: 24, fontWeight: 700, color: "#1e3a5f", margin: "0 0 8px 0" }}>{doc.title}</h2>
+            <div style={{ fontSize: 14, color: "#1e3a5f", fontWeight: 600 }}>No: {doc.docNo}</div>
+            {doc.chit && doc.chit["Receipt Date"] && (
+              <div style={{ fontSize: 13, color: "#64748b", marginTop: 4 }}>Date: {doc.chit["Receipt Date"]}</div>
+            )}
+            {doc.chit && doc.chit["Invoice Date"] && (
+              <div style={{ fontSize: 13, color: "#64748b", marginTop: 4 }}>Date: {doc.chit["Invoice Date"]}</div>
+            )}
+          </div>
         </div>
 
-        {doc.member && (
-          <div style={{ marginBottom: 24 }}>
-            <h3 style={{ fontSize: 14, fontWeight: 700, color: "#1e3a5f", marginBottom: 8 }}>Bill To:</h3>
-            <div style={{ fontSize: 13, color: "#374151" }}>
-              <div style={{ fontWeight: 600 }}>{doc.member.name}</div>
-              <div>{doc.member.address}</div>
-              <div>Phone: {doc.member.phone}</div>
-              {doc.member.pan && <div>PAN: {doc.member.pan}</div>}
+        {/* Info Grid: Customer, Agent, Chit */}
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 24, marginBottom: 32 }}>
+          {doc.member && (
+            <div style={{ background: "#f8fafc", padding: 16, border: "1px solid #e2e8f0", borderRadius: 8 }}>
+              <h3 style={{ fontSize: 13, fontWeight: 700, color: "#1565C0", marginBottom: 12, textTransform: "uppercase", letterSpacing: "0.5px" }}>Customer Details</h3>
+              <div style={{ fontSize: 14, color: "#1e293b", display: "grid", gap: 6 }}>
+                <div style={{ fontWeight: 700, fontSize: 16 }}>{doc.member.name}</div>
+                {doc.member.memberId && <div><span style={{ color: "#64748b", fontSize: 13 }}>ID:</span> {doc.member.memberId}</div>}
+                <div><span style={{ color: "#64748b", fontSize: 13 }}>Phone:</span> {doc.member.phone}</div>
+                {doc.member.address && <div><span style={{ color: "#64748b", fontSize: 13 }}>Address:</span> {doc.member.address}</div>}
+                {doc.member.aadhaar && <div><span style={{ color: "#64748b", fontSize: 13 }}>Aadhaar:</span> {doc.member.aadhaar}</div>}
+                {doc.member.pan && <div><span style={{ color: "#64748b", fontSize: 13 }}>PAN:</span> {doc.member.pan}</div>}
+              </div>
             </div>
-          </div>
-        )}
+          )}
 
-        {doc.chit && (
-          <div style={{ marginBottom: 24 }}>
-            <h3 style={{ fontSize: 14, fontWeight: 700, color: "#1e3a5f", marginBottom: 8 }}>Chit Details:</h3>
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(200px,1fr))", gap: 8, fontSize: 13, color: "#374151" }}>
-              {Object.entries(doc.chit).map(([k, v]) => (
-                <div key={k}><span style={{ fontWeight: 600 }}>{k}:</span> {v}</div>
-              ))}
+          {doc.chit && (
+            <div style={{ background: "#f8fafc", padding: 16, border: "1px solid #e2e8f0", borderRadius: 8 }}>
+              <h3 style={{ fontSize: 13, fontWeight: 700, color: "#1565C0", marginBottom: 12, textTransform: "uppercase", letterSpacing: "0.5px" }}>Chit & Agent Details</h3>
+              <div style={{ display: "grid", gap: 6, fontSize: 14, color: "#1e293b" }}>
+                {Object.entries(doc.chit).filter(([k]) => !k.includes("Date")).map(([k, v]) => (
+                  <div key={k} style={{ display: "flex", justifyContent: "space-between" }}>
+                    <span style={{ color: "#64748b", fontSize: 13 }}>{k}:</span>
+                    <span style={{ fontWeight: 600, textAlign: "right" }}>{v}</span>
+                  </div>
+                ))}
+              </div>
             </div>
-          </div>
-        )}
+          )}
+        </div>
 
         {doc.payments && (
           <div style={{ marginBottom: 24 }}>

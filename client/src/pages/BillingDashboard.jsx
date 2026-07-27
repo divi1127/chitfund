@@ -12,14 +12,29 @@ import { HiEye, HiPrinter, HiArrowDownTray, HiReceiptRefund } from "react-icons/
 export function BillingDashboard({ toast }) {
   const { user } = useAuth();
   const { data: invoices, loading: invoicesLoading } = useData('/invoices');
+  const { data: members } = useData('/members');
+  const [selectedYear, setSelectedYear] = useState("all");
   const [showReceiptPopup, setShowReceiptPopup] = useState(false);
   const [selectedInvoiceForReceipt, setSelectedInvoiceForReceipt] = useState(null);
   const [showInvoicePreview, setShowInvoicePreview] = useState(false);
   const [previewInvoice, setPreviewInvoice] = useState(null);
 
-  const filteredInvoices = user?.role === 'customer'
+  // Agent sees only their customers
+  const agentCustomerIds = user?.role === 'agent' && members 
+    ? members.filter(m => m.agentId === user.agentId || m.agentId === user.userId).map(m => m.memberId)
+    : [];
+
+  const roleFilteredInvoices = user?.role === 'customer'
     ? invoices.filter(inv => inv.memberId === user.userId || inv.memberName === user.name)
+    : user?.role === 'agent'
+    ? invoices.filter(inv => agentCustomerIds.includes(inv.memberId))
     : invoices;
+
+  const invoiceYears = [...new Set(roleFilteredInvoices.map(inv => new Date(inv.date).getFullYear()))].sort((a, b) => b - a);
+  
+  const filteredInvoices = selectedYear === "all"
+    ? roleFilteredInvoices
+    : roleFilteredInvoices.filter(inv => new Date(inv.date).getFullYear() === Number(selectedYear));
 
   const getStatusColor = (status) => {
     switch (status) {
@@ -35,12 +50,21 @@ export function BillingDashboard({ toast }) {
 
   return (
     <div>
-      <SectionHeader title="Invoices & Payments" subtitle="View all payment invoices" />
+      <SectionHeader title="Payments Dashboard" subtitle="View all customer and agent payments" />
 
       <div style={{ display: "grid", gap: 24 }}>
         {/* Invoices Table */}
         <div style={{ background: "var(--bg-card)", border: "1px solid var(--border-color)", borderRadius: 12, padding: 24 }}>
-          <div style={{ fontSize: 16, fontWeight: 600, color: "var(--text-primary)", marginBottom: 16 }}>All Invoices</div>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
+            <div style={{ fontSize: 16, fontWeight: 600, color: "var(--text-primary)" }}>Payment Records</div>
+            {invoiceYears.length > 0 && (
+              <select value={selectedYear} onChange={e => setSelectedYear(e.target.value)}
+                style={{ padding: "6px 12px", borderRadius: 6, border: "1px solid var(--border-color)", background: "var(--bg-card)", color: "var(--text-primary)" }}>
+                <option value="all">All Years</option>
+                {invoiceYears.map(y => <option key={y} value={y}>{y}</option>)}
+              </select>
+            )}
+          </div>
           {filteredInvoices.length === 0 ? (
             <div style={{ textAlign: "center", padding: 40, color: "var(--text-muted)" }}>No invoices found.</div>
           ) : (

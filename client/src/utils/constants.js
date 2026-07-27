@@ -70,7 +70,7 @@ export const NAV_ITEMS = [
   { id: "agents", label: "Agent Management", icon: "agents" },
   { id: "members", label: "Members / Customers", icon: "members" },
   { id: "collections", label: "Collections", icon: "collections" },
-  { id: "billing", label: "Billing", icon: "billing" },
+  { id: "billing", label: "Payments", icon: "billing" },
   { id: "auctions", label: "Auctions", icon: "auctions" },
   { id: "prizes", label: "Prize Payment", icon: "prizes" },
   { id: "accounting", label: "Accounting", icon: "accounting" },

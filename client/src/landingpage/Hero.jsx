@@ -45,7 +45,7 @@ export const Ticker = () => {
 };
 
 export const Hero = ({ onNavigate }) => {
-  const { t } = useLanguage();
+  const { language, t } = useLanguage();
   const [current, setCurrent] = useState(0);
   const [isHovered, setIsHovered] = useState(false);
   const [loaded, setLoaded] = useState(false);
@@ -84,7 +84,7 @@ export const Hero = ({ onNavigate }) => {
               initial={{ opacity: 0, y: 16 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.5, delay: 0.08 }}
-              className="text-[2.2rem] sm:text-[3rem] lg:text-[3.5rem] xl:text-[4rem] font-extrabold leading-[1.08] tracking-tight text-text-primary mb-6 mt-10"
+              className={`${language === 'ta' ? 'text-[2rem] sm:text-[2.5rem] lg:text-[2.8rem] xl:text-[3.2rem]' : 'text-[2.2rem] sm:text-[3rem] lg:text-[3.5rem] xl:text-[4rem]'} font-extrabold leading-[1.08] tracking-tight text-text-primary mb-6 mt-10`}
             >
               {t('hero_title_1')}{' '}
               <span className="text-gradient-blue">{t('hero_title_2')}</span>{' '}
@@ -100,7 +100,7 @@ export const Hero = ({ onNavigate }) => {
               initial={{ opacity: 0, y: 16 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.5, delay: 0.16 }}
-              className="text-lg text-text-secondary leading-relaxed mb-9 max-w-lg"
+              className={`${language === 'ta' ? 'text-base' : 'text-lg'} text-text-secondary leading-relaxed mb-9 max-w-lg`}
             >
               {t('hero_subtitle')}
             </motion.p>

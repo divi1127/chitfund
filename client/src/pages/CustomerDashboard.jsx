@@ -170,7 +170,7 @@ export function CustomerDashboard({ dark, toast }) {
                 rows={filteredPayments.slice(0, 20).map(c => [
                   c.receiptNo || c.partialPayments?.[0]?.receiptNo || "—",
                   new Date(c.date).toLocaleDateString(),
-                  fmt(c.amount || 0),
+                  fmt(c.amount || (c.partialPayments || []).reduce((s, p) => s + (p.amount || 0), 0)),
                   c.mode || c.partialPayments?.[0]?.mode || "—",
                   `Month ${c.installment}`,
                   <Badge key={c._id || c.id} text={c.status} color={c.status === 'Paid' ? 'green' : c.status === 'Partially Paid' ? 'yellow' : 'red'} />

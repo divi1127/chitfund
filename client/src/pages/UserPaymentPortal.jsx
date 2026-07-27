@@ -264,23 +264,28 @@ export function UserPaymentPortal({ toast }) {
           </div>
         )}
 
-        {/* Payment History */}
+        {/* Payment History (Transactions) */}
         <div style={{ background: "var(--bg-card)", border: "1px solid var(--border-color)", borderRadius: 12, padding: 24 }}>
           <div style={{ fontSize: 16, fontWeight: 600, color: "var(--text-primary)", marginBottom: 16 }}>Payment History</div>
-          {userInvoices.length === 0 ? (
-            <div style={{ textAlign: "center", padding: 40, color: "var(--text-muted)" }}>
-              No payment history available.
-            </div>
-          ) : (
-            <Table cols={["Invoice No", "Date", "Amount Paid", "Payment Mode", "Status"]}
-              rows={userInvoices.map(inv => [
-                inv.invoiceNumber,
-                new Date(inv.date).toLocaleDateString(),
-                `₹${inv.amountPaid.toLocaleString()}`,
-                inv.paymentMethod,
-                <Badge key={inv.id} text={inv.status} color={inv.status === 'Paid' ? 'green' : inv.status === 'Partially Paid' ? 'yellow' : 'red'} />
-              ])} />
-          )}
+          {(() => {
+            const userCollections = collections.filter(c => c.memberId === userMember?.memberId || c.memberId === userMember?.id);
+            if (userCollections.length === 0) {
+              return (
+                <div style={{ textAlign: "center", padding: 40, color: "var(--text-muted)" }}>
+                  No payment history available.
+                </div>
+              );
+            }
+            return (
+              <Table cols={["Receipt No", "Date", "Amount", "Status"]}
+                  rows={userCollections.map(c => [
+                    c.receiptNo || (c.partialPayments && c.partialPayments.length > 0 ? c.partialPayments[c.partialPayments.length - 1].receiptNo : "—"),
+                    new Date(c.date).toLocaleDateString(),
+                    `₹${(c.amount || (c.partialPayments || []).reduce((s, p) => s + (p.amount || 0), 0)).toLocaleString()}`,
+                    <Badge key={c.id || Math.random()} text={c.status} color={c.status === 'Paid' ? 'green' : c.status === 'Partially Paid' ? 'yellow' : 'red'} />
+                  ])} />
+            );
+          })()}
         </div>
 
         {/* Payment Form Modal */}
@@ -299,8 +304,46 @@ export function UserPaymentPortal({ toast }) {
                 <div style={{ fontSize: 20, fontWeight: 700, color: "#ef4444" }}>₹{selectedInvoice.balance.toLocaleString()}</div>
               </div>
 
+              {/* Partial Payment Blocks UI */}
               <div style={{ marginBottom: 20 }}>
-                <Input label="Payment Amount" value={form.amount} onChange={v => setForm({ ...form, amount: v })} type="number" />
+                <div style={{ fontSize: 14, fontWeight: 600, color: "var(--text-secondary)", marginBottom: 12 }}>Select Payment Block (Partial Payments)</div>
+                <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(60px, 1fr))", gap: 10 }}>
+                  {(() => {
+                    const maxBlocks = 10;
+                    const blockAmount = selectedInvoice.totalPayable / maxBlocks;
+                    const paidBlocks = Math.round((selectedInvoice.totalPayable - selectedInvoice.balance) / (blockAmount || 1));
+                    return Array.from({ length: maxBlocks }, (_, i) => {
+                      const isPaid = i < paidBlocks;
+                      const isSelected = !isPaid && Math.abs(form.amount - blockAmount) < 1 && form.selectedBlock === i;
+                      
+                      return (
+                        <div
+                          key={i}
+                          onClick={() => {
+                            if (!isPaid) setForm({ ...form, amount: blockAmount, selectedBlock: i });
+                          }}
+                          style={{
+                            padding: "10px",
+                            textAlign: "center",
+                            borderRadius: 8,
+                            cursor: isPaid ? "not-allowed" : "pointer",
+                            background: isPaid ? "#d1d5db" : isSelected ? "#2563eb" : "var(--bg-card-alt)",
+                            color: isPaid ? "#9ca3af" : isSelected ? "#fff" : "var(--text-primary)",
+                            border: isPaid ? "1px solid #d1d5db" : isSelected ? "2px solid #2563eb" : "1px solid #d1d5db",
+                            fontWeight: 600,
+                            fontSize: 14,
+                            opacity: isPaid ? 0.6 : 1
+                          }}
+                        >
+                           {i + 1}
+                        </div>
+                      );
+                    });
+                  })()}
+                </div>
+                <div style={{ fontSize: 12, color: "var(--text-muted-2)", marginTop: 8 }}>
+                  Click a block to pay its fractional amount: {selectedInvoice.totalPayable > 0 ? `₹${(selectedInvoice.totalPayable / 10).toLocaleString()} per block` : ''}
+                </div>
               </div>
 
               <div style={{ marginBottom: 20 }}>
