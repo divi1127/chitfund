@@ -201,8 +201,11 @@ export function InvoiceModal({ invoice, onClose, onPaymentSuccess, toast }) {
             <div style={{ border: "1.5px solid #2563eb", borderRadius: 12, padding: 16, background: "#f8faff" }}>
               <div style={{ fontSize: 11, fontWeight: 700, color: "#2563eb", textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 10 }}>Member Details</div>
               <div style={{ marginBottom: 4 }}><span style={{ fontSize: 11, color: "#64748b" }}>Name</span><div style={{ fontSize: 14, fontWeight: 700, color: "#111" }}>{invoice.memberName}</div></div>
-              <div style={{ marginBottom: 4 }}><span style={{ fontSize: 11, color: "#64748b" }}>Member ID</span><div style={{ fontSize: 13, color: "#111" }}>{invoice.memberId}</div></div>
-              <div><span style={{ fontSize: 11, color: "#64748b" }}>Mobile</span><div style={{ fontSize: 13, color: "#111" }}>{invoice.memberMobile}</div></div>
+              <div style={{ marginBottom: 4, display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+                <div><span style={{ fontSize: 11, color: "#64748b" }}>Member ID</span><div style={{ fontSize: 13, color: "#111" }}>{invoice.memberId}</div></div>
+                <div><span style={{ fontSize: 11, color: "#64748b" }}>Mobile</span><div style={{ fontSize: 13, color: "#111" }}>{invoice.memberMobile}</div></div>
+              </div>
+              <div><span style={{ fontSize: 11, color: "#64748b" }}>Agent / Collected By</span><div style={{ fontSize: 13, color: "#111" }}>{invoice.agentName || invoice.collectedBy || "System Admin"}</div></div>
             </div>
             <div style={{ border: "1.5px solid #ea580c", borderRadius: 12, padding: 16, background: "#fffaf5" }}>
               <div style={{ fontSize: 11, fontWeight: 700, color: "#ea580c", textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 10 }}>Chit Details</div>

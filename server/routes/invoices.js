@@ -91,9 +91,20 @@ router.get('/accounting/:year/:month', authenticate, async (req, res) => {
     const startDate = new Date(year, month - 1, 1);
     const endDate = new Date(year, month, 0);
 
-    const invoices = await Invoice.find({
-      date: { $gte: startDate, $lte: endDate }
-    }).sort({ createdAt: -1 });
+    let filter = { date: { $gte: startDate, $lte: endDate } };
+    
+    if (req.user.role === 'agent') {
+      const agent = await Agent.findOne({ userId: req.user.userId });
+      if (agent) {
+        const agentCustomers = await Member.find({ agentId: agent.agentId });
+        const customerIds = agentCustomers.map(m => m.memberId);
+        filter.memberId = { $in: customerIds };
+      } else {
+        filter.memberId = "NONE";
+      }
+    }
+
+    const invoices = await Invoice.find(filter).sort({ createdAt: -1 });
 
     const members = await Member.find();
     const groups = await Group.find();

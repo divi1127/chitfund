@@ -2,8 +2,10 @@ import { useState, useEffect } from "react";
 import { createData } from "../utils/api";
 import { fmt } from "../utils/helpers";
 import { COMPANY } from "../utils/constants";
+import { useAuth } from "../contexts/AuthContext";
 
 export function PaymentModal({ member, group, scheme, installment, onClose, onSuccess }) {
+  const { user } = useAuth();
   const [mode, setMode] = useState("");
   const [upiRef, setUpiRef] = useState("");
   const [upiProof, setUpiProof] = useState(null);
@@ -11,7 +13,8 @@ export function PaymentModal({ member, group, scheme, installment, onClose, onSu
   const [error, setError] = useState("");
   const [step, setStep] = useState("invoice");
   const [paymentType, setPaymentType] = useState("full");
-  const [numParts, setNumParts] = useState(2);
+  const [numParts, setNumParts] = useState(10);
+  const [selectedBlock, setSelectedBlock] = useState(null);
   const [existingCollection, setExistingCollection] = useState(null);
   const maxDivisions = 10;
 
@@ -176,12 +179,12 @@ export function PaymentModal({ member, group, scheme, installment, onClose, onSu
             )}
           </div>
 
-          {!isLocked && (
+          {!isLocked && user?.role !== 'agent' && (
             <div style={{ marginBottom: 16 }}>
               <div style={{ fontSize: 12, fontWeight: 700, color: "#64748b", marginBottom: 8, letterSpacing: 0.5 }}>PAYMENT OPTION</div>
               <div style={{ display: "flex", gap: 10 }}>
                 {[["full", "Pay Full Amount"], ["parts", "Pay in Parts"]].map(([val, lbl]) => (
-                  <button key={val} onClick={() => { setPaymentType(val); if (val === "parts" && numParts < 2) setNumParts(2); }}
+                  <button key={val} onClick={() => { setPaymentType(val); setNumParts(10); setSelectedBlock(null); }}
                     style={{ flex: 1, padding: "10px 8px", borderRadius: 10, border: `2px solid ${paymentType === val ? "#2563eb" : "#e2e8f0"}`, background: paymentType === val ? "#eff6ff" : "#fff", color: paymentType === val ? "#1e40af" : "#374151", fontWeight: 700, fontSize: 12, cursor: "pointer" }}>
                     {lbl}
                   </button>
@@ -190,39 +193,31 @@ export function PaymentModal({ member, group, scheme, installment, onClose, onSu
             </div>
           )}
 
-          {isLocked && paymentType === "parts" && (
+          {paymentType === "parts" && user?.role !== "agent" && (
             <div style={{ background: "#f8fafc", border: "1px solid #e2e8f0", borderRadius: 10, padding: 14, marginBottom: 16 }}>
-              <div style={{ fontSize: 12, fontWeight: 600, color: "#374151", marginBottom: 8 }}>Split locked to {lockedTotalParts} parts</div>
-              <div style={{ marginTop: 10, background: "#eff6ff", borderRadius: 8, padding: "10px 14px", fontSize: 13 }}>
-                <span style={{ color: "#64748b" }}>This installment was split into </span>
-                <strong style={{ color: "#1e40af", fontSize: 15 }}>{lockedTotalParts}</strong>
-                <span style={{ color: "#64748b" }}> parts. </span>
-                <strong style={{ color: "#16a34a" }}>{approvedPartCount}</strong>
-                <span style={{ color: "#64748b" }}> paid · </span>
-                <strong style={{ color: "#d97706" }}>{numParts - approvedPartCount}</strong>
-                <span style={{ color: "#64748b" }}> remaining</span>
-              </div>
-            </div>
-          )}
-
-          {!isLocked && paymentType === "parts" && (
-            <div style={{ background: "#f8fafc", border: "1px solid #e2e8f0", borderRadius: 10, padding: 14, marginBottom: 16 }}>
-              <div style={{ fontSize: 12, fontWeight: 600, color: "#374151", marginBottom: 8 }}>Split into how many parts? (max {maxDivisions})</div>
-              <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
-                {[2, 3, 4, 5, 6, 7, 8, 9, 10].filter(n => n <= maxDivisions).map(n => (
-                  <button key={n} onClick={() => setNumParts(n)}
-                    style={{ width: 40, height: 40, borderRadius: 8, border: `2px solid ${numParts === n ? "#2563eb" : "#e2e8f0"}`, background: numParts === n ? "#2563eb" : "#fff", color: numParts === n ? "#fff" : "#374151", fontWeight: 700, fontSize: 13, cursor: "pointer" }}>
-                    {n}
-                  </button>
-                ))}
+              <div style={{ fontSize: 12, fontWeight: 600, color: "#374151", marginBottom: 12 }}>Select Payment Block (Partial Payments)</div>
+              {isLocked && (
+                <div style={{ fontSize: 13, color: "#d97706", marginBottom: 12, background: "#fef3c7", padding: "8px 12px", borderRadius: 6 }}>
+                  You have already made partial payments towards this installment.
+                </div>
+              )}
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(5, 1fr)", gap: 8 }}>
+                {Array.from({ length: 10 }, (_, i) => {
+                  const isPaid = isLocked && i < approvedPartCount;
+                  const isSelected = selectedBlock === i;
+                  return (
+                    <button key={i} onClick={() => { if (!isPaid) { setNumParts(10); setSelectedBlock(i); } }}
+                      disabled={isPaid}
+                      style={{ width: "100%", height: 36, borderRadius: 8, border: `2px solid ${isPaid ? "#d1d5db" : isSelected ? "#2563eb" : "#e2e8f0"}`, background: isPaid ? "#d1d5db" : isSelected ? "#2563eb" : "#fff", color: isPaid ? "#9ca3af" : isSelected ? "#fff" : "#374151", fontWeight: 700, fontSize: 13, cursor: isPaid ? "not-allowed" : "pointer", opacity: isPaid ? 0.5 : 1 }}>
+                      {i + 1}
+                    </button>
+                  );
+                })}
               </div>
               <div style={{ marginTop: 10, background: "#eff6ff", borderRadius: 8, padding: "10px 14px", fontSize: 13 }}>
-                <span style={{ color: "#64748b" }}>Installment of </span>
-                <strong style={{ color: "#1e40af", fontSize: 15 }}>{fmt(Math.floor(amount / numParts))}</strong>
-                <span style={{ color: "#64748b" }}> each · You'll pay </span>
-                <strong style={{ color: "#1e40af" }}>{fmt(Math.floor(amount / numParts))}</strong>
-                <span style={{ color: "#64748b" }}> now</span>
-                <div style={{ fontSize: 11, color: "#94a3b8", marginTop: 4 }}>Total: {fmt(amount)} · Remaining after this: {fmt(amount - Math.floor(amount / numParts))}</div>
+                <span style={{ color: "#64748b" }}>Each block is </span>
+                <strong style={{ color: "#1e40af", fontSize: 15 }}>{fmt(Math.floor(amount / 10))}</strong>
+                <div style={{ fontSize: 11, color: "#94a3b8", marginTop: 4 }}>Total: {fmt(amount)}</div>
               </div>
             </div>
           )}
