@@ -13,10 +13,15 @@ export function AgentDashboard({ dark, toast }) {
   const { data: collections } = useData('/collections');
   const { data: commissions } = useData('/commissions');
   const { data: schemes } = useData('/schemes');
+  const { data: groups } = useData('/groups');
 
   const agentId = user?.agentId || user?.userId;
 
-  const myCustomers = Array.isArray(members) ? members.filter(m => m.agentId === agentId) : [];
+  // Agent's own Member record (auto-created when group assigned)
+  const mySelfRecord = Array.isArray(members) ? members.find(m => m.agentId === agentId) : null;
+  const myOwnMemberId = mySelfRecord?.memberId;
+
+  const myCustomers = Array.isArray(members) ? members.filter(m => m.agentId === agentId && m.memberId !== myOwnMemberId) : [];
   const myCustomerIds = myCustomers.map(m => m.memberId);
 
   const todayCollections = Array.isArray(collections) ? collections.filter(c => {
@@ -26,6 +31,10 @@ export function AgentDashboard({ dark, toast }) {
   const todayCollectionAmount = todayCollections.reduce((sum, c) => sum + (c.amount || 0), 0);
 
   const myCollections = Array.isArray(collections) ? collections.filter(c => myCustomerIds.includes(c.memberId)) : [];
+
+  // Agent's own payments
+  const myOwnPayments = myOwnMemberId ? Array.isArray(collections) ? collections.filter(c => c.memberId === myOwnMemberId) : [] : [];
+  const myOwnTotalPaid = myOwnPayments.reduce((sum, c) => sum + (c.amount || 0), 0);
 
   const pendingApprovalsCount = myCollections.reduce((count, c) => {
      if (c.status === 'Pending' && c.mode === 'Cash' && (!c.partialPayments || c.partialPayments.length === 0)) return count + 1;
@@ -50,13 +59,33 @@ export function AgentDashboard({ dark, toast }) {
 
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(180px,1fr))", gap: 16, marginBottom: 28 }}>
         <StatCard label="My Customers" value={myCustomers.length} sub="Registered customers" color="#2563eb" dark={dark} icon={<FiUsers size={22} />} />
+        <StatCard label="My Groups" value={Array.isArray(groups) ? groups.length : 0} sub="Assigned groups" color="#8b5cf6" dark={dark} icon={<FiFileText size={22} />} />
+        <StatCard label="My Own Paid" value={fmt(myOwnTotalPaid)} sub="My installment payments" color="#10b981" dark={dark} icon={<FiCheckCircle size={22} />} />
         <StatCard label="Pending Approvals" value={fmt(pendingAmount)} sub={`${pendingApprovalsCount} pending collections`} color="#ef4444" dark={dark} icon={<FiCreditCard size={22} />} />
         <StatCard label="Today's Collections" value={fmt(todayCollectionAmount)} sub={`${todayCollections.length} collections`} color="#10b981" dark={dark} icon={<FiDollarSign size={22} />} />
         <StatCard label="Commission Earned" value={fmt(totalCommissionEarned)} sub={`${myCommissions.length} payments`} color="#f59e0b" dark={dark} icon={<FiTrendingUp size={22} />} />
-        <StatCard label="Running Schemes" value={activeSchemes} sub="Active schemes" color="#8b5cf6" dark={dark} icon={<FiFileText size={22} />} />
       </div>
 
       <div className="d-grid d-grid-2" style={{ marginBottom: 20 }}>
+        <div style={{ background: dark ? "rgba(255,255,255,.05)" : "#fff", border: dark ? "1px solid rgba(255,255,255,.1)" : "1px solid #e5e7eb", borderRadius: 12, padding: 20 }}>
+          <div style={{ fontSize: 14, fontWeight: 600, color: dark ? "#f3f4f6" : "#111", marginBottom: 14 }}>My Groups</div>
+          {Array.isArray(groups) && groups.length > 0 ? (
+            <Table dark={dark} cols={["Group", "Scheme", "Customers", "My Status", "Action"]}
+              rows={groups.map(g => {
+                const s = Array.isArray(schemes) ? schemes.find(sc => sc.id === g.schemeId) : null;
+                const myMonthPaid = myOwnMemberId ? Array.isArray(collections) ? collections.some(c => c.memberId === myOwnMemberId && Number(c.installment) === (g.currentInstallment || 1) && c.status === 'Paid') : false : false;
+                return [
+                  g.name,
+                  s?.name || "—",
+                  `${g.members?.length || 0}/${g.maxMembers || s?.members || 10}`,
+                  myMonthPaid ? <Badge key="paid" text="Paid" color="green" /> : <Badge key="due" text="Due" color="red" />,
+                  <button key={g.id} onClick={() => window.location.href = "/members"} style={{ padding: "6px 12px", borderRadius: 6, border: "none", background: "#2563eb", color: "#fff", cursor: "pointer", fontSize: 11, fontWeight: 600 }}>View</button>
+                ];
+              })} />
+          ) : (
+            <div style={{ textAlign: "center", padding: 30, color: dark ? "rgba(255,255,255,.4)" : "#9ca3af", fontSize: 13 }}>No groups assigned yet. Contact admin.</div>
+          )}
+        </div>
         <div style={{ background: dark ? "rgba(255,255,255,.05)" : "#fff", border: dark ? "1px solid rgba(255,255,255,.1)" : "1px solid #e5e7eb", borderRadius: 12, padding: 20 }}>
           <div style={{ fontSize: 14, fontWeight: 600, color: dark ? "#f3f4f6" : "#111", marginBottom: 14 }}>My Customers</div>
           {myCustomers.length > 0 ? (

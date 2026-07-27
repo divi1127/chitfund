@@ -3,7 +3,9 @@ import Group from '../models/Group.js';
 import Agent from '../models/Agent.js';
 import Scheme from '../models/Scheme.js';
 import Member from '../models/Member.js';
+import User from '../models/User.js';
 import { authenticate, authorize } from '../middleware/auth.js';
+import { generateCustomerId, generatePasswordFromDob } from '../utils/idGenerator.js';
 
 const router = express.Router();
 
@@ -73,8 +75,65 @@ router.post('/', authenticate, authorize('super_admin'), async (req, res) => {
     }
 
     const scheme = await Scheme.findOne({ id: req.body.schemeId });
+
+    // Build members array – add agent as first paying member
+    let members = [...(req.body.members || [])];
+    let agentMemberRecord = null;
+
+    if (agentId) {
+      const agent = await Agent.findOne({ agentId });
+      if (!agent) return res.status(400).json({ message: 'Agent not found' });
+
+      // Check if agent already has a Member record
+      agentMemberRecord = await Member.findOne({ agentId });
+
+      if (!agentMemberRecord) {
+        const memberId = await generateCustomerId();
+        const autoPassword = agent.dob ? generatePasswordFromDob(agent.dob) : 'welcome@2026';
+
+        agentMemberRecord = await Member.create({
+          id: 'M' + Date.now().toString().slice(-6) + Math.random().toString(36).slice(-3),
+          memberId,
+          userId: memberId,
+          name: agent.name,
+          phone: agent.phone,
+          email: agent.email || '',
+          address: agent.address,
+          aadhaar: agent.aadhaar,
+          pan: agent.pan || '',
+          dob: agent.dob || null,
+          password: autoPassword,
+          status: 'Active',
+          agentId: agent.agentId,
+          groups: [],
+          modules: ['dashboard', 'schemes', 'groups', 'collections', 'profile', 'payments'],
+          permissions: ['view']
+        });
+
+        // Create User record so agent can login as customer too
+        const userExists = await User.findOne({ userId: memberId });
+        if (!userExists) {
+          await User.create({
+            userId: memberId,
+            plainPassword: autoPassword,
+            name: agent.name,
+            email: agent.email || `${memberId}@nvschit.com`,
+            password: autoPassword,
+            role: 'customer',
+            modules: agentMemberRecord.modules,
+            permissions: ['view']
+          });
+        }
+      }
+
+      if (!members.includes(agentMemberRecord.memberId)) {
+        members.unshift(agentMemberRecord.memberId);
+      }
+    }
+
     const groupData = {
       ...req.body,
+      members,
       maxMembers: scheme?.members || 10
     };
 
@@ -83,6 +142,13 @@ router.post('/', authenticate, authorize('super_admin'), async (req, res) => {
 
     if (agentId) {
       await Agent.findOneAndUpdate({ agentId }, { $addToSet: { assignedGroups: savedGroup.id } });
+      // Link group in agent's Member record too
+      if (agentMemberRecord) {
+        await Member.findOneAndUpdate(
+          { memberId: agentMemberRecord.memberId },
+          { $addToSet: { groups: savedGroup.id } }
+        );
+      }
     }
 
     res.status(201).json(savedGroup);
@@ -102,14 +168,73 @@ router.put('/:id', authenticate, authorize('super_admin'), async (req, res) => {
       return res.status(400).json({ message: `Group can have a maximum of ${existing.maxMembers || 10} members` });
     }
 
-    if (agentId && agentId !== existing.agentId) {
-      const agentGroupCount = await Group.countDocuments({ agentId, status: 'Active' });
-      if (agentGroupCount >= 50) {
-        return res.status(400).json({ message: 'Agent has reached maximum limit of 50 chit groups' });
+    // Handle agent change: remove old agent from members, add new agent
+    let updatedMembers = members ? [...members] : [...(existing.members || [])];
+    const oldAgentId = existing.agentId;
+
+    if (agentId !== undefined && agentId !== oldAgentId) {
+      // Remove old agent's memberId from members
+      if (oldAgentId) {
+        const oldAgentMember = await Member.findOne({ agentId: oldAgentId });
+        if (oldAgentMember) {
+          updatedMembers = updatedMembers.filter(m => m !== oldAgentMember.memberId);
+          await Member.findOneAndUpdate(
+            { memberId: oldAgentMember.memberId },
+            { $pull: { groups: existing.id } }
+          );
+        }
+        await Agent.findOneAndUpdate({ agentId: oldAgentId }, { $pull: { assignedGroups: existing.id } });
+      }
+
+      // Add new agent to members
+      if (agentId) {
+        const agentGroupCount = await Group.countDocuments({ agentId, status: 'Active' });
+        if (agentGroupCount >= 50) {
+          return res.status(400).json({ message: 'Agent has reached maximum limit of 50 chit groups' });
+        }
+
+        const agent = await Agent.findOne({ agentId });
+        if (!agent) return res.status(400).json({ message: 'Agent not found' });
+
+        let agentMember = await Member.findOne({ agentId });
+        if (!agentMember) {
+          const memberId = await generateCustomerId();
+          const autoPassword = agent.dob ? generatePasswordFromDob(agent.dob) : 'welcome@2026';
+          agentMember = await Member.create({
+            id: 'M' + Date.now().toString().slice(-6) + Math.random().toString(36).slice(-3),
+            memberId, userId: memberId,
+            name: agent.name, phone: agent.phone,
+            email: agent.email || '', address: agent.address,
+            aadhaar: agent.aadhaar, pan: agent.pan || '',
+            dob: agent.dob || null, password: autoPassword,
+            status: 'Active', agentId: agent.agentId, groups: [],
+            modules: ['dashboard', 'schemes', 'groups', 'collections', 'profile', 'payments'],
+            permissions: ['view']
+          });
+          const userExists = await User.findOne({ userId: memberId });
+          if (!userExists) {
+            await User.create({
+              userId: memberId, plainPassword: autoPassword,
+              name: agent.name, email: agent.email || `${memberId}@nvschit.com`,
+              password: autoPassword, role: 'customer',
+              modules: agentMember.modules, permissions: ['view']
+            });
+          }
+        }
+
+        if (!updatedMembers.includes(agentMember.memberId)) {
+          updatedMembers.unshift(agentMember.memberId);
+        }
+        await Agent.findOneAndUpdate({ agentId }, { $addToSet: { assignedGroups: existing.id } });
+        await Member.findOneAndUpdate(
+          { memberId: agentMember.memberId },
+          { $addToSet: { groups: existing.id } }
+        );
       }
     }
 
-    const group = await Group.findOneAndUpdate({ id: req.params.id }, req.body, { new: true });
+    const updateData = { ...req.body, members: updatedMembers };
+    const group = await Group.findOneAndUpdate({ id: req.params.id }, updateData, { new: true });
     res.json(group);
   } catch (error) {
     res.status(400).json({ message: 'Error updating group: ' + error.message });

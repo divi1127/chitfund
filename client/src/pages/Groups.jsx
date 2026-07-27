@@ -224,7 +224,7 @@ export function Groups({ toast }) {
         </div>
       )}
 
-      <Table cols={["Group", "Scheme", "Agent", "Start Date", "Duration", "Members (Limit)", "Status", ...(canEdit ? ["Actions"] : [])]}
+      <Table cols={["Group", "Scheme", "Agent", "Start Date", "Duration", "Customers (Limit)", "Status", ...(canEdit ? ["Actions"] : [])]}
         rows={visibleGroups.map(g => {
           const s = schemeById(g.schemeId);
           const agent = agents.find(a => a.agentId === g.agentId);
