@@ -7,6 +7,7 @@ import Scheme from '../models/Scheme.js';
 import Invoice from '../models/Invoice.js';
 import { authenticate, authorize } from '../middleware/auth.js';
 import { generateCustomerId, generatePasswordFromDob, generateInvoiceNo } from '../utils/idGenerator.js';
+import { createNotification } from '../utils/notify.js';
 
 const router = express.Router();
 
@@ -130,37 +131,39 @@ router.post('/', authenticate, authorize('super_admin', 'admin', 'agent'), async
         const memberGroup = await Group.findOne({ id: groupId });
         const memberScheme = memberGroup ? await Scheme.findOne({ id: memberGroup.schemeId }) : null;
 
-        if (memberScheme && memberGroup) {
-          const invoiceNo = await generateInvoiceNo();
-          const dueDate = new Date();
-          dueDate.setDate(5);
-          dueDate.setMonth(dueDate.getMonth() + 1);
+          if (memberScheme && memberGroup) {
+            const curMonth = memberGroup.currentInstallment || 1;
+            const monthAmt = memberScheme.monthlyAmounts?.find(m => m.month === curMonth)?.amount || memberScheme.monthlyAmounts?.[0]?.amount || 0;
+            const invoiceNo = await generateInvoiceNo();
+            const dueDate = new Date();
+            dueDate.setDate(5);
+            dueDate.setMonth(dueDate.getMonth() + 1);
 
-          const invoiceData = {
-            invoiceNumber: invoiceNo,
-            receiptNumber: '',
-            branch: 'Madurai HQ',
-            collectedBy: req.user.name,
-            memberId,
-            memberName: name,
-            memberMobile: phone,
-            memberAddress: address || '',
-            memberAadhar: aadhaar || '',
-            chitName: memberScheme.name,
-            chitGroup: memberGroup.name,
-            chitNumber: `CHIT-${memberScheme.amount}`,
-            totalChitValue: memberScheme.amount,
-            monthlyAmount: memberScheme.monthlyInstallment,
-            duration: memberScheme.duration,
-            currentMonth: memberGroup.currentInstallment || 1,
-            dueDate,
-            installmentAmount: memberScheme.monthlyInstallment,
-            lateFine: 0,
-            discount: 0,
-            previousDue: 0,
-            totalPayable: memberScheme.monthlyInstallment,
-            amountPaid: 0,
-            balance: memberScheme.monthlyInstallment,
+            const invoiceData = {
+              invoiceNumber: invoiceNo,
+              receiptNumber: '',
+              branch: 'Madurai HQ',
+              collectedBy: req.user.name,
+              memberId,
+              memberName: name,
+              memberMobile: phone,
+              memberAddress: address || '',
+              memberAadhar: aadhaar || '',
+              chitName: memberScheme.name,
+              chitGroup: memberGroup.name,
+              chitNumber: `CHIT-${memberScheme.amount}`,
+              totalChitValue: memberScheme.amount,
+              monthlyAmount: monthAmt,
+              duration: memberScheme.duration,
+              currentMonth: curMonth,
+              dueDate,
+              installmentAmount: monthAmt,
+              lateFine: 0,
+              discount: 0,
+              previousDue: 0,
+              totalPayable: monthAmt,
+              amountPaid: 0,
+              balance: monthAmt,
             paymentMethod: 'Pending',
             paidInstallments: 0,
             remainingInstallments: memberScheme.duration,
@@ -177,6 +180,14 @@ router.post('/', authenticate, authorize('super_admin', 'admin', 'agent'), async
         console.error('Invoice creation error:', invError.message);
       }
     }
+
+    await createNotification({
+      title: 'New Customer Registered',
+      message: `Customer ${savedMember.name} (${savedMember.memberId}) has been registered${agentId ? ` under agent ${agentId}` : ''}.`,
+      type: 'success',
+      recipientType: 'all',
+      createdBy: req.user?.userId || 'system',
+    });
 
     res.status(201).json(savedMember);
   } catch (error) {

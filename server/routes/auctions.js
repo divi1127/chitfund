@@ -4,7 +4,8 @@ import Group from '../models/Group.js';
 import Scheme from '../models/Scheme.js';
 import Member from '../models/Member.js';
 import { authenticate, authorize } from '../middleware/auth.js';
-import { generateAuctionConductId } from '../utils/idGenerator.js';
+import { generateAuctionConductId, generatePrizeVoucherNo } from '../utils/idGenerator.js';
+import { createNotification } from '../utils/notify.js';
 
 const router = express.Router();
 
@@ -23,7 +24,7 @@ router.get('/', authenticate, async (req, res) => {
         groupName: g?.name || '',
         schemeName: s?.name || '',
         schemeAmount: s?.amount || 0,
-        monthlyInstallment: s?.monthlyInstallment || 0,
+        monthlyInstallment: s?.monthlyAmounts?.[0]?.amount || 0,
         totalInstallments: s?.duration || 0
       };
     });
@@ -133,6 +134,50 @@ router.delete('/:id', authenticate, authorize('super_admin'), async (req, res) =
   } catch (error) {
     console.error('❌ Auctions: Error deleting:', error.message);
     res.status(500).json({ message: 'Server error deleting auction' });
+  }
+});
+
+// ── Prize Payment ──────────────────────────────────────────────────────
+router.put('/:id/prize-payment', authenticate, authorize('super_admin', 'admin'), async (req, res) => {
+  try {
+    const auction = await Auction.findOne({ id: req.params.id });
+    if (!auction) return res.status(404).json({ message: 'Auction not found' });
+    if (auction.status !== 'Completed') return res.status(400).json({ message: 'Auction must be completed first' });
+
+    const { amount, date, method, referenceNo, proof, notes } = req.body;
+    const voucherNo = await generatePrizeVoucherNo();
+
+    auction.prizePayment = {
+      voucherNo,
+      amount: Number(amount) || auction.winningBid || auction.bidAmount || 0,
+      date: date || new Date(),
+      method: method || 'Bank Transfer',
+      referenceNo: referenceNo || '',
+      proof: proof || '',
+      notes: notes || '',
+      processedBy: req.user.name || req.user.userId,
+      status: 'Paid'
+    };
+
+    await auction.save();
+
+    const winner = await Member.findOne({ $or: [{ id: auction.winnerId }, { memberId: auction.winnerId }] });
+    const group = await Group.findOne({ id: auction.groupId });
+    const scheme = group ? await Scheme.findOne({ id: group.schemeId }) : null;
+
+    await createNotification({
+      title: 'Prize Payment Processed',
+      message: `Prize amount of ₹${(Number(amount) || auction.winningBid || 0).toLocaleString()} paid to ${winner?.name || auction.winnerId} for ${scheme?.name || ''} (${group?.name || ''}) via ${method}. Voucher: ${voucherNo}`,
+      type: 'success',
+      recipientType: 'all',
+      createdBy: req.user?.userId || 'system',
+    });
+
+    console.log(`✅ Prize Payment: ${voucherNo} for auction ${auction.conductId} — ₹${auction.prizePayment.amount}`);
+    res.json(auction);
+  } catch (error) {
+    console.error('❌ Prize Payment error:', error.message);
+    res.status(400).json({ message: 'Error processing prize payment: ' + error.message });
   }
 });
 

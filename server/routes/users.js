@@ -39,7 +39,7 @@ router.get('/:id', authenticateToken, async (req, res) => {
 
 router.post('/', authenticateToken, requireRole('super_admin', 'admin'), async (req, res) => {
   try {
-    const { userId, password, name, email, phone, role, modules, permissions, branch, assignedBranch } = req.body;
+    const { userId, password, name, email, phone, role, modules, permissions, modulePermissions, branch, assignedBranch } = req.body;
 
     if (!userId || !password || !name || !email) {
       console.error('❌ Users: Missing required fields');
@@ -68,6 +68,7 @@ router.post('/', authenticateToken, requireRole('super_admin', 'admin'), async (
       role: role || 'agent',
       modules: modules || [],
       permissions: permissions || [],
+      modulePermissions: modulePermissions || [],
       branch: branch || assignedBranch,
       assignedBranch: assignedBranch || branch
     });
@@ -93,7 +94,7 @@ router.put('/:id', authenticateToken, requireRole('super_admin', 'admin'), async
       return res.status(403).json({ message: 'Admins can only edit agents' });
     }
 
-    const { name, email, phone, role, modules, permissions, status, branch, assignedBranch, password } = req.body;
+    const { name, email, phone, role, modules, permissions, modulePermissions, status, branch, assignedBranch, password } = req.body;
 
     const updateData = {};
     if (name) updateData.name = name;
@@ -102,6 +103,7 @@ router.put('/:id', authenticateToken, requireRole('super_admin', 'admin'), async
     if (role && req.user.role === 'super_admin') updateData.role = role;
     if (modules) updateData.modules = modules;
     if (permissions) updateData.permissions = permissions;
+    if (modulePermissions) updateData.modulePermissions = modulePermissions;
     if (status) updateData.status = status;
     if (branch && req.user.role === 'super_admin') updateData.branch = branch;
     if (assignedBranch && req.user.role === 'super_admin') updateData.assignedBranch = assignedBranch;

@@ -312,7 +312,7 @@ export function Collections({ toast, setPreview }) {
           return [
             c.receiptNo || "—", m?.name || "—", m?.userId || "—", g?.name || "—",
             "#" + c.installment,
-            fmt(s?.monthlyInstallment || 0),
+            fmt(s?.monthlyAmounts?.[0]?.amount || 0),
             fmt(c.amount),
             c.date?.split("T")[0], c.mode,
             <Badge key={c.id + "s"} text={c.status} color={c.status === "Paid" ? "green" : "yellow"} />,

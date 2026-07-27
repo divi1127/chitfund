@@ -15,6 +15,13 @@ const userSchema = new mongoose.Schema({
   },
   modules: [{ type: String }],
   permissions: [{ type: String }],
+  modulePermissions: [{
+    module: { type: String, required: true },
+    create: { type: Boolean, default: false },
+    edit: { type: Boolean, default: false },
+    delete: { type: Boolean, default: false },
+    view: { type: Boolean, default: false },
+  }],
 
   status: { type: String, enum: ['active', 'inactive'], default: 'active' },
   branch: { type: String },

@@ -155,7 +155,7 @@ export function Dashboard({ toast }) {
           </div>
           <div style={{ background: "var(--bg-card)", border: "1px solid var(--border-color)", borderRadius: 12, padding: 20 }}>
             <div style={{ fontSize: 12, color: "var(--text-muted)", marginBottom: 4 }}>Monthly Installment</div>
-            <div style={{ fontSize: 18, fontWeight: 600, color: "var(--text-primary)" }}>₹{userScheme?.monthlyInstallment?.toLocaleString() || "0"}</div>
+            <div style={{ fontSize: 18, fontWeight: 600, color: "var(--text-primary)" }}>₹{(userScheme?.monthlyAmounts?.[0]?.amount || 0)?.toLocaleString()}</div>
           </div>
           <div style={{ background: "var(--bg-card)", border: "1px solid var(--border-color)", borderRadius: 12, padding: 20 }}>
             <div style={{ fontSize: 12, color: "var(--text-muted)", marginBottom: 4 }}>Current Due</div>
@@ -192,7 +192,7 @@ export function Dashboard({ toast }) {
             // Build schedule from scheme's monthlyAmounts
             const monthAmounts = userScheme?.monthlyAmounts || [];
             const totalChitValue = userScheme?.amount || 0;
-            const monthlyInstallment = userScheme?.monthlyInstallment || 0;
+            const monthlyInstallment = userScheme?.monthlyAmounts?.[0]?.amount || 0;
             const schedule = [];
             for (let i = 0; i < monthAmounts.length; i++) {
               const ma = monthAmounts[i];

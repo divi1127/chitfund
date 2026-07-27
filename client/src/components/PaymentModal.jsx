@@ -10,10 +10,14 @@ export function PaymentModal({ member, group, scheme, installment, onClose, onSu
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [step, setStep] = useState("invoice"); // invoice | pay | success
+  const [paymentType, setPaymentType] = useState("full"); // full | parts
+  const [numParts, setNumParts] = useState(2);
+  const maxDivisions = 10;
 
   const monthData = scheme?.monthlyAmounts?.find(m => m.month === installment.month)
-    ?? { amount: scheme?.monthlyInstallment || 0, auctionAmount: 0 };
+    ?? { amount: 0, auctionAmount: 0 };
   const amount = monthData.amount;
+  const payAmount = paymentType === "full" ? amount : Math.floor(amount / numParts);
 
   // Due date = joined + (month-1) months, day 5
   const dueDate = (() => {
@@ -40,7 +44,10 @@ export function PaymentModal({ member, group, scheme, installment, onClose, onSu
       await createData("/collections/member-payment", {
         memberId: member.id,
         groupId: group.id,
-        amount,
+        amount: payAmount,
+        fullAmount: amount,
+        paymentType,
+        numParts: paymentType === "parts" ? numParts : undefined,
         installment: installment.month,
         mode,
         date: new Date().toISOString().split("T")[0],
@@ -77,8 +84,8 @@ export function PaymentModal({ member, group, scheme, installment, onClose, onSu
         </div>
         <div style={{ fontSize: 14, color: "#64748b", lineHeight: 1.7, marginBottom: 28 }}>
           {mode === "UPI"
-            ? <>UPI payment of <strong>{fmt(amount)}</strong> for <strong>Month {installment.month}</strong> submitted.<br />Receipt will be available once verified.</>
-            : <>Your cash payment request of <strong>{fmt(amount)}</strong> for <strong>Month {installment.month}</strong> is submitted.<br />Status will change to <strong>Paid</strong> once admin approves.</>
+            ? <>UPI payment of <strong>{fmt(payAmount)}</strong> for <strong>Month {installment.month}</strong>{paymentType === "parts" ? <> (part of {numParts})</> : ""} submitted.<br />Receipt will be available once verified.</>
+            : <>Your cash payment request of <strong>{fmt(payAmount)}</strong> for <strong>Month {installment.month}</strong>{paymentType === "parts" ? <> (part of {numParts})</> : ""} is submitted.<br />Status will change to <strong>Paid</strong> once admin approves.</>
           }
         </div>
         <button onClick={onClose} style={{ padding: "12px 32px", background: "#2563eb", color: "#fff", border: "none", borderRadius: 10, fontWeight: 700, cursor: "pointer", fontSize: 14 }}>
@@ -123,11 +130,46 @@ export function PaymentModal({ member, group, scheme, installment, onClose, onSu
             )}
           </div>
 
+          {/* Payment type selector */}
+          <div style={{ marginBottom: 16 }}>
+            <div style={{ fontSize: 12, fontWeight: 700, color: "#64748b", marginBottom: 8, letterSpacing: 0.5 }}>PAYMENT OPTION</div>
+            <div style={{ display: "flex", gap: 10 }}>
+              {[["full", "Pay Full Amount"], ["parts", "Pay in Parts"]].map(([val, lbl]) => (
+                <button key={val} onClick={() => { setPaymentType(val); if (val === "parts" && numParts < 2) setNumParts(2); }}
+                  style={{ flex: 1, padding: "10px 8px", borderRadius: 10, border: `2px solid ${paymentType === val ? "#2563eb" : "#e2e8f0"}`, background: paymentType === val ? "#eff6ff" : "#fff", color: paymentType === val ? "#1e40af" : "#374151", fontWeight: 700, fontSize: 12, cursor: "pointer" }}>
+                  {lbl}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {paymentType === "parts" && (
+            <div style={{ background: "#f8fafc", border: "1px solid #e2e8f0", borderRadius: 10, padding: 14, marginBottom: 16 }}>
+              <div style={{ fontSize: 12, fontWeight: 600, color: "#374151", marginBottom: 8 }}>Split into how many parts? (max {maxDivisions})</div>
+              <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+                {[2, 3, 4, 5, 6, 7, 8, 9, 10].filter(n => n <= maxDivisions).map(n => (
+                  <button key={n} onClick={() => setNumParts(n)}
+                    style={{ width: 40, height: 40, borderRadius: 8, border: `2px solid ${numParts === n ? "#2563eb" : "#e2e8f0"}`, background: numParts === n ? "#2563eb" : "#fff", color: numParts === n ? "#fff" : "#374151", fontWeight: 700, fontSize: 13, cursor: "pointer" }}>
+                    {n}
+                  </button>
+                ))}
+              </div>
+              <div style={{ marginTop: 10, background: "#eff6ff", borderRadius: 8, padding: "10px 14px", fontSize: 13 }}>
+                <span style={{ color: "#64748b" }}>Installment of </span>
+                <strong style={{ color: "#1e40af", fontSize: 15 }}>{fmt(Math.floor(amount / numParts))}</strong>
+                <span style={{ color: "#64748b" }}> each · You'll pay </span>
+                <strong style={{ color: "#1e40af" }}>{fmt(Math.floor(amount / numParts))}</strong>
+                <span style={{ color: "#64748b" }}> now</span>
+                <div style={{ fontSize: 11, color: "#94a3b8", marginTop: 4 }}>Total: {fmt(amount)} · Remaining after this: {fmt(amount - Math.floor(amount / numParts))}</div>
+              </div>
+            </div>
+          )}
+
           {/* Step: invoice → proceed */}
           {step === "invoice" && (
             <button onClick={() => setStep("pay")}
               style={{ width: "100%", padding: 14, background: "#2563eb", color: "#fff", border: "none", borderRadius: 10, fontSize: 15, fontWeight: 700, cursor: "pointer" }}>
-              Proceed to Pay →
+              Proceed to Pay {fmt(payAmount)} →
             </button>
           )}
 

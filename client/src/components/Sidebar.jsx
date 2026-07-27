@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { ROUTES } from "../utils/constants";
 import { logo } from "../assets";
@@ -5,7 +6,10 @@ import {
   HiHome, HiUserGroup, HiDocumentText, HiSquares2X2, HiCreditCard,
   HiCurrencyRupee, HiScale, HiTrophy, HiPresentationChartBar,
   HiPresentationChartLine, HiBriefcase, HiBuildingOffice2, HiBell,
-  HiCog6Tooth, HiUser, HiWallet,
+  HiCog6Tooth, HiUser, HiWallet, HiUsers, HiMagnifyingGlass,
+  HiShieldCheck, HiClipboardDocumentList, HiLockClosed,
+  HiArchiveBoxArrowDown, HiBellAlert, HiReceiptPercent,
+  HiChevronDown,
 } from "react-icons/hi2";
 
 const ICON_MAP = {
@@ -14,12 +18,82 @@ const ICON_MAP = {
   auctions: HiScale, prizes: HiTrophy, accounting: HiPresentationChartBar,
   reports: HiPresentationChartLine, employees: HiBriefcase,
   branches: HiBuildingOffice2, notifications: HiBell, settings: HiCog6Tooth,
-  profile: HiUser, payments: HiWallet,
+  profile: HiUser, payments: HiWallet, agents: HiUsers,
+  enquiries: HiMagnifyingGlass, kyc: HiShieldCheck,
+  "user-management": HiUsers, "audit-logs": HiClipboardDocumentList,
+  "platform-settings": HiCog6Tooth, "invoice-settings": HiDocumentText,
+  "receipt-settings": HiReceiptPercent,
+  "notification-settings": HiBellAlert,
+  "role-permissions": HiLockClosed, "backup-restore": HiArchiveBoxArrowDown,
 };
 
-function NavItem({ id, label, icon, active, collapsed, onNavigate }) {
+function NavItem({ id, label, icon, children, active, collapsed, onNavigate, expanded, onToggle }) {
   const IconComponent = ICON_MAP[icon] || HiHome;
   const isActive = active === id;
+  const hasChildren = children && children.length > 0;
+  const isExpanded = expanded === id;
+
+  if (hasChildren) {
+    if (collapsed) {
+      return (
+        <div
+          title={label}
+          style={{
+            width: "100%", padding: "12px 0", minHeight: 44, borderRadius: 8,
+            background: "transparent",
+            color: "rgba(255,255,255,.4)", cursor: "default",
+            fontSize: 13.5, fontWeight: 400,
+            display: "flex", alignItems: "center", gap: 0,
+            justifyContent: "center", marginBottom: 1,
+            borderLeft: "3px solid transparent",
+            position: "relative",
+          }}
+        >
+          <span style={{ fontSize: 19, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+            <IconComponent />
+          </span>
+        </div>
+      );
+    }
+
+    return (
+      <>
+        <button
+          onClick={() => onToggle(id)}
+          title={label}
+          style={{
+            width: "100%", padding: "10px 14px", minHeight: 44, borderRadius: 8,
+            border: "none", background: "transparent",
+            color: "rgba(255,255,255,.6)", cursor: "pointer",
+            fontSize: 13.5, fontWeight: 400,
+            display: "flex", alignItems: "center", gap: 12,
+            justifyContent: "flex-start", transition: "background .15s, color .15s",
+            marginBottom: 1, borderLeft: "3px solid transparent",
+            position: "relative", textAlign: "left",
+          }}
+          onMouseEnter={(e) => { e.currentTarget.style.background = "rgba(255,255,255,.07)"; e.currentTarget.style.color = "#fff"; }}
+          onMouseLeave={(e) => { e.currentTarget.style.background = "transparent"; e.currentTarget.style.color = "rgba(255,255,255,.6)"; }}
+        >
+          <span style={{ fontSize: 17, minWidth: 22, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+            <IconComponent />
+          </span>
+          <span style={{ whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", flex: 1 }}>
+            {label}
+          </span>
+          <span style={{ transform: isExpanded ? "rotate(180deg)" : "rotate(0)", transition: "transform .2s", display: "flex", flexShrink: 0 }}>
+            <HiChevronDown size={14} />
+          </span>
+        </button>
+        {isExpanded && (
+          <div style={{ paddingLeft: 12 }}>
+            {children.map((child) => (
+              <ChildItem key={child.id} {...child} active={active} onNavigate={onNavigate} />
+            ))}
+          </div>
+        )}
+      </>
+    );
+  }
 
   return (
     <button
@@ -79,7 +153,45 @@ function NavItem({ id, label, icon, active, collapsed, onNavigate }) {
   );
 }
 
+function ChildItem({ id, label, icon, active, onNavigate }) {
+  const IconComponent = ICON_MAP[icon] || HiHome;
+  const isActive = active === id;
+
+  return (
+    <button
+      onClick={() => onNavigate(id)}
+      style={{
+        width: "100%", padding: "8px 14px", minHeight: 36, borderRadius: 6,
+        border: "none", background: isActive ? "rgba(59,130,246,0.18)" : "transparent",
+        color: isActive ? "#fff" : "rgba(255,255,255,.5)", cursor: "pointer",
+        fontSize: 12.5, fontWeight: isActive ? 600 : 400,
+        display: "flex", alignItems: "center", gap: 10,
+        justifyContent: "flex-start", transition: "background .15s, color .15s",
+        marginBottom: 1, textAlign: "left",
+      }}
+      onMouseEnter={(e) => { if (!isActive) { e.currentTarget.style.background = "rgba(255,255,255,.06)"; e.currentTarget.style.color = "#fff"; } }}
+      onMouseLeave={(e) => { if (!isActive) { e.currentTarget.style.background = "transparent"; e.currentTarget.style.color = "rgba(255,255,255,.5)"; } }}
+    >
+      <span style={{ fontSize: 14, minWidth: 18, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+        <IconComponent />
+      </span>
+      <span style={{ whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", flex: 1 }}>
+        {label}
+      </span>
+      {isActive && (
+        <span style={{ width: 5, height: 5, borderRadius: "50%", background: "#3b82f6", flexShrink: 0 }} />
+      )}
+    </button>
+  );
+}
+
 function SidebarInner({ collapsed, setCollapsed, navItems, active, onNavigate, showCollapse = true }) {
+  const [expandedSection, setExpandedSection] = useState(null);
+
+  const handleToggle = (id) => {
+    setExpandedSection(expandedSection === id ? null : id);
+  };
+
   return (
     <div style={{ display: "flex", flexDirection: "column", height: "100%" }}>
       {/* Brand */}
@@ -108,7 +220,7 @@ function SidebarInner({ collapsed, setCollapsed, navItems, active, onNavigate, s
         padding: collapsed ? "12px 6px" : "12px 10px",
       }}>
         {navItems.map((item) => (
-          <NavItem key={item.id} {...item} active={active} collapsed={collapsed} onNavigate={onNavigate} />
+          <NavItem key={item.id} {...item} active={active} collapsed={collapsed} onNavigate={onNavigate} expanded={expandedSection} onToggle={handleToggle} />
         ))}
       </div>
 

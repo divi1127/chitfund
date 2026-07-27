@@ -18,7 +18,7 @@ export function Schemes({ dark, toast }) {
   const [editingScheme, setEditingScheme] = useState(null);
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("All");
-  const [form, setForm] = useState({ name: "", amount: "", duration: "", members: "", monthlyInstallment: "", commission: "", monthlyAmounts: [] });
+  const [form, setForm] = useState({ name: "", amount: "", duration: "", members: "", commission: "", monthlyAmounts: [] });
   const [errors, setErrors] = useState({});
 
   const isCustomer = user?.role === "customer";
@@ -51,7 +51,6 @@ export function Schemes({ dark, toast }) {
     if (!form.amount || Number(form.amount) <= 0) e.amount = "Valid amount required";
     if (!form.duration || Number(form.duration) <= 0) e.duration = "Valid duration required";
     if (!form.members || Number(form.members) <= 0) e.members = "Valid member count required";
-    if (!form.monthlyInstallment || Number(form.monthlyInstallment) <= 0) e.monthlyInstallment = "Valid installment required";
     if (form.commission === "" || Number(form.commission) < 0 || Number(form.commission) > 100) e.commission = "Commission 0–100";
     setErrors(e);
     return !Object.keys(e).length;
@@ -64,7 +63,7 @@ export function Schemes({ dark, toast }) {
         ...form,
         id: editingScheme ? editingScheme.id : "S" + Date.now().toString().slice(-6),
         amount: Number(form.amount), duration: Number(form.duration),
-        members: Number(form.members), monthlyInstallment: Number(form.monthlyInstallment),
+        members: Number(form.members),
         commission: Number(form.commission),
         monthlyAmounts: form.monthlyAmounts.map(m => ({ month: m.month, amount: Number(m.amount), auctionAmount: Number(m.auctionAmount) || 0 })),
         status: editingScheme?.status || "Active",
@@ -72,7 +71,7 @@ export function Schemes({ dark, toast }) {
       if (editingScheme) { await updateData("/schemes", editingScheme.id, schemeData); toast.add("Scheme updated!"); }
       else { await createData("/schemes", schemeData); toast.add("Scheme added!"); }
       setShowForm(false); setEditingScheme(null);
-      setForm({ name: "", amount: "", duration: "", members: "", monthlyInstallment: "", commission: "", monthlyAmounts: [] });
+      setForm({ name: "", amount: "", duration: "", members: "", commission: "", monthlyAmounts: [] });
       setErrors({}); reload();
     } catch (err) { toast.add("Error: " + err.message, "error"); }
   };
@@ -81,10 +80,10 @@ export function Schemes({ dark, toast }) {
     setEditingScheme(s);
     setForm({
       name: s.name, amount: s.amount, duration: s.duration, members: s.members,
-      monthlyInstallment: s.monthlyInstallment, commission: s.commission,
+      commission: s.commission,
       monthlyAmounts: s.monthlyAmounts?.length > 0
         ? s.monthlyAmounts.map(m => ({ month: m.month, amount: m.amount, auctionAmount: m.auctionAmount || 0 }))
-        : Array.from({ length: s.duration }, (_, i) => ({ month: i + 1, amount: s.monthlyInstallment, auctionAmount: 0 })),
+        : Array.from({ length: s.duration }, (_, i) => ({ month: i + 1, amount: 0, auctionAmount: 0 })),
     });
     setShowForm(true);
   };
@@ -113,7 +112,7 @@ export function Schemes({ dark, toast }) {
         title="Chit Schemes"
         subtitle={isCustomer ? "Your enrolled scheme details" : "Manage chit fund scheme configurations"}
         dark={dark}
-        actions={canEdit ? [<Btn key="a" label="+ New Scheme" primary onClick={() => { setEditingScheme(null); setForm({ name: "", amount: "", duration: "", members: "", monthlyInstallment: "", commission: "", monthlyAmounts: [] }); setShowForm(true); }} />] : []}
+        actions={canEdit ? [<Btn key="a" label="+ New Scheme" primary onClick={() => { setEditingScheme(null); setForm({ name: "", amount: "", duration: "", members: "", commission: "", monthlyAmounts: [] }); setShowForm(true); }} />] : []}
       />
 
       {/* Admin form */}
@@ -121,14 +120,20 @@ export function Schemes({ dark, toast }) {
         <div style={{ background: "#f8fafc", border: "1px solid #e5e7eb", borderRadius: 12, padding: 24, marginBottom: 24 }}>
           <div style={{ fontWeight: 700, fontSize: 15, marginBottom: 16 }}>{editingScheme ? "Edit Scheme" : "New Scheme"}</div>
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(220px,1fr))", gap: "12px 20px" }}>
-            {[["Scheme Name *","name"],["Chit Amount (₹) *","amount"],["Duration (months) *","duration"],["Members *","members"],["Monthly Installment *","monthlyInstallment"],["Commission (%) *","commission"]].map(([lbl,key]) => (
+            {[["Scheme Name *","name"],["Chit Amount (₹) *","amount"],["Duration (months) *","duration"],["Members *","members"],["Commission (%) *","commission"]].map(([lbl,key]) => (
               <div key={key}>
                 <Input label={lbl} value={form[key]} onChange={v => {
                   const updated = { ...form, [key]: v };
-                  if ((key === "duration" || key === "monthlyInstallment") && Number(updated.duration) > 0) {
-                    updated.monthlyAmounts = Array.from({ length: Number(updated.duration) }, (_, i) => ({
-                      month: i + 1, amount: Number(updated.monthlyInstallment) || 0, auctionAmount: form.monthlyAmounts[i]?.auctionAmount || 0,
-                    }));
+                  if (key === "duration" && Number(v) > 0) {
+                    const dur = Number(v);
+                    const prev = form.monthlyAmounts;
+                    if (dur > prev.length) {
+                      const startAmount = prev.length > 0 ? prev[prev.length - 1].amount : 0;
+                      for (let i = prev.length + 1; i <= dur; i++) {
+                        prev.push({ month: i, amount: startAmount, auctionAmount: 0 });
+                      }
+                    }
+                    updated.monthlyAmounts = prev.slice(0, dur);
                   }
                   setForm(updated);
                 }} type={key === "name" ? "text" : "number"} />
@@ -169,7 +174,7 @@ export function Schemes({ dark, toast }) {
 
           <div style={{ display: "flex", gap: 10, marginTop: 16 }}>
             <Btn label={editingScheme ? "Update Scheme" : "Save Scheme"} onClick={handleSubmit} primary />
-            <Btn label="Cancel" onClick={() => { setShowForm(false); setEditingScheme(null); setForm({ name: "", amount: "", duration: "", members: "", monthlyInstallment: "", commission: "", monthlyAmounts: [] }); setErrors({}); }} />
+            <Btn label="Cancel" onClick={() => { setShowForm(false); setEditingScheme(null); setForm({ name: "", amount: "", duration: "", members: "", commission: "", monthlyAmounts: [] }); setErrors({}); }} />
           </div>
         </div>
       )}
@@ -180,7 +185,7 @@ export function Schemes({ dark, toast }) {
           <div style={statStyle("#3b82f6")}><div style={{ fontSize: 11, color: "#6b7280", fontWeight: 600, marginBottom: 4 }}>Total Schemes</div><div style={{ fontSize: 24, fontWeight: 800, color: "#3b82f6" }}>{schemes.length}</div></div>
           <div style={statStyle("#10b981")}><div style={{ fontSize: 11, color: "#6b7280", fontWeight: 600, marginBottom: 4 }}>Active</div><div style={{ fontSize: 24, fontWeight: 800, color: "#10b981" }}>{schemes.filter(s => s.status === "Active").length}</div></div>
           <div style={statStyle("#f59e0b")}><div style={{ fontSize: 11, color: "#6b7280", fontWeight: 600, marginBottom: 4 }}>Total Chit Value</div><div style={{ fontSize: 20, fontWeight: 800, color: "#f59e0b" }}>{fmt(schemes.reduce((s, c) => s + (c.amount || 0), 0))}</div></div>
-          <div style={statStyle("#8b5cf6")}><div style={{ fontSize: 11, color: "#6b7280", fontWeight: 600, marginBottom: 4 }}>Monthly Inflow</div><div style={{ fontSize: 20, fontWeight: 800, color: "#8b5cf6" }}>{fmt(schemes.reduce((s, c) => s + (c.monthlyInstallment || 0), 0))}</div></div>
+          <div style={statStyle("#8b5cf6")}><div style={{ fontSize: 11, color: "#6b7280", fontWeight: 600, marginBottom: 4 }}>Monthly Inflow</div><div style={{ fontSize: 20, fontWeight: 800, color: "#8b5cf6" }}>{fmt(schemes.reduce((s, c) => s + (c.monthlyAmounts?.[0]?.amount || 0), 0))}</div></div>
         </div>
       )}
 
@@ -209,7 +214,7 @@ export function Schemes({ dark, toast }) {
                 <Badge text={s.status} color={s.status === "Active" ? "green" : "gray"} />
               </div>
               <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(140px,1fr))", gap: 12, marginBottom: 20 }}>
-                {[["Monthly Installment", fmt(s.monthlyInstallment), "#2563eb"],["Commission", s.commission + "%", "#7c3aed"],["Members", s.members, "#0891b2"],["Duration", s.duration + " months", "#059669"]].map(([lbl,val,color]) => (
+                {[["Monthly Amount", fmt(s.monthlyAmounts?.[0]?.amount || 0), "#2563eb"],["Commission", s.commission + "%", "#7c3aed"],["Members", s.members, "#0891b2"],["Duration", s.duration + " months", "#059669"]].map(([lbl,val,color]) => (
                   <div key={lbl} style={{ background: "#f8fafc", borderRadius: 10, padding: "12px 16px", border: `1px solid ${color}20` }}>
                     <div style={{ fontSize: 11, color: "#64748b", fontWeight: 600, marginBottom: 4 }}>{lbl}</div>
                     <div style={{ fontSize: 16, fontWeight: 800, color }}>{val}</div>
@@ -255,12 +260,12 @@ export function Schemes({ dark, toast }) {
       {/* Admin: table view */}
       {!isCustomer && (
         <div style={{ background: "#fff", border: "1px solid #e5e7eb", borderRadius: 12, overflow: "hidden" }}>
-          <Table dark={dark} cols={["Scheme Name","Chit Value","Duration","Members","Monthly Installment","Commission","Status","Actions"]}
+          <Table dark={dark} cols={["Scheme Name","Chit Value","Duration","Members","Monthly Amount","Commission","Status","Actions"]}
             rows={filtered.map(s => [
               <span key={s.id} style={{ fontWeight: 600 }}>{s.name}</span>,
               <span key={s.id+"v"} style={{ fontWeight: 700, color: "#10b981" }}>{fmt(s.amount)}</span>,
               s.duration + " months", s.members,
-              <span key={s.id+"mi"} style={{ fontWeight: 600 }}>{fmt(s.monthlyInstallment)}</span>,
+              <span key={s.id+"mi"} style={{ fontWeight: 600 }}>{fmt(s.monthlyAmounts?.[0]?.amount || 0)}</span>,
               s.commission + "%",
               <Badge key={s.id+"st"} text={s.status} color={s.status === "Active" ? "green" : "gray"} />,
               <div key={s.id+"a"} style={{ display: "flex", gap: 6 }}>

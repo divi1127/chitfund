@@ -21,7 +21,7 @@ router.get('/', authenticate, async (req, res) => {
         schemeName: scheme?.name || 'Unknown',
         totalInstallments: scheme?.duration || 0,
         schemeAmount: scheme?.amount || 0,
-        schemeMonthlyInstallment: scheme?.monthlyInstallment || 0
+        schemeMonthlyInstallment: scheme?.monthlyAmounts?.[0]?.amount || 0
       };
     });
 

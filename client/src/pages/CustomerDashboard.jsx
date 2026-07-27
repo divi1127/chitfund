@@ -38,7 +38,7 @@ export function CustomerDashboard({ dark, toast }) {
 
   const schemeMonthlyAmounts = userScheme?.monthlyAmounts || [];
   const totalMonths = userScheme?.duration || 0;
-  const monthlyInstallment = userScheme?.monthlyInstallment || 0;
+  const monthlyInstallment = userScheme?.monthlyAmounts?.[0]?.amount || 0;
 
   const paidMonthNums = new Set(
     userInvoices.filter(inv => inv.status === 'Paid' || inv.status === 'Proof Submitted')

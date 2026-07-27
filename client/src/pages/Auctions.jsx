@@ -7,7 +7,7 @@ import { Badge } from "../components/Badge";
 import { Btn } from "../components/Btn";
 import { Input } from "../components/Input";
 import { fmt } from "../utils/helpers";
-import { HiPlay, HiReceiptRefund, HiPencil, HiTrash, HiUser } from "react-icons/hi2";
+import { HiPlay, HiReceiptRefund, HiPencil, HiTrash, HiUser, HiBanknotes, HiCheckBadge } from "react-icons/hi2";
 import { IconBtn } from "../components/IconBtn";
 import { useAuth } from "../contexts/AuthContext";
 
@@ -33,6 +33,8 @@ export function Auctions({ toast, setPreview }) {
   const [qcWinnerId, setQcWinnerId] = useState("");
   const [selectedGroupId, setSelectedGroupId] = useState("");
   const [selectedSchemeId, setSelectedSchemeId] = useState("");
+  const [prizePayment, setPrizePayment] = useState(null);
+  const [prizeForm, setPrizeForm] = useState({ amount: "", date: "", method: "Bank Transfer", referenceNo: "", proof: "", notes: "" });
 
   const isSuperAdmin = user?.role === "super_admin";
   const isCustomer = user?.role === "customer";
@@ -188,6 +190,39 @@ export function Auctions({ toast, setPreview }) {
     }
   };
 
+  const handlePrizePayment = (auction) => {
+    setPrizePayment(auction);
+    setPrizeForm({
+      amount: String(auction.winningBid || auction.bidAmount || 0),
+      date: new Date().toISOString().split('T')[0],
+      method: 'Bank Transfer',
+      referenceNo: auction.prizePayment?.referenceNo || '',
+      proof: '',
+      notes: auction.prizePayment?.notes || '',
+    });
+  };
+
+  const handleSubmitPrizePayment = async () => {
+    if (!prizePayment) return;
+    if (!prizeForm.amount || Number(prizeForm.amount) <= 0) { toast.add("Enter valid amount", "error"); return; }
+    if (!prizeForm.date) { toast.add("Select payment date", "error"); return; }
+    try {
+      await updateData(`/auctions/${prizePayment.id}/prize-payment`, {
+        amount: Number(prizeForm.amount),
+        date: prizeForm.date,
+        method: prizeForm.method,
+        referenceNo: prizeForm.referenceNo,
+        proof: prizeForm.proof,
+        notes: prizeForm.notes,
+      });
+      toast.add("Prize payment recorded successfully!");
+      setPrizePayment(null);
+      setRefresh(r => r + 1);
+    } catch (err) {
+      toast.add("Error: " + err.message, "error");
+    }
+  };
+
   const handleGenerateReceipt = (auction) => {
     const g = groupById(auction.groupId);
     const s = g ? schemeById(g.schemeId) : null;
@@ -313,7 +348,7 @@ export function Auctions({ toast, setPreview }) {
               <div style={{ display: "flex", gap: 12, marginBottom: 16, flexWrap: "wrap" }}>
                 <div style={{ fontSize: 12, color: "var(--text-muted)" }}>Scheme: <strong>{groupDetails.scheme?.name}</strong></div>
                 <div style={{ fontSize: 12, color: "var(--text-muted)" }}>Members: <strong>{groupDetails.members?.length}</strong></div>
-                <div style={{ fontSize: 12, color: "var(--text-muted)" }}>Monthly: <strong>{fmt(groupDetails.scheme?.monthlyInstallment)}</strong></div>
+                <div style={{ fontSize: 12, color: "var(--text-muted)" }}>Monthly: <strong>{fmt(groupDetails.scheme?.monthlyAmounts?.[0]?.amount || 0)}</strong></div>
                 <div style={{ fontSize: 12, color: "var(--text-muted)" }}>Installment: <strong>#{groupDetails.group?.currentInstallment}</strong></div>
               </div>
             )}
@@ -454,7 +489,7 @@ export function Auctions({ toast, setPreview }) {
           <div style={{ fontSize: 13 }}>Choose a group to see all monthly installments and conduct auctions.</div>
         </div>
       ) : (
-      <Table cols={["Conduct ID", "Group", "Date", "Installment", "Auction Amount", "Winning Bid", "Winner", "Status", ...(isCustomer ? [] : ["Actions"])]}
+      <Table cols={["Conduct ID", "Group", "Date", "Installment", "Auction Amount", "Winning Bid", "Winner", "Prize", "Status", ...(isCustomer ? [] : ["Actions"])]}
         rows={(() => {
           const rows = [];
           const targetGroups = isCustomer
@@ -483,11 +518,21 @@ export function Auctions({ toast, setPreview }) {
                   fmt(existingAuction.baseAmount),
                   fmt(existingAuction.winningBid || 0),
                   existingAuction.winnerId ? `${winnerMember?.name || ""} (${existingAuction.winnerId})` : "—",
+                  existingAuction.prizePayment?.status === "Paid"
+                    ? <Badge key={existingAuction.id + 'prize'} text={`Paid ₹${(existingAuction.prizePayment.amount || 0).toLocaleString()}`} color="green" />
+                    : existingAuction.status === "Completed"
+                      ? <Badge key={existingAuction.id + 'prize'} text="Pending" color="yellow" />
+                      : <span key={existingAuction.id + 'prize'} style={{ color: "#94a3b8", fontSize: 12 }}>—</span>,
                   <Badge key={existingAuction.id} text={existingAuction.status} color={existingAuction.status === "Completed" ? "green" : existingAuction.status === "Scheduled" ? "blue" : "yellow"} />,
                 ];
                 if (!isCustomer) row.push(
                   <div key={existingAuction.id} style={{ display: "flex", gap: 6 }}>
                     {existingAuction.status === "Scheduled" && isSuperAdmin && <IconBtn icon={<HiPlay size={14} />} onClick={() => handleConductAuction(existingAuction)} color="#d97706" title="Conduct" />}
+                    {existingAuction.status === "Completed" && (isSuperAdmin || user?.role === "admin") && (
+                      <IconBtn icon={<HiBanknotes size={14} />} onClick={() => handlePrizePayment(existingAuction)}
+                        color={existingAuction.prizePayment?.status === "Paid" ? "#10b981" : "#d97706"}
+                        title={existingAuction.prizePayment?.status === "Paid" ? "View Prize Payment" : "Prize Payment"} />
+                    )}
                     <IconBtn icon={<HiReceiptRefund size={14} />} onClick={() => handleGenerateReceipt(existingAuction)} color="#7c3aed" title="Receipt" />
                     {isSuperAdmin && <IconBtn icon={<HiPencil size={14} />} onClick={() => handleEdit(existingAuction)} color="#2563eb" title="Edit" />}
                     {isSuperAdmin && <IconBtn icon={<HiTrash size={14} />} onClick={() => handleDelete(existingAuction.id)} color="#dc2626" title="Delete" />}
@@ -502,7 +547,7 @@ export function Auctions({ toast, setPreview }) {
                   g.name,
                   <span key={key + 'date'} style={{ color: "var(--text-muted)", fontSize: 12 }}>Not scheduled</span>,
                   "#" + i,
-                  fmt(baseAmt), "—", "—",
+                  fmt(baseAmt), "—", "—", "—",
                   <Badge key={key + 'st'} text="Ready" color={baseAmt > 0 ? "green" : "orange"} />,
                   <div key={key + 'act'} style={{ display: "flex", gap: 6 }}>
                     {isSuperAdmin && <IconBtn icon={<HiPlay size={14} />} onClick={() => {
@@ -519,6 +564,98 @@ export function Auctions({ toast, setPreview }) {
 
           return rows;
         })()} />
+      )}
+
+      {/* ── Prize Payment Modal ── */}
+      {prizePayment && (
+        <div style={{ position: "fixed", top: 0, left: 0, right: 0, bottom: 0, background: "rgba(0,0,0,0.5)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 1000 }}>
+          <div style={{ background: "var(--bg-card)", borderRadius: 12, padding: 24, maxWidth: 520, width: "90%", maxHeight: "90vh", overflowY: "auto" }}>
+            <div style={{ fontSize: 15, fontWeight: 700, color: "var(--text-primary)", marginBottom: 4 }}>Prize Payment</div>
+            <div style={{ fontSize: 12, color: "var(--text-muted)", marginBottom: 16 }}>
+              {groupById(prizePayment.groupId)?.name} — Winner: {memberByGroupMemberId(prizePayment.winnerId)?.name || prizePayment.winnerId}
+            </div>
+
+            {prizePayment.prizePayment?.status === "Paid" ? (
+              <>
+                <div style={{ background: "#f0fdf4", border: "1px solid #bbf7d0", borderRadius: 10, padding: 16, marginBottom: 16 }}>
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
+                    <span style={{ fontSize: 13, fontWeight: 600, color: "#166534" }}>Prize Already Paid</span>
+                    <HiCheckBadge size={20} color="#16a34a" />
+                  </div>
+                  <div style={{ fontSize: 24, fontWeight: 800, color: "#166534", marginBottom: 8 }}>{fmt(prizePayment.prizePayment.amount)}</div>
+                  <div style={{ fontSize: 12, color: "#166534" }}>
+                    Voucher: <strong>{prizePayment.prizePayment.voucherNo}</strong> · {prizePayment.prizePayment.method} · {prizePayment.prizePayment.date?.split?.('T')[0] || new Date(prizePayment.prizePayment.date).toLocaleDateString()}
+                  </div>
+                  {prizePayment.prizePayment.referenceNo && (
+                    <div style={{ fontSize: 12, color: "#166534", marginTop: 4 }}>Ref: {prizePayment.prizePayment.referenceNo}</div>
+                  )}
+                  {prizePayment.prizePayment.notes && (
+                    <div style={{ fontSize: 12, color: "#166534", marginTop: 4 }}>Notes: {prizePayment.prizePayment.notes}</div>
+                  )}
+                </div>
+                <Btn label="Close" onClick={() => setPrizePayment(null)} />
+              </>
+            ) : (
+              <>
+                <div style={{ background: "var(--bg-card-alt)", borderRadius: 8, padding: 16, marginBottom: 16 }}>
+                  <div style={{ fontSize: 12, color: "var(--text-muted)", marginBottom: 4 }}>Prize Amount (Winning Bid)</div>
+                  <div style={{ fontSize: 24, fontWeight: 800, color: "#d97706" }}>{fmt(prizePayment.winningBid || prizePayment.bidAmount || 0)}</div>
+                  <div style={{ fontSize: 11, color: "var(--text-muted)", marginTop: 4 }}>Installment #{prizePayment.installment} · Base: {fmt(prizePayment.baseAmount)}</div>
+                </div>
+
+                <div style={{ marginBottom: 14 }}>
+                  <label style={{ fontSize: 12, fontWeight: 600, color: "var(--text-secondary)", display: "block", marginBottom: 4 }}>Payment Amount (₹) *</label>
+                  <input type="number" value={prizeForm.amount} onChange={e => setPrizeForm({ ...prizeForm, amount: e.target.value })}
+                    style={{ width: "100%", padding: "10px 12px", borderRadius: 8, border: "1px solid var(--border-color)", background: "var(--bg-input)", color: "var(--text-primary)", fontSize: 13, boxSizing: "border-box" }} />
+                </div>
+
+                <div style={{ marginBottom: 14 }}>
+                  <label style={{ fontSize: 12, fontWeight: 600, color: "var(--text-secondary)", display: "block", marginBottom: 4 }}>Payment Date *</label>
+                  <input type="date" value={prizeForm.date} onChange={e => setPrizeForm({ ...prizeForm, date: e.target.value })}
+                    style={{ width: "100%", padding: "10px 12px", borderRadius: 8, border: "1px solid var(--border-color)", background: "var(--bg-input)", color: "var(--text-primary)", fontSize: 13, boxSizing: "border-box" }} />
+                </div>
+
+                <div style={{ marginBottom: 14 }}>
+                  <label style={{ fontSize: 12, fontWeight: 600, color: "var(--text-secondary)", display: "block", marginBottom: 4 }}>Payment Method</label>
+                  <select value={prizeForm.method} onChange={e => setPrizeForm({ ...prizeForm, method: e.target.value })}
+                    style={{ width: "100%", padding: "10px 12px", borderRadius: 8, border: "1px solid var(--border-color)", background: "var(--bg-input)", color: "var(--text-primary)", fontSize: 13, boxSizing: "border-box" }}>
+                    {["Bank Transfer", "Cheque", "Cash", "UPI"].map(m => <option key={m} value={m}>{m}</option>)}
+                  </select>
+                </div>
+
+                <div style={{ marginBottom: 14 }}>
+                  <label style={{ fontSize: 12, fontWeight: 600, color: "var(--text-secondary)", display: "block", marginBottom: 4 }}>Reference / Transaction No</label>
+                  <input type="text" value={prizeForm.referenceNo} onChange={e => setPrizeForm({ ...prizeForm, referenceNo: e.target.value })}
+                    placeholder="e.g. NEFT UTR, Cheque No"
+                    style={{ width: "100%", padding: "10px 12px", borderRadius: 8, border: "1px solid var(--border-color)", background: "var(--bg-input)", color: "var(--text-primary)", fontSize: 13, boxSizing: "border-box" }} />
+                </div>
+
+                <div style={{ marginBottom: 14 }}>
+                  <label style={{ fontSize: 12, fontWeight: 600, color: "var(--text-secondary)", display: "block", marginBottom: 4 }}>Upload Payment Proof</label>
+                  <input type="file" accept="image/*" onChange={e => {
+                    const file = e.target.files[0]; if (!file) return;
+                    const reader = new FileReader();
+                    reader.onload = ev => setPrizeForm({ ...prizeForm, proof: ev.target.result });
+                    reader.readAsDataURL(file);
+                  }} style={{ width: "100%", border: "1px solid var(--border-color)", borderRadius: 8, padding: 8, fontSize: 12, boxSizing: "border-box", background: "var(--bg-input)" }} />
+                  {prizeForm.proof && <img src={prizeForm.proof} alt="proof" style={{ marginTop: 8, maxHeight: 120, borderRadius: 8, border: "1px solid var(--border-color)" }} />}
+                </div>
+
+                <div style={{ marginBottom: 16 }}>
+                  <label style={{ fontSize: 12, fontWeight: 600, color: "var(--text-secondary)", display: "block", marginBottom: 4 }}>Notes</label>
+                  <textarea value={prizeForm.notes} onChange={e => setPrizeForm({ ...prizeForm, notes: e.target.value })}
+                    placeholder="Payment notes..."
+                    rows={2} style={{ width: "100%", padding: "10px 12px", borderRadius: 8, border: "1px solid var(--border-color)", background: "var(--bg-input)", color: "var(--text-primary)", fontSize: 13, boxSizing: "border-box", resize: "vertical" }} />
+                </div>
+
+                <div style={{ display: "flex", gap: 10 }}>
+                  <Btn label="Record Payment" onClick={handleSubmitPrizePayment} primary />
+                  <Btn label="Cancel" onClick={() => setPrizePayment(null)} />
+                </div>
+              </>
+            )}
+          </div>
+        </div>
       )}
     </div>
   );

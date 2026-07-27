@@ -278,7 +278,7 @@ export function Members({ toast, setPreview }) {
               {scheme && (
                 <div style={{ fontSize: 12, color: "#64748b", textAlign: "center" }}>
                   <div style={{ fontWeight: 700, color: "#0f172a", fontSize: 13 }}>{scheme.name}</div>
-                  <div>{fmt(scheme.monthlyInstallment)}/mo · {scheme.duration} months</div>
+                  <div>{fmt(scheme.monthlyAmounts?.[0]?.amount || 0)}/mo · {scheme.duration} months</div>
                 </div>
               )}
               <Badge text={member.status} color={member.status === "Active" ? "green" : member.status === "Pending" ? "yellow" : "red"} />
@@ -318,7 +318,7 @@ export function Members({ toast, setPreview }) {
                     <tbody>
                       {(scheme.monthlyAmounts?.length
                         ? scheme.monthlyAmounts
-                        : Array.from({ length: scheme.duration }, (_, i) => ({ month: i + 1, amount: scheme.monthlyInstallment, auctionAmount: 0 }))
+                        : Array.from({ length: scheme.duration }, (_, i) => ({ month: i + 1, amount: scheme.monthlyAmounts?.[i]?.amount || 0, auctionAmount: 0 }))
                       ).map((m) => {
                         const paid = isPaid(member, m.month);
                         const pending = isPending(member, m.month);

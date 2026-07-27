@@ -81,7 +81,7 @@ export function BillingDashboard({ toast }) {
       const memberGroup = memberGroupId ? groups.find(g => g.id === memberGroupId) : null;
       const memberScheme = memberGroup ? schemes.find(s => s.id === memberGroup.schemeId) : null;
       
-      const monthlyInstallment = memberScheme ? (memberScheme.monthlyAmounts?.[(memberGroup?.currentInstallment || 1) - 1]?.amount || memberScheme.monthlyInstallment) : parseFloat(form.installmentAmount);
+      const monthlyInstallment = memberScheme ? (memberScheme.monthlyAmounts?.[(memberGroup?.currentInstallment || 1) - 1]?.amount || memberScheme.monthlyAmounts?.[0]?.amount || 0) : parseFloat(form.installmentAmount);
       const duration = memberScheme?.duration || "—";
       const totalChitValue = memberScheme?.amount || "—";
 
@@ -238,7 +238,7 @@ export function BillingDashboard({ toast }) {
               </div>
               <div>
                 <div style={{ fontSize: 12, color: "var(--text-muted)", marginBottom: 4 }}>Monthly Amount</div>
-                <div style={{ fontSize: 15, fontWeight: 600, color: "var(--text-primary)" }}>₹{(memberScheme?.monthlyAmounts?.[(memberGroup?.currentInstallment || 1) - 1]?.amount || memberScheme?.monthlyInstallment)?.toLocaleString() || "0"}</div>
+                <div style={{ fontSize: 15, fontWeight: 600, color: "var(--text-primary)" }}>₹{(memberScheme?.monthlyAmounts?.[(memberGroup?.currentInstallment || 1) - 1]?.amount || memberScheme?.monthlyAmounts?.[0]?.amount || 0)?.toLocaleString()}</div>
               </div>
               <div>
                 <div style={{ fontSize: 12, color: "var(--text-muted)", marginBottom: 4 }}>Current Installment</div>

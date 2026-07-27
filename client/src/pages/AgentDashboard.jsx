@@ -117,7 +117,7 @@ export function AgentDashboard({ dark, toast }) {
           {groups.map(g => {
             const s = Array.isArray(schemes) ? schemes.find(sc => sc.id === g.schemeId) : null;
             if (!s) return null;
-            const months = s.monthlyAmounts?.length ? s.monthlyAmounts : Array.from({ length: s.duration }, (_, i) => ({ month: i + 1, amount: s.monthlyInstallment, auctionAmount: 0 }));
+            const months = s.monthlyAmounts?.length ? s.monthlyAmounts : Array.from({ length: s.duration }, (_, i) => ({ month: i + 1, amount: 0, auctionAmount: 0 }));
             const paidMonths = myOwnMemberId ? Array.isArray(collections) ? collections.filter(c => c.memberId === myOwnMemberId && c.status === 'Paid').map(c => Number(c.installment)) : [] : [];
             const pendingMonths = myOwnMemberId ? Array.isArray(collections) ? collections.filter(c => c.memberId === myOwnMemberId && c.status === 'Pending').map(c => Number(c.installment)) : [] : [];
             return (

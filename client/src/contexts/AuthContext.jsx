@@ -4,19 +4,19 @@ const AuthContext = createContext(null);
 
 const ROLE_PERMISSIONS = {
   super_admin: {
-    navItems: ["dashboard", "branches", "user-management", "agents", "members", "schemes", "groups", "collections", "billing", "auctions", "prizes", "accounting", "reports", "notifications", "platform-settings", "invoice-settings", "receipt-settings", "notification-settings", "role-permissions", "audit-logs", "backup-restore", "profile", "enquiries", "kyc"],
+    navItems: ["dashboard", "branches", "schemes", "groups", "agents", "members", "collections", "billing", "auctions", "prizes", "accounting", "reports", "enquiries", "notifications", "kyc", "user-management", "audit-logs", "platform-settings", "invoice-settings", "receipt-settings", "notification-settings", "role-permissions", "backup-restore"],
     permissions: ["create", "edit", "delete", "view", "approve", "reject", "configure", "export"],
   },
   admin: {
-    navItems: ["dashboard", "agents", "members", "schemes", "groups", "collections", "billing", "auctions", "reports", "notifications", "profile", "kyc", "enquiries", "user-management", "audit-logs", "role-permissions"],
+    navItems: ["dashboard", "branches", "schemes", "groups", "agents", "members", "collections", "billing", "auctions", "reports", "notifications", "kyc", "enquiries", "user-management", "audit-logs", "role-permissions"],
     permissions: ["create", "edit", "view", "approve"],
   },
   agent: {
-    navItems: ["dashboard", "members", "collections", "commissions", "profile", "notifications"],
+    navItems: ["dashboard", "members", "collections", "notifications"],
     permissions: ["create", "view", "edit"],
   },
   customer: {
-    navItems: ["dashboard", "schemes", "payments", "invoices", "receipts", "auctions", "profile", "notifications", "support"],
+    navItems: ["dashboard", "schemes", "auctions", "notifications"],
     permissions: ["view"],
   },
 };
@@ -69,6 +69,16 @@ export function AuthProvider({ children }) {
     return roleConfig.navItems.includes(moduleId) || user.modules?.includes(moduleId) || false;
   }, [user]);
 
+  const hasModulePermission = useCallback((moduleId, permission) => {
+    if (!user) return false;
+    if (user.role === "super_admin") return true;
+    if (!hasModuleAccess(moduleId)) return false;
+    const mp = user.modulePermissions || [];
+    const modPerm = mp.find(p => p.module === moduleId);
+    if (modPerm) return !!modPerm[permission];
+    return user.permissions?.includes(permission) || false;
+  }, [user, hasModuleAccess]);
+
   const getDashboardForRole = useCallback(() => {
     if (!user) return null;
     return user.role;
@@ -76,7 +86,7 @@ export function AuthProvider({ children }) {
 
   return (
     <AuthContext.Provider value={{
-      user, loading, login, logout, hasPermission, hasModuleAccess, getDashboardForRole
+      user, loading, login, logout, hasPermission, hasModuleAccess, hasModulePermission, getDashboardForRole
     }}>
       {children}
     </AuthContext.Provider>

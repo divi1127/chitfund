@@ -40,7 +40,7 @@ export function UserDashboard({ dark, toast }) {
 
   const schemeMonthlyAmounts = userScheme?.monthlyAmounts || [];
   const totalMonths = userScheme?.duration || 0;
-  const monthlyInstallment = userScheme?.monthlyInstallment || 0;
+  const monthlyInstallment = userScheme?.monthlyAmounts?.[0]?.amount || 0;
 
   const paidMonthNums = new Set(
     userInvoices.filter(inv => inv.status === 'Paid' || inv.status === 'Proof Submitted')
@@ -145,7 +145,7 @@ export function UserDashboard({ dark, toast }) {
                 <div style={{ width: 36, height: 36, borderRadius: 10, background: "#f59e0b", display: "flex", alignItems: "center", justifyContent: "center", color: "#fff" }}><FiDollarSign size={18} /></div>
                 <div>
                   <div style={{ fontSize: 11, color: dark ? "rgba(255,255,255,.5)" : "#6b7280" }}>Installment</div>
-                  <div style={{ fontSize: 15, fontWeight: 600, color: dark ? "#f3f4f6" : "#111" }}>₹{(userScheme?.monthlyInstallment || 0).toLocaleString()}/mo</div>
+                  <div style={{ fontSize: 15, fontWeight: 600, color: dark ? "#f3f4f6" : "#111" }}>₹{(userScheme?.monthlyAmounts?.[0]?.amount || 0).toLocaleString()}/mo</div>
                 </div>
               </div>
               <div style={{ fontSize: 12, color: dark ? "rgba(255,255,255,.5)" : "#6b7280" }}>Next: #{nextInstallment}</div>

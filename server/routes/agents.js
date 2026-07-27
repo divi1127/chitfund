@@ -3,9 +3,12 @@ import Agent from '../models/Agent.js';
 import Member from '../models/Member.js';
 import User from '../models/User.js';
 import Group from '../models/Group.js';
+import Scheme from '../models/Scheme.js';
+import Collection from '../models/Collection.js';
 import Commission from '../models/Commission.js';
 import { authenticate, authorize } from '../middleware/auth.js';
 import { generateAgentId, generatePasswordFromDob } from '../utils/idGenerator.js';
+import { notifyAllAdmins } from '../utils/notify.js';
 
 const router = express.Router();
 
@@ -17,6 +20,95 @@ router.get('/', authenticate, authorize('super_admin', 'admin'), async (req, res
     res.json(agents);
   } catch (error) {
     res.status(500).json({ message: 'Server error fetching agents' });
+  }
+});
+
+// ── Agent Summary with Filters ─────────────────────────────────────────────
+router.get('/summary/filter', authenticate, authorize('super_admin', 'admin'), async (req, res) => {
+  try {
+    const { year, schemeId, groupId } = req.query;
+    const agents = await Agent.find();
+    const members = await Member.find();
+    const groups = await Group.find();
+    const schemes = await Scheme.find();
+    const collections = await Collection.find();
+    const commissions = await Commission.find();
+
+    let filteredGroups = groups;
+    if (groupId) filteredGroups = filteredGroups.filter(g => g.id === groupId);
+    if (schemeId) filteredGroups = filteredGroups.filter(g => g.schemeId === schemeId);
+
+    const availableYears = [...new Set(Array.isArray(collections) ? collections.map(c => new Date(c.date).getFullYear()) : [])].sort();
+
+    const result = agents.map(agent => {
+      const agentCustomers = members.filter(m => m.agentId === agent.agentId);
+      let agentGroups = groups.filter(g => g.agentId === agent.agentId);
+      if (groupId) agentGroups = agentGroups.filter(g => g.id === groupId);
+      if (schemeId) agentGroups = agentGroups.filter(g => g.schemeId === schemeId);
+
+      const customerIds = agentCustomers.map(m => m.memberId);
+      let agentCollections = collections.filter(c => customerIds.includes(c.memberId));
+
+      if (year) {
+        const y = parseInt(year);
+        agentCollections = agentCollections.filter(c => {
+          const d = new Date(c.date);
+          return d.getFullYear() === y;
+        });
+      }
+      if (groupId) agentCollections = agentCollections.filter(c => c.groupId === groupId);
+
+      const totalPaid = agentCollections.filter(c => c.status === 'Paid').reduce((s, c) => s + (c.amount || 0), 0);
+      const totalPending = agentCollections.filter(c => c.status === 'Pending' || c.status === 'Partially Paid').reduce((s, c) => s + ((c.pendingBalance || 0) || (c.fullInstallmentAmount || 0) - (c.amount || 0)), 0);
+
+      const totalDue = agentCustomers.reduce((sum, m) => {
+        const memberGroups = groups.filter(g => m.groups?.includes(g.id));
+        return sum + memberGroups.reduce((gs, g) => {
+          const scheme = schemes.find(s => s.id === g.schemeId);
+          const memberColls = collections.filter(c => c.memberId === m.memberId && c.groupId === g.id);
+          const paidMonths = new Set(memberColls.map(c => c.installment)).size;
+          const due = (scheme?.duration || 0) - paidMonths;
+          const monthAmt = scheme?.monthlyAmounts?.[0]?.amount || 0;
+          return gs + Math.max(0, due) * monthAmt;
+        }, 0);
+      }, 0);
+
+      let agentCommissions = commissions.filter(c => c.agentId === agent.agentId);
+      if (year) agentCommissions = agentCommissions.filter(c => c.year === parseInt(year));
+      if (groupId) agentCommissions = agentCommissions.filter(c => c.groupId === groupId);
+
+      const totalCommission = agentCommissions.reduce((s, c) => s + (c.commissionAmount || 0), 0);
+      const paidCommission = agentCommissions.filter(c => c.status === 'Paid').reduce((s, c) => s + (c.commissionAmount || 0), 0);
+
+      const joinedChits = agentGroups.map(g => {
+        const scheme = schemes.find(s => s.id === g.schemeId);
+        const groupMembers = agentCustomers.filter(m => m.groups?.includes(g.id));
+        const groupColls = collections.filter(c => c.groupId === g.id && customerIds.includes(c.memberId));
+        const groupPaid = groupColls.filter(c => c.status === 'Paid').reduce((s, c) => s + (c.amount || 0), 0);
+        return {
+          groupId: g.id, groupName: g.name,
+          schemeName: scheme?.name || '', schemeAmount: scheme?.amount || 0,
+          monthlyInstallment: scheme?.monthlyAmounts?.[0]?.amount || 0,
+          memberCount: groupMembers.length, totalPaid: groupPaid,
+          startDate: g.startDate, status: g.status,
+        };
+      });
+
+      return {
+        agentId: agent.agentId, name: agent.name, phone: agent.phone,
+        photo: agent.photo, status: agent.status,
+        customerCount: agentCustomers.length, joinedChitCount: agentGroups.length,
+        totalPaid, totalPending, totalDue,
+        totalCommission, paidCommission,
+        pendingCommission: totalCommission - paidCommission,
+        joinedChits,
+      };
+    });
+
+    res.json({ agents: result, availableYears });
+  } catch (error) {
+    console.error('❌ Agent summary error:', error.message);
+    res.status(500).json({ message: 'Server error: ' + error.message });
   }
 });
 
@@ -71,6 +163,8 @@ router.post('/', authenticate, authorize('super_admin', 'admin'), async (req, re
       });
       await newUser.save();
     }
+
+    await notifyAllAdmins('New Agent Created', `Agent ${savedAgent.name} (${savedAgent.agentId}) has been added to the system.`, 'success');
 
     res.status(201).json(savedAgent);
   } catch (error) {

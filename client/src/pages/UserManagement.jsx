@@ -4,11 +4,12 @@ import { Table } from "../components/Table";
 import { Badge } from "../components/Badge";
 import { Btn } from "../components/Btn";
 import { Input } from "../components/Input";
-import { HiPencil, HiTrash, HiEye, HiEyeSlash } from "react-icons/hi2";
+import { HiPencil, HiTrash, HiIdentification } from "react-icons/hi2";
 import { IconBtn } from "../components/IconBtn";
 import { useAuth } from "../contexts/AuthContext";
+import { IDCardModal } from "../components/IDCardModal";
 
-const ALL_MODULES = ["dashboard", "members", "schemes", "groups", "collections", "billing", "auctions", "prizes", "accounting", "reports", "employees", "branches", "notifications", "settings", "enquiries", "kyc"];
+const ALL_MODULES = ["dashboard", "members", "schemes", "groups", "collections", "billing", "auctions", "prizes", "accounting", "reports", "employees", "branches", "notifications", "settings", "enquiries", "kyc", "agents", "user-management", "audit-logs"];
 
 const ALL_PERMISSIONS = ["create", "edit", "delete", "view"];
 
@@ -25,21 +26,20 @@ export function UserManagement({ dark, toast }) {
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
   const [editingUser, setEditingUser] = useState(null);
-  const [form, setForm] = useState({ userId: "", password: "", name: "", email: "", phone: "", role: "user", modules: [], permissions: [] });
+  const [roleFilter, setRoleFilter] = useState("");
+  const [form, setForm] = useState({ userId: "", password: "", name: "", email: "", phone: "", role: "user", modules: [], permissions: [], modulePermissions: [] });
   const [errors, setErrors] = useState({});
-  const [visiblePw, setVisiblePw] = useState({});
+  const [printingUser, setPrintingUser] = useState(null);
   const isSuperAdmin = currentUser?.role === "super_admin";
-
-  const togglePwVisibility = (userId) => {
-    setVisiblePw(prev => ({ ...prev, [userId]: !prev[userId] }));
-  };
 
   const canManageAll = currentUser?.role === "super_admin";
 
   const fetchUsers = async () => {
     try {
-      const response = await fetch('/api/users', {
-        headers: { 'Authorization': `Bearer ${currentUser.token}` }
+      const token = localStorage.getItem("token");
+      const API_BASE = import.meta.env.VITE_API_BASE || "https://chitfund-cxnp.onrender.com/api";
+      const response = await fetch(`${API_BASE}/users`, {
+        headers: { 'Authorization': `Bearer ${token}` }
       });
       if (response.ok) {
         const data = await response.json();
@@ -52,6 +52,8 @@ export function UserManagement({ dark, toast }) {
   };
 
   useEffect(() => { fetchUsers(); }, []);
+
+  const filteredUsers = roleFilter ? users.filter(u => u.role === roleFilter) : users;
 
   const validateForm = () => {
     const newErrors = {};
@@ -67,27 +69,35 @@ export function UserManagement({ dark, toast }) {
   const handleSubmit = async () => {
     if (!validateForm()) return;
     try {
+      const token = localStorage.getItem("token");
+      const API_BASE = import.meta.env.VITE_API_BASE || "https://chitfund-cxnp.onrender.com/api";
+
       const userData = {
         ...form,
         modules: form.role === "super_admin" ? ALL_MODULES : form.modules,
         permissions: form.role === "super_admin" ? ALL_PERMISSIONS : form.permissions,
+        modulePermissions: form.role === "super_admin"
+          ? ALL_MODULES.map(m => ({ module: m, create: true, edit: true, delete: true, view: true }))
+          : form.modulePermissions,
         plainPassword: form.password
       };
 
-      const url = editingUser ? `/api/users/${editingUser._id}` : '/api/users';
+      if (editingUser && !userData.password) delete userData.password;
+
+      const url = editingUser ? `${API_BASE}/users/${editingUser._id}` : `${API_BASE}/users`;
       const method = editingUser ? 'PUT' : 'POST';
 
       const response = await fetch(url, {
         method,
-        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${currentUser.token}` },
-        body: JSON.stringify(editingUser && !userData.password ? { ...userData, password: undefined } : userData)
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+        body: JSON.stringify(userData)
       });
 
       if (response.ok) {
-        toast.add(editingUser ? "User updated successfully!" : "User created successfully!");
+        toast.add(editingUser ? "User updated!" : "User created!");
         setShowForm(false);
         setEditingUser(null);
-        setForm({ userId: "", password: "", name: "", email: "", phone: "", role: "user", modules: [], permissions: [] });
+        setForm({ userId: "", password: "", name: "", email: "", phone: "", role: "user", modules: [], permissions: [], modulePermissions: [] });
         setErrors({});
         fetchUsers();
       } else {
@@ -109,7 +119,8 @@ export function UserManagement({ dark, toast }) {
       phone: user.phone || "",
       role: user.role,
       modules: user.modules || [],
-      permissions: user.permissions || []
+      permissions: user.permissions || [],
+      modulePermissions: user.modulePermissions || []
     });
     setShowForm(true);
   };
@@ -117,12 +128,14 @@ export function UserManagement({ dark, toast }) {
   const handleDelete = async (userId) => {
     if (!confirm("Are you sure you want to delete this user?")) return;
     try {
-      const response = await fetch(`/api/users/${userId}`, {
+      const token = localStorage.getItem("token");
+      const API_BASE = import.meta.env.VITE_API_BASE || "https://chitfund-cxnp.onrender.com/api";
+      const response = await fetch(`${API_BASE}/users/${userId}`, {
         method: 'DELETE',
-        headers: { 'Authorization': `Bearer ${currentUser.token}` }
+        headers: { 'Authorization': `Bearer ${token}` }
       });
       if (response.ok) {
-        toast.add("User deleted successfully!");
+        toast.add("User deleted!");
         fetchUsers();
       } else {
         const err = await response.json();
@@ -134,30 +147,67 @@ export function UserManagement({ dark, toast }) {
   };
 
   const toggleModule = (moduleId) => {
-    if (form.modules.includes(moduleId)) {
-      setForm({ ...form, modules: form.modules.filter(m => m !== moduleId) });
-    } else {
-      setForm({ ...form, modules: [...form.modules, moduleId] });
+    const newModules = form.modules.includes(moduleId)
+      ? form.modules.filter(m => m !== moduleId)
+      : [...form.modules, moduleId];
+    const newMp = form.modulePermissions.filter(p => p.module !== moduleId);
+    if (!form.modules.includes(moduleId)) {
+      newMp.push({ module: moduleId, create: false, edit: false, delete: false, view: true });
     }
+    setForm({ ...form, modules: newModules, modulePermissions: newMp });
   };
 
   const togglePermission = (permission) => {
-    if (form.permissions.includes(permission)) {
-      setForm({ ...form, permissions: form.permissions.filter(p => p !== permission) });
+    setForm({
+      ...form,
+      permissions: form.permissions.includes(permission)
+        ? form.permissions.filter(p => p !== permission)
+        : [...form.permissions, permission]
+    });
+  };
+
+  const setModulePerm = (moduleId, perm, value) => {
+    const mp = [...form.modulePermissions];
+    const idx = mp.findIndex(p => p.module === moduleId);
+    if (idx >= 0) {
+      mp[idx] = { ...mp[idx], [perm]: value };
     } else {
-      setForm({ ...form, permissions: [...form.permissions, permission] });
+      mp.push({ module: moduleId, create: false, edit: false, delete: false, view: false, [perm]: value });
     }
+    setForm({ ...form, modulePermissions: mp });
+  };
+
+  const getModulePerm = (moduleId, perm) => {
+    const mp = form.modulePermissions.find(p => p.module === moduleId);
+    return mp ? !!mp[perm] : false;
   };
 
   if (loading) return <div style={{ padding: 40, textAlign: "center" }}>Loading...</div>;
 
+  const selectStyle = {
+    padding: "9px 12px", borderRadius: 8, border: "1px solid " + (dark ? "rgba(255,255,255,.15)" : "#d1d5db"),
+    background: dark ? "rgba(255,255,255,.05)" : "#fff", color: dark ? "#f3f4f6" : "#111",
+    fontSize: 13, outline: "none", cursor: "pointer"
+  };
+
   return (
     <div>
       <SectionHeader title="User Management" subtitle={canManageAll ? "Manage all system users and permissions" : "Manage users in your branch"} dark={dark}
-        actions={[<Btn key="add" label="+ Add User" onClick={() => { setEditingUser(null); setForm({ userId: "", password: "", name: "", email: "", phone: "", role: "user", modules: [], permissions: [] }); setShowForm(true); }} primary />]} />
+        actions={[
+          <div key="filter" style={{ display: "flex", gap: 8, alignItems: "center" }}>
+            <select value={roleFilter} onChange={e => setRoleFilter(e.target.value)} style={selectStyle}>
+              <option value="">All Roles</option>
+              <option value="super_admin">Super Admin</option>
+              <option value="admin">Admin</option>
+              <option value="agent">Agent</option>
+              <option value="customer">Customer</option>
+            </select>
+          </div>,
+          <Btn key="add" label="+ Add User" onClick={() => { setEditingUser(null); setForm({ userId: "", password: "", name: "", email: "", phone: "", role: "user", modules: [], permissions: [], modulePermissions: [] }); setShowForm(true); }} primary />
+        ]} />
 
       {showForm && isSuperAdmin && (
-        <div style={{ background: "var(--bg-card)", border: "1px solid var(--border-color)", borderRadius: 12, padding: 24, marginBottom: 24 }}>
+        <div style={{ background: "var(--bg-card)", border: "1px solid var(--border-color)", borderRadius: 12, padding: 24, marginBottom: 24, maxHeight: "80vh", overflowY: "auto" }}>
           <div style={{ fontSize: 15, fontWeight: 600, color: "var(--text-primary)", marginBottom: 16 }}>{editingUser ? "Edit User" : "New User"}</div>
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(220px,1fr))", gap: "0 20px" }}>
             <div>
@@ -189,26 +239,43 @@ export function UserManagement({ dark, toast }) {
           {form.role !== "super_admin" && canManageAll && (
             <>
               <div style={{ marginTop: 20 }}>
-                <div style={{ fontSize: 13, fontWeight: 600, color: "var(--text-secondary)", marginBottom: 12 }}>Module Access</div>
-                <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill,minmax(180px,1fr))", gap: 8 }}>
-                  {ALL_MODULES.map(module => (
-                    <label key={module} style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 12, color: dark ? "rgba(255,255,255,.7)" : "#374151", cursor: "pointer" }}>
-                      <input type="checkbox" checked={form.modules.includes(module)} onChange={() => toggleModule(module)} style={{ cursor: "pointer" }} />
-                      {module.charAt(0).toUpperCase() + module.slice(1).replace(/-/g, ' ')}
-                    </label>
-                  ))}
-                </div>
-              </div>
-
-              <div style={{ marginTop: 20 }}>
-                <div style={{ fontSize: 13, fontWeight: 600, color: "var(--text-secondary)", marginBottom: 12 }}>Permissions</div>
-                <div style={{ display: "flex", gap: 16, flexWrap: "wrap" }}>
-                  {ALL_PERMISSIONS.map(permission => (
-                    <label key={permission} style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 12, color: dark ? "rgba(255,255,255,.7)" : "#374151", cursor: "pointer" }}>
-                      <input type="checkbox" checked={form.permissions.includes(permission)} onChange={() => togglePermission(permission)} style={{ cursor: "pointer" }} />
-                      {permission.charAt(0).toUpperCase() + permission.slice(1)}
-                    </label>
-                  ))}
+                <div style={{ fontSize: 13, fontWeight: 600, color: "var(--text-secondary)", marginBottom: 12 }}>Module Access & Permissions</div>
+                <div style={{ overflowX: "auto" }}>
+                  <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 12 }}>
+                    <thead>
+                      <tr style={{ borderBottom: "1px solid " + (dark ? "rgba(255,255,255,.1)" : "#e5e7eb") }}>
+                        <th style={{ textAlign: "left", padding: "8px 12px", color: dark ? "rgba(255,255,255,.6)" : "#64748b", fontWeight: 600 }}>Module</th>
+                        <th style={{ textAlign: "center", padding: "8px 12px", color: dark ? "rgba(255,255,255,.6)" : "#64748b", fontWeight: 600 }}>Access</th>
+                        <th style={{ textAlign: "center", padding: "8px 12px", color: dark ? "rgba(255,255,255,.6)" : "#64748b", fontWeight: 600 }}>View</th>
+                        <th style={{ textAlign: "center", padding: "8px 12px", color: dark ? "rgba(255,255,255,.6)" : "#64748b", fontWeight: 600 }}>Create</th>
+                        <th style={{ textAlign: "center", padding: "8px 12px", color: dark ? "rgba(255,255,255,.6)" : "#64748b", fontWeight: 600 }}>Edit</th>
+                        <th style={{ textAlign: "center", padding: "8px 12px", color: dark ? "rgba(255,255,255,.6)" : "#64748b", fontWeight: 600 }}>Delete</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {ALL_MODULES.map(module => (
+                        <tr key={module} style={{ borderBottom: "1px solid " + (dark ? "rgba(255,255,255,.05)" : "#f1f5f9") }}>
+                          <td style={{ padding: "6px 12px", color: dark ? "rgba(255,255,255,.8)" : "#374151", fontWeight: 500, whiteSpace: "nowrap" }}>
+                            {module.charAt(0).toUpperCase() + module.slice(1).replace(/-/g, ' ')}
+                          </td>
+                          <td style={{ textAlign: "center", padding: "6px 12px" }}>
+                            <input type="checkbox" checked={form.modules.includes(module)} onChange={() => toggleModule(module)} style={{ cursor: "pointer" }} />
+                          </td>
+                          {["view", "create", "edit", "delete"].map(perm => (
+                            <td key={perm} style={{ textAlign: "center", padding: "6px 12px" }}>
+                              <input
+                                type="checkbox"
+                                checked={getModulePerm(module, perm)}
+                                disabled={!form.modules.includes(module)}
+                                onChange={() => setModulePerm(module, perm, !getModulePerm(module, perm))}
+                                style={{ cursor: form.modules.includes(module) ? "pointer" : "not-allowed", opacity: form.modules.includes(module) ? 1 : 0.3 }}
+                              />
+                            </td>
+                          ))}
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
                 </div>
               </div>
             </>
@@ -216,27 +283,42 @@ export function UserManagement({ dark, toast }) {
 
           <div style={{ display: "flex", gap: 10, marginTop: 16 }}>
             <Btn label={editingUser ? "Update User" : "Create User"} onClick={handleSubmit} primary />
-            <Btn label="Cancel" onClick={() => { setShowForm(false); setEditingUser(null); setForm({ userId: "", password: "", name: "", email: "", phone: "", role: "user", modules: [], permissions: [] }); setErrors({}); }} />
+            <Btn label="Cancel" onClick={() => { setShowForm(false); setEditingUser(null); setForm({ userId: "", password: "", name: "", email: "", phone: "", role: "user", modules: [], permissions: [], modulePermissions: [] }); setErrors({}); }} />
           </div>
         </div>
       )}
 
       <Table dark={dark} cols={["User ID", "Name", "Email", "Role", "Modules", "Branch", "Status", "Actions"]}
-        rows={users.map(u => [
+        rows={filteredUsers.map(u => [
           u.userId,
           u.name,
           u.email,
-           <Badge key={u._id} text={u.role === "super_admin" ? "Super Admin" : u.role === "admin" ? "Admin" : u.role === "agent" ? "Agent" : u.role === "customer" ? "Customer" : "Agent"} color={u.role === "super_admin" ? "purple" : u.role === "admin" ? "blue" : u.role === "agent" ? "green" : u.role === "customer" ? "gray" : "gray"} />,
+          <Badge key={u._id} text={u.role === "super_admin" ? "Super Admin" : u.role === "admin" ? "Admin" : u.role === "agent" ? "Agent" : u.role === "customer" ? "Customer" : "Agent"} color={u.role === "super_admin" ? "purple" : u.role === "admin" ? "blue" : u.role === "agent" ? "green" : u.role === "customer" ? "gray" : "gray"} />,
           u.role === "super_admin" ? "All" : `${u.modules?.length || 0} modules`,
-          u.branch || u.assignedBranch || " ",
+          u.branch || u.assignedBranch || "-",
           <Badge key={u._id} text={u.status} color={u.status === "active" ? "green" : "red"} />,
           <div key={u._id} style={{ display: "flex", gap: 6 }}>
+            <IconBtn icon={<HiIdentification size={14} />} onClick={() => setPrintingUser(u)} color="#0ea5e9" title="Print ID" />
             <button onClick={() => handleEdit(u)} style={{ fontSize: 11, padding: "4px 10px", borderRadius: 6, border: "1px solid #2563eb", background: "transparent", color: "#2563eb", cursor: "pointer" }}>Edit</button>
             {canManageAll && u.role !== "super_admin" && (
               <button onClick={() => handleDelete(u._id)} style={{ fontSize: 11, padding: "4px 10px", borderRadius: 6, border: "1px solid #dc2626", background: "transparent", color: "#dc2626", cursor: "pointer" }}>Delete</button>
             )}
           </div>
         ])} />
+
+      {printingUser && (
+        <IDCardModal
+          entity={{
+            ...printingUser,
+            agentId: printingUser.userId,
+            memberId: printingUser.userId,
+            phone: printingUser.phone || "-",
+            aadhaar: "-",
+          }}
+          type={printingUser.role === "agent" ? "Agent" : "Member"}
+          onClose={() => setPrintingUser(null)}
+        />
+      )}
     </div>
   );
 }

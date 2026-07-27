@@ -8,6 +8,7 @@ import Agent from '../models/Agent.js';
 import PlatformSettings from '../models/PlatformSettings.js';
 import { authenticate, authorize } from '../middleware/auth.js';
 import { generateReceiptNo } from '../utils/idGenerator.js';
+import { createNotification } from '../utils/notify.js';
 
 const router = express.Router();
 
@@ -133,7 +134,7 @@ router.post('/', authenticate, authorize('super_admin', 'admin', 'agent'), async
       chitGroup: group?.name || '',
       chitNumber: `CHIT-${scheme?.amount || ''}`,
       totalChitValue: scheme?.amount || 0,
-      monthlyAmount: scheme?.monthlyInstallment || 0,
+      monthlyAmount: scheme?.monthlyAmounts?.find(m => m.month === Number(data.installment))?.amount || scheme?.monthlyAmounts?.[0]?.amount || 0,
       duration: scheme?.duration || 0,
       currentMonth: data.installment || 1,
       dueDate: data.date || new Date(),
@@ -156,6 +157,14 @@ router.post('/', authenticate, authorize('super_admin', 'admin', 'agent'), async
 
     const invoice = new Invoice(invoiceData);
     await invoice.save();
+
+    await createNotification({
+      title: 'Payment Received',
+      message: `Payment of ₹${paidAmount} received from ${member?.name || data.memberId} for ${scheme?.name || ''} (${group?.name || ''}) - ${pendingBal > 0 ? 'Partial' : 'Full'} payment.`,
+      type: 'success',
+      recipientType: 'all',
+      createdBy: req.user?.userId || 'system',
+    });
 
     res.status(201).json(savedCollection);
   } catch (error) {
@@ -261,7 +270,7 @@ router.post('/member-payment', authenticate, async (req, res) => {
     // No collection exists, create one
     const receiptNo = await generateReceiptNo();
     const invoice = await Invoice.findOne({ invoiceNumber: data.invoiceNumber });
-    const fullAmount = invoice ? invoice.installmentAmount : paidAmount;
+    const fullAmount = data.fullAmount || (invoice ? invoice.installmentAmount : paidAmount);
 
     collection = await Collection.create({
       id: 'C' + Date.now().toString().slice(-8),

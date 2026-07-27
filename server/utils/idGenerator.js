@@ -74,7 +74,7 @@ export const generateMemberPassword = () => {
 
 export const generateReceiptNo = async () => {
   const year = new Date().getFullYear();
-  const prefix = `RCP${year}`;
+  const prefix = `RCT-NVS-${year}`;
   const existing = await Collection.find({ receiptNo: new RegExp(`^${prefix}`) })
     .sort({ receiptNo: -1 })
     .limit(1);
@@ -85,14 +85,14 @@ export const generateReceiptNo = async () => {
     if (!isNaN(num)) nextNum = num + 1;
   }
 
-  const newId = `${prefix}${String(nextNum).padStart(3, '0')}`;
+  const newId = `${prefix}${String(nextNum).padStart(2, '0')}`;
   console.log(`✅ ID Gen: Generated receipt no - ${newId}`);
   return newId;
 };
 
 export const generateInvoiceNo = async () => {
   const year = new Date().getFullYear();
-  const prefix = `INV${year}`;
+  const prefix = `INV-NVS-${year}`;
   const existing = await Invoice.find({ invoiceNumber: new RegExp(`^${prefix}`) })
     .sort({ invoiceNumber: -1 })
     .limit(1);
@@ -103,8 +103,26 @@ export const generateInvoiceNo = async () => {
     if (!isNaN(num)) nextNum = num + 1;
   }
 
-  const newId = `${prefix}${String(nextNum).padStart(3, '0')}`;
+  const newId = `${prefix}${String(nextNum).padStart(2, '0')}`;
   console.log(`✅ ID Gen: Generated invoice no - ${newId}`);
+  return newId;
+};
+
+export const generatePrizeVoucherNo = async () => {
+  const year = new Date().getFullYear();
+  const prefix = `PV-NVS-${year}`;
+  const existing = await Auction.find({ 'prizePayment.voucherNo': new RegExp(`^${prefix}`) })
+    .sort({ 'prizePayment.voucherNo': -1 })
+    .limit(1);
+
+  let nextNum = 1;
+  if (existing.length > 0 && existing[0].prizePayment?.voucherNo) {
+    const num = parseInt(existing[0].prizePayment.voucherNo.slice(prefix.length), 10);
+    if (!isNaN(num)) nextNum = num + 1;
+  }
+
+  const newId = `${prefix}${String(nextNum).padStart(2, '0')}`;
+  console.log(`✅ ID Gen: Generated prize voucher no - ${newId}`);
   return newId;
 };
 

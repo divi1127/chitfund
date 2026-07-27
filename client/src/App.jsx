@@ -155,9 +155,17 @@ function AppLayout() {
     );
   }
 
-  const filteredNavItems = NAV_ITEMS.filter((item) =>
-    hasModuleAccess(item.id)
-  );
+  const filteredNavItems = NAV_ITEMS.reduce((acc, item) => {
+    if (item.children) {
+      const children = item.children.filter((c) => hasModuleAccess(c.id));
+      if (children.length > 0) {
+        acc.push({ ...item, children });
+      }
+    } else if (hasModuleAccess(item.id)) {
+      acc.push(item);
+    }
+    return acc;
+  }, []);
 
   const sidebarW = collapsed ? 64 : 240;
 
