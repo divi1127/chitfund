@@ -27,7 +27,8 @@ export function Groups({ toast }) {
   const [showForm, setShowForm] = useState(false);
   const [showMemberModal, setShowMemberModal] = useState(false);
   const [editingGroup, setEditingGroup] = useState(null);
-  const [form, setForm] = useState({ name: "", schemeId: "", startDate: "" });
+  const [form, setForm] = useState({ name: "", schemeId: "", startDate: "", agentId: "" });
+  const { data: agents } = useData('/agents');
   const [errors, setErrors] = useState({});
   const [selectedMembers, setSelectedMembers] = useState([]);
   
@@ -77,7 +78,8 @@ export function Groups({ toast }) {
     setForm({
       name: group.name,
       schemeId: group.schemeId,
-      startDate: group.startDate?.split('T')[0]
+      startDate: group.startDate?.split('T')[0],
+      agentId: group.agentId || ""
     });
     setShowForm(true);
   };
@@ -181,10 +183,13 @@ export function Groups({ toast }) {
               <Input label="Start Date *" value={form.startDate} onChange={v => setForm({ ...form, startDate: v })} type="date" />
               {errors.startDate && <div style={{ color: "#dc2626", fontSize: 11, marginTop: 4 }}>{errors.startDate}</div>}
             </div>
+            <div>
+              <Input label="Assign Agent" value={form.agentId} onChange={v => setForm({ ...form, agentId: v })} options={agents.map(a => ({ value: a.agentId, label: `${a.name} (${a.agentId})` }))} />
+            </div>
           </div>
           <div style={{ display: "flex", gap: 10, marginTop: 16 }}>
             <Btn label={editingGroup ? "Update Group" : "Save Group"} onClick={handleSubmit} primary />
-            <Btn label="Cancel" onClick={() => { setShowForm(false); setEditingGroup(null); setForm({ name: "", schemeId: "", startDate: "" }); setErrors({}); }} />
+            <Btn label="Cancel" onClick={() => { setShowForm(false); setEditingGroup(null); setForm({ name: "", schemeId: "", startDate: "", agentId: "" }); setErrors({}); }} />
           </div>
         </div>
       )}
@@ -219,12 +224,13 @@ export function Groups({ toast }) {
         </div>
       )}
 
-      <Table cols={["Group", "Scheme", "Start Date", "Duration", "Members (Limit)", "Status", ...(canEdit ? ["Actions"] : [])]}
+      <Table cols={["Group", "Scheme", "Agent", "Start Date", "Duration", "Members (Limit)", "Status", ...(canEdit ? ["Actions"] : [])]}
         rows={visibleGroups.map(g => {
           const s = schemeById(g.schemeId);
+          const agent = agents.find(a => a.agentId === g.agentId);
           const memberCount = g.members ? g.members.length : 0;
           const memberLimit = s?.members || 20;
-          return [g.name, s?.name, g.startDate?.split('T')[0], s?.duration ? s.duration + " months" : "-", `${memberCount}/${memberLimit}`,
+          return [g.name, s?.name, agent ? agent.name : (g.agentId || "—"), g.startDate?.split('T')[0], s?.duration ? s.duration + " months" : "-", `${memberCount}/${memberLimit}`,
             <Badge key={g.id} text={g.status} color="green" />,
             canEdit ? (
               <div key={g.id} style={{ display: "inline-flex", gap: 6 }}>
