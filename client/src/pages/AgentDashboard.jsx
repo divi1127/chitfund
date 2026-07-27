@@ -1,13 +1,16 @@
+import { useState } from "react";
 import { useData } from "../hooks/useData";
 import { SectionHeader } from "../components/SectionHeader";
 import { StatCard } from "../components/StatCard";
 import { Table } from "../components/Table";
 import { Badge } from "../components/Badge";
 import { fmt, today } from "../utils/helpers";
+import { PaymentModal } from "../components/PaymentModal";
 import { FiDollarSign, FiUsers, FiFileText, FiTrendingUp, FiCreditCard, FiCheckCircle } from "react-icons/fi";
 import { useAuth } from "../contexts/AuthContext";
 
 export function AgentDashboard({ dark, toast }) {
+  const [payTarget, setPayTarget] = useState(null);
   const { user } = useAuth();
   const { data: members } = useData('/members');
   const { data: collections } = useData('/collections');
@@ -108,6 +111,64 @@ export function AgentDashboard({ dark, toast }) {
         </div>
       </div>
 
+      {mySelfRecord && Array.isArray(groups) && groups.length > 0 && (
+        <div style={{ background: dark ? "rgba(255,255,255,.05)" : "#fff", border: dark ? "1px solid rgba(255,255,255,.1)" : "1px solid #e5e7eb", borderRadius: 12, padding: 20, marginBottom: 20 }}>
+          <div style={{ fontSize: 14, fontWeight: 600, color: dark ? "#f3f4f6" : "#111", marginBottom: 14 }}>My Installment Schedule</div>
+          {groups.map(g => {
+            const s = Array.isArray(schemes) ? schemes.find(sc => sc.id === g.schemeId) : null;
+            if (!s) return null;
+            const months = s.monthlyAmounts?.length ? s.monthlyAmounts : Array.from({ length: s.duration }, (_, i) => ({ month: i + 1, amount: s.monthlyInstallment, auctionAmount: 0 }));
+            const paidMonths = myOwnMemberId ? Array.isArray(collections) ? collections.filter(c => c.memberId === myOwnMemberId && c.status === 'Paid').map(c => Number(c.installment)) : [] : [];
+            const pendingMonths = myOwnMemberId ? Array.isArray(collections) ? collections.filter(c => c.memberId === myOwnMemberId && c.status === 'Pending').map(c => Number(c.installment)) : [] : [];
+            return (
+              <div key={g.id} style={{ marginBottom: 16, padding: 12, background: dark ? "rgba(255,255,255,.03)" : "#f8fafc", borderRadius: 8 }}>
+                <div style={{ fontWeight: 700, fontSize: 13, color: dark ? "#f3f4f6" : "#0f172a", marginBottom: 8 }}>{g.name} ({s.name})</div>
+                <div style={{ overflowX: "auto" }}>
+                  <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 12 }}>
+                    <thead>
+                      <tr style={{ background: dark ? "rgba(255,255,255,.05)" : "#f1f5f9" }}>
+                        {["Month", "Due", "Amount", "Status", ""].map(h => <th key={h} style={{ padding: "6px 10px", textAlign: "left", color: dark ? "rgba(255,255,255,.5)" : "#64748b", fontWeight: 600, borderBottom: "1px solid " + (dark ? "rgba(255,255,255,.1)" : "#e5e7eb") }}>{h}</th>)}
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {months.map(m => {
+                        const paid = paidMonths.includes(m.month);
+                        const pending = pendingMonths.includes(m.month);
+                        const now = new Date();
+                        const due = new Date(mySelfRecord.joined || now);
+                        due.setMonth(due.getMonth() + m.month - 1);
+                        due.setDate(5);
+                        const overdue = !paid && !pending && due < now;
+                        return (
+                          <tr key={m.month} style={{ borderBottom: "1px solid " + (dark ? "rgba(255,255,255,.05)" : "#f1f5f9"), background: paid ? "#f0fdf4" : pending ? "#fffbeb" : overdue ? "#fef2f2" : "transparent" }}>
+                            <td style={{ padding: "6px 10px", fontWeight: 700 }}>Month {m.month}</td>
+                            <td style={{ padding: "6px 10px", color: overdue ? "#dc2626" : dark ? "rgba(255,255,255,.5)" : "#64748b" }}>{due.toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" })}</td>
+                            <td style={{ padding: "6px 10px", fontWeight: 700 }}>{fmt(m.amount)}</td>
+                            <td style={{ padding: "6px 10px" }}>
+                              {paid ? <Badge text="Paid" color="green" /> : pending ? <Badge text="Pending" color="yellow" /> : overdue ? <Badge text="Overdue" color="red" /> : <Badge text="Due" color="orange" />}
+                            </td>
+                            <td style={{ padding: "6px 10px" }}>
+                              {!paid && !pending && (
+                                <button onClick={() => setPayTarget({ member: mySelfRecord, group: g, scheme: s, installment: m })}
+                                  style={{ padding: "4px 12px", background: "#2563eb", color: "#fff", border: "none", borderRadius: 6, fontSize: 11, fontWeight: 600, cursor: "pointer" }}>
+                                  Pay
+                                </button>
+                              )}
+                              {pending && <span style={{ fontSize: 11, color: "#92400e" }}>Awaiting</span>}
+                              {paid && <span style={{ fontSize: 11, color: "#16a34a", fontWeight: 600 }}>✓</span>}
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      )}
+
       <div style={{ background: dark ? "rgba(255,255,255,.05)" : "#fff", border: dark ? "1px solid rgba(255,255,255,.1)" : "1px solid #e5e7eb", borderRadius: 12, padding: 20 }}>
         <div style={{ fontSize: 14, fontWeight: 600, color: dark ? "#f3f4f6" : "#111", marginBottom: 14 }}>Commission Summary</div>
         {myCommissions.length > 0 ? (
@@ -120,6 +181,17 @@ export function AgentDashboard({ dark, toast }) {
           <div style={{ textAlign: "center", padding: 20, color: dark ? "rgba(255,255,255,.4)" : "#9ca3af", fontSize: 13 }}>No commission data yet.</div>
         )}
       </div>
+
+      {payTarget && (
+        <PaymentModal
+          member={payTarget.member}
+          group={payTarget.group}
+          scheme={payTarget.scheme}
+          installment={payTarget.installment}
+          onClose={() => setPayTarget(null)}
+          onSuccess={() => { setPayTarget(null); window.location.reload(); }}
+        />
+      )}
     </div>
   );
 }
