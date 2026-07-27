@@ -26,7 +26,7 @@ router.get('/', authenticate, async (req, res) => {
     if (req.user.role === 'agent') {
       const agent = await Agent.findOne({ userId: req.user.userId });
       if (agent) {
-        const filtered = groupsWithScheme.filter(g => g.agentId === agent.agentId);
+        const filtered = groupsWithScheme.filter(g => !g.agentId || g.agentId === agent.agentId);
         return res.json(filtered);
       }
       return res.json([]);
