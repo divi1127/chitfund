@@ -50,7 +50,7 @@ export function Dashboard({ toast }) {
   const nextDueDate = new Date();
   nextDueDate.setDate(5);
   nextDueDate.setMonth(nextDueDate.getMonth() + 1);
-  const nextMonthAmount = userScheme?.monthlyAmounts?.[currentInstallment - 1]?.amount || userScheme?.monthlyInstallment || 0;
+  const nextMonthAmount = userScheme?.monthlyAmounts?.[currentInstallment - 1]?.amount || userScheme?.monthlyAmounts?.[0]?.amount || 0;
 
   const totalMonths = userScheme?.duration || 0;
   const paidCount = paidInvoices.length;
@@ -154,7 +154,7 @@ export function Dashboard({ toast }) {
             <div style={{ fontSize: 18, fontWeight: 600, color: "var(--text-primary)" }}>{userScheme?.name || "Not Assigned"}</div>
           </div>
           <div style={{ background: "var(--bg-card)", border: "1px solid var(--border-color)", borderRadius: 12, padding: 20 }}>
-            <div style={{ fontSize: 12, color: "var(--text-muted)", marginBottom: 4 }}>Monthly Installment</div>
+            <div style={{ fontSize: 12, color: "var(--text-muted)", marginBottom: 4 }}>Current Month</div>
             <div style={{ fontSize: 18, fontWeight: 600, color: "var(--text-primary)" }}>₹{(userScheme?.monthlyAmounts?.[0]?.amount || 0)?.toLocaleString()}</div>
           </div>
           <div style={{ background: "var(--bg-card)", border: "1px solid var(--border-color)", borderRadius: 12, padding: 20 }}>
@@ -227,7 +227,7 @@ export function Dashboard({ toast }) {
               <div>
                 {/* Summary */}
                 <div style={{ display: "flex", gap: 24, padding: "14px 0", borderBottom: "1px solid var(--border-color)", marginBottom: 12 }}>
-                  <div><span style={{ fontSize: 12, color: "var(--text-muted)" }}>Monthly </span><span style={{ fontSize: 15, fontWeight: 700 }}>₹{monthlyInstallment.toLocaleString()}/mo</span></div>
+                  <div><span style={{ fontSize: 12, color: "var(--text-muted)" }}>Month 1 </span><span style={{ fontSize: 15, fontWeight: 700 }}>₹{monthlyInstallment.toLocaleString()}</span></div>
                   <div><span style={{ fontSize: 12, color: "var(--text-muted)" }}>Total </span><span style={{ fontSize: 15, fontWeight: 700 }}>₹{emiTotal.toLocaleString()}</span></div>
                   <div><span style={{ fontSize: 12, color: "var(--text-muted)" }}>Chit Value </span><span style={{ fontSize: 15, fontWeight: 700 }}>₹{totalChitValue.toLocaleString()}</span></div>
                 </div>

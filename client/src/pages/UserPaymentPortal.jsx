@@ -51,7 +51,7 @@ export function UserPaymentPortal({ toast }) {
 
   // Build payment schedule from installments
   const duration = userScheme?.duration || 50;
-  const monthlyAmount = userScheme?.monthlyAmounts?.[(userGroup?.currentInstallment || 1) - 1]?.amount || userScheme?.monthlyInstallment || 0;
+  const monthlyAmount = userScheme?.monthlyAmounts?.[(userGroup?.currentInstallment || 1) - 1]?.amount || userScheme?.monthlyAmounts?.[0]?.amount || 0;
   const currentInstallment = userGroup?.currentInstallment || 1;
   const paidInstallmentNumbers = userInvoices
     .filter(inv => inv.status === 'Paid')
@@ -143,8 +143,8 @@ export function UserPaymentPortal({ toast }) {
                 <div style={{ fontSize: 15, fontWeight: 600, color: "var(--text-primary)" }}>{userScheme?.name || "Not Assigned"}</div>
               </div>
               <div>
-                <div style={{ fontSize: 12, color: "var(--text-muted)", marginBottom: 4 }}>Monthly Installment</div>
-                <div style={{ fontSize: 15, fontWeight: 600, color: "var(--text-primary)" }}>₹{(userScheme?.monthlyAmounts?.[(userGroup?.currentInstallment || 1) - 1]?.amount || userScheme?.monthlyInstallment)?.toLocaleString() || "0"}</div>
+                <div style={{ fontSize: 12, color: "var(--text-muted)", marginBottom: 4 }}>Current Installment</div>
+                <div style={{ fontSize: 15, fontWeight: 600, color: "var(--text-primary)" }}>₹{(userScheme?.monthlyAmounts?.[(userGroup?.currentInstallment || 1) - 1]?.amount || userScheme?.monthlyAmounts?.[0]?.amount || 0)?.toLocaleString()}</div>
               </div>
               <div>
                 <div style={{ fontSize: 12, color: "var(--text-muted)", marginBottom: 4 }}>Current Due</div>

@@ -221,7 +221,7 @@ export const ChitPlans = () => {
         id: s.id,
         name: s.name,
         tagline: planTaglines[i] || 'Chit scheme',
-        monthlyShare: fmt(s.monthlyAmounts?.[0]?.amount || 0),
+        monthlyShare: '₹' + fmt(s.monthlyAmounts?.[0]?.amount || 0),
         poolValue: fmt(s.amount),
         duration: s.duration + ' Months',
         commission: s.commission + '%',

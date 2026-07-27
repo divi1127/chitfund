@@ -278,7 +278,7 @@ export function Members({ toast, setPreview }) {
               {scheme && (
                 <div style={{ fontSize: 12, color: "#64748b", textAlign: "center" }}>
                   <div style={{ fontWeight: 700, color: "#0f172a", fontSize: 13 }}>{scheme.name}</div>
-                  <div>{fmt(scheme.monthlyAmounts?.[0]?.amount || 0)}/mo · {scheme.duration} months</div>
+                  <div>From {fmt(scheme.monthlyAmounts?.[0]?.amount || 0)} · {scheme.duration} months</div>
                 </div>
               )}
               <Badge text={member.status} color={member.status === "Active" ? "green" : member.status === "Pending" ? "yellow" : "red"} />

@@ -38,7 +38,7 @@ export function CustomerDashboard({ dark, toast }) {
 
   const schemeMonthlyAmounts = userScheme?.monthlyAmounts || [];
   const totalMonths = userScheme?.duration || 0;
-  const monthlyInstallment = userScheme?.monthlyAmounts?.[0]?.amount || 0;
+  const monthlyInstallment = userScheme?.monthlyAmounts?.find(m => m.month === currentInstallment)?.amount || userScheme?.monthlyAmounts?.[0]?.amount || 0;
 
   const paidMonthNums = new Set(
     userInvoices.filter(inv => inv.status === 'Paid' || inv.status === 'Proof Submitted')
@@ -102,8 +102,8 @@ export function CustomerDashboard({ dark, toast }) {
               <div style={{ fontSize: 12, color: dark ? "rgba(255,255,255,.5)" : "#6b7280", marginTop: 4 }}>Group: {userGroup?.name || "N/A"}</div>
             </div>
             <div style={{ background: dark ? "rgba(255,255,255,.05)" : "#fff", border: dark ? "1px solid rgba(255,255,255,.1)" : "1px solid #e5e7eb", borderRadius: 12, padding: 20 }}>
-              <div style={{ fontSize: 11, color: dark ? "rgba(255,255,255,.5)" : "#6b7280" }}>Monthly Installment</div>
-              <div style={{ fontSize: 15, fontWeight: 600, color: dark ? "#f3f4f6" : "#111" }}>{fmt(monthlyInstallment)}/mo</div>
+              <div style={{ fontSize: 11, color: dark ? "rgba(255,255,255,.5)" : "#6b7280" }}>Installment #{currentInstallment}</div>
+              <div style={{ fontSize: 15, fontWeight: 600, color: dark ? "#f3f4f6" : "#111" }}>{fmt(monthlyInstallment)}</div>
               <div style={{ fontSize: 12, color: dark ? "rgba(255,255,255,.5)" : "#6b7280", marginTop: 4 }}>Next Due: {nextDueDate.toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}</div>
             </div>
             <div style={{ background: dark ? "rgba(255,255,255,.05)" : "#fff", border: dark ? "1px solid rgba(255,255,255,.1)" : "1px solid #e5e7eb", borderRadius: 12, padding: 20 }}>

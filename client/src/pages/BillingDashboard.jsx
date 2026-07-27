@@ -11,7 +11,7 @@ import { useAuth } from "../contexts/AuthContext";
 import { COMPANY } from "../utils/constants";
 import { QRCodeCanvas } from "qrcode.react";
 import { IconBtn } from "../components/IconBtn";
-import { HiEye, HiPrinter, HiReceiptRefund, HiArrowDownTray, HiDevicePhoneMobile, HiEnvelope } from "react-icons/hi2";
+import { HiEye, HiPrinter, HiReceiptRefund, HiArrowDownTray, HiDevicePhoneMobile, HiEnvelope, HiBanknotes } from "react-icons/hi2";
 
 export function BillingDashboard({ toast }) {
   const { user } = useAuth();
@@ -52,10 +52,17 @@ export function BillingDashboard({ toast }) {
     referenceNumber: '',
     remarks: ''
   });
+  const [paymentType, setPaymentType] = useState("full");
+  const [numParts, setNumParts] = useState(2);
+  const [addPaymentTarget, setAddPaymentTarget] = useState(null);
+  const [addPaymentAmount, setAddPaymentAmount] = useState("");
+  const maxDivisions = 10;
 
   const calculateTotal = () => {
     return parseFloat(form.installmentAmount) + parseFloat(form.lateFine) - parseFloat(form.discount) + parseFloat(form.previousDue);
   };
+  const totalPayable = calculateTotal();
+  const partAmount = paymentType === "parts" ? Math.floor(totalPayable / numParts) : totalPayable;
 
   const handleGenerateInvoice = async () => {
     if (!selectedMember) {
@@ -81,9 +88,12 @@ export function BillingDashboard({ toast }) {
       const memberGroup = memberGroupId ? groups.find(g => g.id === memberGroupId) : null;
       const memberScheme = memberGroup ? schemes.find(s => s.id === memberGroup.schemeId) : null;
       
-      const monthlyInstallment = memberScheme ? (memberScheme.monthlyAmounts?.[(memberGroup?.currentInstallment || 1) - 1]?.amount || memberScheme.monthlyAmounts?.[0]?.amount || 0) : parseFloat(form.installmentAmount);
+      const curInstallment = memberGroup?.currentInstallment || 1;
+      const monthlyInstallment = memberScheme ? (memberScheme.monthlyAmounts?.[curInstallment - 1]?.amount || memberScheme.monthlyAmounts?.[0]?.amount || 0) : parseFloat(form.installmentAmount);
       const duration = memberScheme?.duration || "—";
       const totalChitValue = memberScheme?.amount || "—";
+      const sumPrevInstallments = memberScheme?.monthlyAmounts?.filter(m => m.month < curInstallment).reduce((s, m) => s + (m.amount || 0), 0) || 0;
+      const sumRemaining = memberScheme?.monthlyAmounts?.filter(m => m.month >= curInstallment).reduce((s, m) => s + (m.amount || 0), 0) || 0;
 
       const invoiceData = {
         branch: COMPANY.branch,
@@ -112,21 +122,69 @@ export function BillingDashboard({ toast }) {
         referenceNumber: form.referenceNumber,
         paidInstallments: memberGroup ? memberGroup.currentInstallment - 1 : 0,
         remainingInstallments: duration !== "—" ? duration - (memberGroup ? memberGroup.currentInstallment - 1 : 0) : 0,
-        totalPaid: monthlyInstallment * (memberGroup ? memberGroup.currentInstallment - 1 : 0),
-        remainingAmount: totalChitValue !== "—" ? totalChitValue - (monthlyInstallment * (memberGroup ? memberGroup.currentInstallment - 1 : 0)) : 0,
+        totalPaid: sumPrevInstallments,
+        remainingAmount: totalChitValue !== "—" ? totalChitValue - sumPrevInstallments : 0,
         status: 'Paid',
         remarks: form.remarks
       };
 
-      const response = await createData('/invoices', invoiceData);
+      const amountPaidNow = paymentType === "parts" ? partAmount : totalPayable;
+      const balanceNow = totalPayable - amountPaidNow;
+
+      const updatedInvoiceData = {
+        ...invoiceData,
+        amountPaid: amountPaidNow,
+        balance: balanceNow,
+        totalPayable: totalPayable,
+        installmentAmount: totalPayable,
+        status: balanceNow > 0 ? 'Partially Paid' : 'Paid',
+        remarks: balanceNow > 0
+          ? `Part ${1} of ${numParts}: ₹${amountPaidNow} paid. Balance: ₹${balanceNow}. ${form.remarks}`
+          : form.remarks,
+        paymentSplits: [{
+          amount: amountPaidNow,
+          date: new Date().toISOString(),
+          method: form.paymentMethod,
+          reference: form.referenceNumber,
+        }],
+        totalParts: paymentType === "parts" ? numParts : 1,
+        paidParts: paymentType === "parts" ? 1 : 1,
+      };
+
+      const response = await createData('/invoices', updatedInvoiceData);
       setGeneratedInvoice(response.invoice);
       setShowInvoicePreview(true);
       setShowInvoiceForm(false);
-      toast.add("Invoice generated successfully!");
+      toast.add(balanceNow > 0 ? `Partial payment recorded! ₹${balanceNow} remaining.` : "Invoice generated successfully!");
       refreshInvoices();
     } catch (error) {
       toast.add("Error generating invoice: " + error.message, "error");
     }
+  };
+
+  const handleAddPayment = async (invoice) => {
+    if (!addPaymentAmount || parseFloat(addPaymentAmount) <= 0) { toast.add("Enter valid amount", "error"); return; }
+    const addAmt = parseFloat(addPaymentAmount);
+    if (addAmt > (invoice.balance || 0)) { toast.add("Amount exceeds balance", "error"); return; }
+    try {
+      const newBalance = (invoice.balance || 0) - addAmt;
+      const paidParts = (invoice.paidParts || 1) + 1;
+      const splits = [...(invoice.paymentSplits || []), {
+        amount: addAmt, date: new Date().toISOString(), method: 'Cash', reference: '',
+      }];
+      await updateData('/invoices', invoice._id, {
+        amountPaid: (invoice.amountPaid || 0) + addAmt,
+        balance: newBalance,
+        status: newBalance > 0 ? 'Partially Paid' : 'Paid',
+        paidParts,
+        paymentSplits: splits,
+        remarks: `Additional payment ₹${addAmt}. Remaining: ₹${newBalance}.`
+      });
+      toast.add(newBalance > 0 ? `₹${addAmt} added. ₹${newBalance} remaining.` : "Fully paid!");
+      setAddPaymentTarget(null);
+      setAddPaymentAmount("");
+      refreshInvoices();
+    } catch (err) { toast.add("Error: " + err.message, "error"); }
   };
 
   const getStatusColor = (status) => {
@@ -280,10 +338,47 @@ export function BillingDashboard({ toast }) {
               </div>
             </div>
 
-            <div style={{ marginTop: 20, padding: 16, background: "var(--bg-card)", borderRadius: 8, border: "1px solid var(--border-color)" }}>
-              <div style={{ fontSize: 18, fontWeight: 700, color: "var(--text-primary)", marginBottom: 8 }}>
-                Total Amount: ₹{calculateTotal().toLocaleString()}
+            <div style={{ marginTop: 16 }}>
+              <div style={{ fontSize: 12, fontWeight: 700, color: "var(--text-muted)", marginBottom: 8, letterSpacing: 0.5 }}>PAYMENT TYPE</div>
+              <div style={{ display: "flex", gap: 10 }}>
+                {[["full", "Pay Full Now"], ["parts", "Split Payment"]].map(([val, lbl]) => (
+                  <button key={val} onClick={() => setPaymentType(val)}
+                    style={{ flex: 1, padding: "10px 8px", borderRadius: 10, border: `2px solid ${paymentType === val ? "#2563eb" : "#e2e8f0"}`, background: paymentType === val ? "#eff6ff" : "var(--bg-card)", color: paymentType === val ? "#1e40af" : "var(--text-primary)", fontWeight: 700, fontSize: 12, cursor: "pointer" }}>
+                    {lbl}
+                  </button>
+                ))}
               </div>
+            </div>
+
+            {paymentType === "parts" && (
+              <div style={{ background: "#f8fafc", border: "1px solid #e2e8f0", borderRadius: 10, padding: 14, marginTop: 12 }}>
+                <div style={{ fontSize: 12, fontWeight: 600, color: "#374151", marginBottom: 8 }}>Split into how many parts? (max {maxDivisions})</div>
+                <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+                  {[2, 3, 4, 5, 6, 7, 8, 9, 10].filter(n => n <= maxDivisions).map(n => (
+                    <button key={n} onClick={() => setNumParts(n)}
+                      style={{ width: 40, height: 40, borderRadius: 8, border: `2px solid ${numParts === n ? "#2563eb" : "#e2e8f0"}`, background: numParts === n ? "#2563eb" : "var(--bg-card)", color: numParts === n ? "#fff" : "var(--text-primary)", fontWeight: 700, fontSize: 13, cursor: "pointer" }}>
+                      {n}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            <div style={{ marginTop: 16, padding: 16, background: paymentType === "parts" ? "#fefce8" : "var(--bg-card)", borderRadius: 8, border: "1px solid var(--border-color)" }}>
+              {paymentType === "parts" ? (
+                <>
+                  <div style={{ fontSize: 13, color: "#92400e", marginBottom: 4 }}>
+                    Paying <strong style={{ fontSize: 16 }}>₹{partAmount.toLocaleString()}</strong> now (part 1 of {numParts})
+                  </div>
+                  <div style={{ fontSize: 12, color: "#a16207" }}>
+                    Total: ₹{totalPayable.toLocaleString()} · Remaining: ₹{(totalPayable - partAmount).toLocaleString()}
+                  </div>
+                </>
+              ) : (
+                <div style={{ fontSize: 18, fontWeight: 700, color: "var(--text-primary)" }}>
+                  Total: ₹{totalPayable.toLocaleString()}
+                </div>
+              )}
             </div>
 
             <div style={{ marginTop: 20 }}>
@@ -345,8 +440,11 @@ export function BillingDashboard({ toast }) {
               <div key={inv.id} style={{ display: "flex", gap: 4, flexWrap: "wrap", alignItems: "center" }}>
                 <IconBtn icon={<HiEye size={14} />} onClick={() => { setGeneratedInvoice(inv); setShowInvoicePreview(true); }} color="#2563eb" title="View" />
                 <IconBtn icon={<HiPrinter size={14} />} onClick={() => window.print()} color="#10b981" title="Print" />
-                {inv.status === 'Paid' && (
+                {(inv.status === 'Paid' || inv.status === 'Partially Paid') && (
                   <IconBtn icon={<HiReceiptRefund size={14} />} onClick={() => { setSelectedInvoiceForReceipt(inv); setShowReceiptPopup(true); }} color="#8b5cf6" title="Receipt" />
+                )}
+                {inv.status === 'Partially Paid' && (
+                  <IconBtn icon={<HiBanknotes size={14} />} onClick={() => { setAddPaymentTarget(inv); setAddPaymentAmount(""); }} color="#d97706" title="Add Payment" />
                 )}
                 <IconBtn icon={<HiArrowDownTray size={14} />} onClick={() => toast.add("Downloading PDF...")} color="#f59e0b" title="Download" />
                 <IconBtn icon={<HiDevicePhoneMobile size={14} />} onClick={async () => {
@@ -483,6 +581,37 @@ export function BillingDashboard({ toast }) {
           </div>
         )}
       </div>
+
+      {/* ── Add Payment Modal ── */}
+      {addPaymentTarget && (
+        <div style={{ position: "fixed", top: 0, left: 0, right: 0, bottom: 0, background: "rgba(0,0,0,0.5)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 1000 }}>
+          <div style={{ background: "var(--bg-card)", borderRadius: 12, padding: 24, maxWidth: 420, width: "90%" }}>
+            <div style={{ fontSize: 15, fontWeight: 700, color: "var(--text-primary)", marginBottom: 4 }}>Add Payment</div>
+            <div style={{ fontSize: 12, color: "var(--text-muted)", marginBottom: 16 }}>
+              {addPaymentTarget.memberName} — {addPaymentTarget.invoiceNumber}
+            </div>
+            <div style={{ background: "#fefce8", border: "1px solid #fde68a", borderRadius: 8, padding: "12px 16px", marginBottom: 16 }}>
+              <div style={{ fontSize: 13, color: "#92400e", marginBottom: 4 }}>
+                Balance: <strong>₹{(addPaymentTarget.balance || 0).toLocaleString()}</strong>
+              </div>
+              <div style={{ fontSize: 12, color: "#a16207" }}>
+                Paid: ₹{(addPaymentTarget.amountPaid || 0).toLocaleString()} of ₹{(addPaymentTarget.totalPayable || 0).toLocaleString()}
+                {addPaymentTarget.totalParts > 1 && <span> · Part {addPaymentTarget.paidParts || 1} of {addPaymentTarget.totalParts}</span>}
+              </div>
+            </div>
+            <div style={{ marginBottom: 14 }}>
+              <label style={{ fontSize: 12, fontWeight: 600, color: "var(--text-secondary)", display: "block", marginBottom: 4 }}>Amount to Pay (₹)</label>
+              <input type="number" value={addPaymentAmount} onChange={e => setAddPaymentAmount(e.target.value)}
+                placeholder={`Max ₹${(addPaymentTarget.balance || 0).toLocaleString()}`}
+                style={{ width: "100%", padding: "10px 12px", borderRadius: 8, border: "1px solid var(--border-color)", background: "var(--bg-input)", color: "var(--text-primary)", fontSize: 13, boxSizing: "border-box" }} />
+            </div>
+            <div style={{ display: "flex", gap: 10 }}>
+              <Btn label="Record Payment" onClick={() => handleAddPayment(addPaymentTarget)} primary />
+              <Btn label="Cancel" onClick={() => setAddPaymentTarget(null)} />
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

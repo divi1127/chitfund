@@ -295,7 +295,7 @@ export function Agents({ toast }) {
                       <div key={idx} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", background: "#fff", borderRadius: 8, padding: "10px 14px", border: "1px solid #e5e7eb", flexWrap: "wrap", gap: 8 }}>
                         <div>
                           <div style={{ fontWeight: 600, fontSize: 13, color: "#0f172a" }}>{chit.groupName}</div>
-                          <div style={{ fontSize: 11, color: "#64748b" }}>{chit.schemeName} · ₹{chit.schemeAmount?.toLocaleString()} · ₹{chit.monthlyInstallment}/mo</div>
+                          <div style={{ fontSize: 11, color: "#64748b" }}>{chit.schemeName} · ₹{chit.schemeAmount?.toLocaleString()} · From ₹{chit.monthlyInstallment}</div>
                         </div>
                         <div style={{ display: "flex", gap: 12, alignItems: "center" }}>
                           <div style={{ textAlign: "center" }}>

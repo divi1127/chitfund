@@ -1,8 +1,15 @@
 import mongoose from 'mongoose';
 
+const paymentSplitSchema = new mongoose.Schema({
+  amount: { type: Number, required: true },
+  date: { type: Date, default: Date.now },
+  method: { type: String, default: 'Cash' },
+  reference: { type: String, default: '' },
+}, { _id: false });
+
 const invoiceSchema = new mongoose.Schema({
   invoiceNumber: { type: String, required: true, unique: true },
-  receiptNumber: { type: String, required: true, unique: true },
+  receiptNumber: { type: String, default: '' },
   date: { type: Date, required: true },
   time: { type: String, required: true },
   branch: { type: String, required: true },
@@ -44,6 +51,11 @@ const invoiceSchema = new mongoose.Schema({
   totalPaid: { type: Number, required: true },
   remainingAmount: { type: Number, required: true },
   
+  // Split Payment Tracking
+  paymentSplits: [paymentSplitSchema],
+  totalParts: { type: Number, default: 1 },
+  paidParts: { type: Number, default: 1 },
+
   // Invoice Status
   status: { type: String, enum: ['Paid', 'Partially Paid', 'Due', 'Cancelled', 'Pending', 'Proof Submitted', 'Rejected'], default: 'Paid' },
   remarks: { type: String },
