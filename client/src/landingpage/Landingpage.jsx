@@ -10,6 +10,7 @@ import { Benefits } from './Benefits';
 import { LegalProcess } from './LegalProcess';
 import { AgreementDetails } from './AgreementDetails';
 import { Testimonials } from './Testimonials';
+import { NVSAdsSection } from './NVSAdsSection';
 import { FAQ } from './FAQ';
 import { ContactForm } from './ContactForm';
 import { CTA } from './CTA';
@@ -43,6 +44,7 @@ function Landingpage() {
         <LegalProcess />
         <AgreementDetails />
         <Testimonials />
+        <NVSAdsSection />
         <FAQ />
         <ContactForm />
         <CTA onNavigate={handleNavigate} />

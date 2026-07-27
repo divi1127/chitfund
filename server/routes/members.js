@@ -56,8 +56,8 @@ router.post('/', authenticate, authorize('super_admin', 'admin', 'agent'), async
     if (agentId) {
       const agent = await Agent.findOne({ agentId });
       if (!agent) return res.status(400).json({ message: 'Agent not found' });
-      if (agent.customers && agent.customers.length >= 9) {
-        return res.status(400).json({ message: 'Agent has reached maximum customer limit (9)' });
+      if (agent.customers && agent.customers.length >= 50) {
+        return res.status(400).json({ message: 'Agent has reached maximum customer limit (50)' });
       }
     }
 
@@ -75,8 +75,8 @@ router.post('/', authenticate, authorize('super_admin', 'admin', 'agent'), async
       }
     }
 
-    const existingMemberByEmail = await Member.findOne({ email });
-    if (existingMemberByEmail && existingMemberByEmail.groups.length >= 2) {
+    const existingMemberById = await Member.findOne({ $or: [{ email }, { aadhaar }] });
+    if (existingMemberById && existingMemberById.groups.length >= 2) {
       return res.status(400).json({ message: 'Customer can join a maximum of 2 chit schemes' });
     }
 

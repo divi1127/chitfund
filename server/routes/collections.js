@@ -4,6 +4,8 @@ import Invoice from '../models/Invoice.js';
 import Member from '../models/Member.js';
 import Group from '../models/Group.js';
 import Scheme from '../models/Scheme.js';
+import Agent from '../models/Agent.js';
+import PlatformSettings from '../models/PlatformSettings.js';
 import { authenticate, authorize } from '../middleware/auth.js';
 import { generateReceiptNo } from '../utils/idGenerator.js';
 
@@ -216,78 +218,68 @@ router.post('/partial-payment', authenticate, authorize('super_admin', 'admin'),
 router.post('/member-payment', authenticate, async (req, res) => {
   try {
     const data = req.body;
-    const receiptNo = await generateReceiptNo();
-    const member = await Member.findOne({ id: data.memberId });
-    const group = await Group.findOne({ id: data.groupId });
-    const scheme = group ? await Scheme.findOne({ id: group.schemeId }) : null;
-
-    // Prevent duplicate payment for same month
-    const existing = await Collection.findOne({
-      memberId: data.memberId,
+    const member = await Member.findOne({ id: data.memberId }) || await Member.findOne({ memberId: data.memberId });
+    if (!member) return res.status(404).json({ message: 'Member not found' });
+    
+    // Fetch max divisions setting
+    const maxDivisionsSetting = await PlatformSettings.findOne({ key: 'maxPaymentDivisions' });
+    const maxDivisions = maxDivisionsSetting ? Number(maxDivisionsSetting.value) : 10;
+    
+    // Check if collection already exists for this month
+    let collection = await Collection.findOne({
+      memberId: member.memberId,
       groupId: data.groupId,
-      installment: Number(data.installment),
-      status: { $in: ['Paid', 'Pending'] }
+      installment: Number(data.installment)
     });
-    if (existing) {
-      return res.status(400).json({ message: `Month ${data.installment} already has a ${existing.status.toLowerCase()} payment.` });
-    }
+    
+    const paidAmount = Number(data.amount);
+    const partialReceipt = await generateReceiptNo();
+    const partialPaymentData = {
+      amount: paidAmount,
+      date: data.date || new Date(),
+      mode: data.mode,
+      receiptNo: partialReceipt,
+      proof: data.paymentProof || data.upiProof || '',
+      status: 'Pending'
+    };
 
-    const collection = await Collection.create({
+    if (collection) {
+      // Validate max divisions
+      if (collection.partialPayments.length >= maxDivisions) {
+         return res.status(400).json({ message: `Maximum partial transactions (${maxDivisions}) reached for this month.` });
+      }
+      
+      // We don't increase collection's 'amount' or decrease 'pendingBalance' yet because it's pending approval
+      collection.partialPayments.push(partialPaymentData);
+      
+      // If collection was fully paid, but they are adding more? That shouldn't happen if UI restricts it.
+      await collection.save();
+      console.log(`⏳ Partial payment added: ${partialReceipt} ₹${paidAmount} Month ${data.installment}`);
+      return res.status(201).json(collection);
+    }
+    
+    // No collection exists, create one
+    const receiptNo = await generateReceiptNo();
+    const invoice = await Invoice.findOne({ invoiceNumber: data.invoiceNumber });
+    const fullAmount = invoice ? invoice.installmentAmount : paidAmount;
+
+    collection = await Collection.create({
       id: 'C' + Date.now().toString().slice(-8),
-      memberId: data.memberId,
+      invoiceNumber: data.invoiceNumber || '',
+      memberId: member.memberId,
       groupId: data.groupId,
-      amount: Number(data.amount),
+      amount: 0, // 0 because it is pending approval
       installment: Number(data.installment),
       mode: data.mode,
       date: data.date || new Date(),
-      status: data.status || 'Pending',
+      status: 'Pending',
       receiptNo,
-      upiRef: data.upiRef || '',
-      upiProof: data.upiProof || '',
+      fullInstallmentAmount: fullAmount,
+      pendingBalance: fullAmount,
+      partialPayments: [partialPaymentData]
     });
-
-    // Auto-create invoice only for UPI (Paid) payments
-    if (data.status === 'Paid') {
-      const invoiceNo = 'INV' + new Date().getFullYear() + String(Date.now()).slice(-5);
-      await Invoice.create({
-        invoiceNumber: invoiceNo,
-        receiptNumber: receiptNo,
-        date: data.date || new Date(),
-        time: new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' }),
-        branch: 'Main Branch',
-        collectedBy: member?.name || 'Self',
-        memberId: member?.memberId || data.memberId,
-        memberName: member?.name || '',
-        memberMobile: member?.phone || '',
-        memberAddress: member?.address || '',
-        memberAadhar: member?.aadhaar || '',
-        chitName: scheme?.name || '',
-        chitGroup: group?.name || '',
-        chitNumber: `CHIT-${scheme?.amount || ''}-001`,
-        totalChitValue: scheme?.amount || 0,
-        monthlyAmount: Number(data.amount),
-        duration: scheme?.duration || 0,
-        currentMonth: Number(data.installment),
-        dueDate: data.date || new Date(),
-        installmentAmount: Number(data.amount),
-        lateFine: 0, discount: 0, previousDue: 0,
-        totalPayable: Number(data.amount),
-        amountPaid: Number(data.amount),
-        balance: 0,
-        paymentMethod: data.mode,
-        referenceNumber: data.upiRef || '',
-        paidInstallments: Number(data.installment),
-        remainingInstallments: (scheme?.duration || 0) - Number(data.installment),
-        totalPaid: Number(data.amount),
-        remainingAmount: (scheme?.amount || 0) - Number(data.amount),
-        status: 'Paid',
-        remarks: 'Self-payment via UPI'
-      });
-      console.log(`✅ Member self-payment: ${receiptNo} ₹${data.amount} Month ${data.installment} [Paid]`);
-    } else {
-      console.log(`⏳ Cash payment pending: ${receiptNo} ₹${data.amount} Month ${data.installment} [Pending]`);
-    }
-
+    
+    console.log(`⏳ New partial collection created: ${receiptNo} with partial ${partialReceipt} ₹${paidAmount} Month ${data.installment}`);
     res.status(201).json(collection);
   } catch (error) {
     console.error('❌ member-payment error:', error.message);
@@ -346,6 +338,47 @@ router.put('/:id/approve', authenticate, authorize('super_admin', 'admin'), asyn
     res.json(collection);
   } catch (error) {
     console.error('❌ approve error:', error.message);
+    res.status(500).json({ message: error.message });
+  }
+});
+
+// ── Admin approve partial payment with proof ─────────────────────────────────
+router.put('/:id/approve-partial/:receiptNo', authenticate, authorize('super_admin', 'admin', 'agent'), async (req, res) => {
+  try {
+    const { id, receiptNo } = req.params;
+    const collection = await Collection.findOne({ id });
+    if (!collection) return res.status(404).json({ message: 'Collection not found' });
+
+    const partialIndex = collection.partialPayments.findIndex(p => p.receiptNo === receiptNo);
+    if (partialIndex === -1) return res.status(404).json({ message: 'Partial payment not found' });
+    if (collection.partialPayments[partialIndex].status === 'Paid') {
+      return res.status(400).json({ message: 'Already approved' });
+    }
+
+    const amountPaid = collection.partialPayments[partialIndex].amount;
+    
+    // Update collection
+    collection.partialPayments[partialIndex].status = 'Paid';
+    collection.amount += amountPaid;
+    collection.pendingBalance = Math.max(0, collection.fullInstallmentAmount - collection.amount);
+    collection.status = collection.pendingBalance > 0 ? 'Partially Paid' : 'Paid';
+    await collection.save();
+    
+    // Update invoice
+    const invoice = await Invoice.findOne({ invoiceNumber: collection.invoiceNumber });
+    if (invoice) {
+       invoice.amountPaid += amountPaid;
+       invoice.balance = Math.max(0, invoice.totalPayable - invoice.amountPaid);
+       invoice.status = invoice.balance > 0 ? 'Partially Paid' : 'Paid';
+       // We can record receipt numbers or partial payment notes in remarks
+       invoice.remarks = `Last partial payment: ${receiptNo} approved. Total Paid: ₹${invoice.amountPaid}`;
+       await invoice.save();
+    }
+
+    console.log(`✅ Partial payment approved: ${receiptNo} by ${req.user.userId}`);
+    res.json(collection);
+  } catch (error) {
+    console.error('❌ approve-partial error:', error.message);
     res.status(500).json({ message: error.message });
   }
 });

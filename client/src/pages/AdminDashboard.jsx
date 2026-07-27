@@ -32,8 +32,18 @@ export function AdminDashboard({ dark, toast }) {
   });
   const monthlyCollectionsAmount = monthlyCollections.reduce((sum, c) => sum + (c.amount || 0), 0);
 
-  const pendingCollections = collections.filter(c => c.status === 'Pending' || c.status === 'Partially Paid');
-  const pendingAmount = pendingCollections.reduce((sum, c) => sum + (c.pendingBalance || c.amount || 0), 0);
+  // Pending Collections = pure cash pending + any pending partials
+  const pendingApprovalsCount = collections.reduce((count, c) => {
+     if (c.status === 'Pending' && c.mode === 'Cash' && (!c.partialPayments || c.partialPayments.length === 0)) return count + 1;
+     return count + (c.partialPayments?.filter(p => p.status === 'Pending').length || 0);
+  }, 0);
+  
+  const pendingAmount = collections.reduce((sum, c) => {
+      let pendingSum = 0;
+      if (c.status === 'Pending' && c.mode === 'Cash' && (!c.partialPayments || c.partialPayments.length === 0)) pendingSum += c.amount || 0;
+      pendingSum += (c.partialPayments || []).filter(p => p.status === 'Pending').reduce((pSum, p) => pSum + (p.amount || 0), 0);
+      return sum + pendingSum;
+  }, 0);
 
   const activeGroups = groups.filter(g => g.status === 'Active').length;
   const activeSchemes = schemes.filter(s => s.status === 'Active').length;
@@ -51,7 +61,7 @@ export function AdminDashboard({ dark, toast }) {
 
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(180px,1fr))", gap: 16, marginBottom: 28 }}>
         <StatCard label="Today's Collection" value={fmt(todayCollectionAmount)} sub="Today" color="#10b981" dark={dark} icon={<FiDollarSign size={22} />} />
-        <StatCard label="Pending Collection" value={fmt(pendingAmount)} sub={`${pendingCollections.length} pending`} color="#ef4444" dark={dark} icon={<FiAlertCircle size={22} />} />
+        <StatCard label="Pending Approvals" value={fmt(pendingAmount)} sub={`${pendingApprovalsCount} pending requests`} color="#ef4444" dark={dark} icon={<FiAlertCircle size={22} />} />
         <StatCard label="Total Agents" value={agents?.length || 0} sub="Under this branch" color="#8b5cf6" dark={dark} icon={<FiUsers size={22} />} />
         <StatCard label="Total Customers" value={members?.length || 0} sub="Registered members" color="#d97706" dark={dark} icon={<FiUsers size={22} />} />
         <StatCard label="Running Schemes" value={activeSchemes} sub="Active schemes" color="#16a34a" dark={dark} icon={<FiFileText size={22} />} />

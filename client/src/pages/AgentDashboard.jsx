@@ -25,10 +25,19 @@ export function AgentDashboard({ dark, toast }) {
   }) : [];
   const todayCollectionAmount = todayCollections.reduce((sum, c) => sum + (c.amount || 0), 0);
 
-  const pendingCollections = Array.isArray(collections) ? collections.filter(c => {
-    return (c.status === 'Pending' || c.status === 'Partially Paid') && myCustomerIds.includes(c.memberId);
-  }) : [];
-  const pendingAmount = pendingCollections.reduce((sum, c) => sum + (c.pendingBalance || c.amount || 0), 0);
+  const myCollections = Array.isArray(collections) ? collections.filter(c => myCustomerIds.includes(c.memberId)) : [];
+
+  const pendingApprovalsCount = myCollections.reduce((count, c) => {
+     if (c.status === 'Pending' && c.mode === 'Cash' && (!c.partialPayments || c.partialPayments.length === 0)) return count + 1;
+     return count + (c.partialPayments?.filter(p => p.status === 'Pending').length || 0);
+  }, 0);
+  
+  const pendingAmount = myCollections.reduce((sum, c) => {
+      let pendingSum = 0;
+      if (c.status === 'Pending' && c.mode === 'Cash' && (!c.partialPayments || c.partialPayments.length === 0)) pendingSum += c.amount || 0;
+      pendingSum += (c.partialPayments || []).filter(p => p.status === 'Pending').reduce((pSum, p) => pSum + (p.amount || 0), 0);
+      return sum + pendingSum;
+  }, 0);
 
   const myCommissions = Array.isArray(commissions) ? commissions.filter(c => c.agentId === agentId) : [];
   const totalCommissionEarned = myCommissions.reduce((sum, c) => sum + c.commissionAmount, 0);
@@ -41,7 +50,7 @@ export function AgentDashboard({ dark, toast }) {
 
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(180px,1fr))", gap: 16, marginBottom: 28 }}>
         <StatCard label="My Customers" value={myCustomers.length} sub="Registered customers" color="#2563eb" dark={dark} icon={<FiUsers size={22} />} />
-        <StatCard label="Pending Collections" value={fmt(pendingAmount)} sub={`${pendingCollections.length} pending`} color="#ef4444" dark={dark} icon={<FiCreditCard size={22} />} />
+        <StatCard label="Pending Approvals" value={fmt(pendingAmount)} sub={`${pendingApprovalsCount} pending collections`} color="#ef4444" dark={dark} icon={<FiCreditCard size={22} />} />
         <StatCard label="Today's Collections" value={fmt(todayCollectionAmount)} sub={`${todayCollections.length} collections`} color="#10b981" dark={dark} icon={<FiDollarSign size={22} />} />
         <StatCard label="Commission Earned" value={fmt(totalCommissionEarned)} sub={`${myCommissions.length} payments`} color="#f59e0b" dark={dark} icon={<FiTrendingUp size={22} />} />
         <StatCard label="Running Schemes" value={activeSchemes} sub="Active schemes" color="#8b5cf6" dark={dark} icon={<FiFileText size={22} />} />

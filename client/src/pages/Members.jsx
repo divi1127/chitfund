@@ -26,7 +26,7 @@ export function Members({ toast, setPreview }) {
   const [expandedMember, setExpandedMember] = useState(null); // member id with schedule open
   const [payTarget, setPayTarget] = useState(null); // { member, group, scheme, installment }
   const [printingEntity, setPrintingEntity] = useState(null);
-  const [form, setForm] = useState({ name: "", phone: "", email: "", address: "", pan: "", aadhaar: "", groupId: "", photo: "", dob: "" });
+  const [form, setForm] = useState({ name: "", phone: "", email: "", address: "", pan: "", aadhaar: "", groupId: "", photo: "", kycProof: "", dob: "" });
   const [errors, setErrors] = useState({});
 
   const isSuperAdmin = user?.role === "super_admin";
@@ -96,7 +96,7 @@ export function Members({ toast, setPreview }) {
           id: "M" + Date.now().toString().slice(-6),
           memberId, userId: memberId,
           joined: new Date().toISOString().split("T")[0],
-          status: "Active",
+          status: isAgent ? "Pending" : "Active",
           groups: form.groupId ? [form.groupId] : [],
           modules: ["dashboard","members","schemes","groups","collections","billing","auctions","accounting","profile","payments"],
           permissions: ["view"],
@@ -114,7 +114,7 @@ export function Members({ toast, setPreview }) {
 
   const resetForm = () => {
     setShowForm(false); setEditingMember(null);
-    setForm({ name: "", phone: "", email: "", address: "", pan: "", aadhaar: "", groupId: "", photo: "", dob: "" });
+    setForm({ name: "", phone: "", email: "", address: "", pan: "", aadhaar: "", groupId: "", photo: "", kycProof: "", dob: "" });
     setErrors({});
   };
 
@@ -124,6 +124,25 @@ export function Members({ toast, setPreview }) {
     const reader = new FileReader();
     reader.onload = (ev) => setForm({ ...form, photo: ev.target.result });
     reader.readAsDataURL(file);
+  };
+
+  const handleKycUpload = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    try {
+      const formData = new FormData();
+      formData.append('file', file);
+      const res = await fetch("https://chitfund-cxnp.onrender.com/api/upload", { // You may want to use relative URL if proxied or import VITE_API_BASE
+         method: 'POST',
+         headers: { Authorization: `Bearer ${localStorage.getItem('token')}` },
+         body: formData
+      });
+      const data = await res.json();
+      setForm({ ...form, kycProof: data.url });
+      toast.add("KYC Uploaded!");
+    } catch {
+      toast.add("KYC Upload failed", "error");
+    }
   };
 
   const handleDelete = async (id) => {
@@ -145,6 +164,16 @@ export function Members({ toast, setPreview }) {
       },
       amount: total, notes: "Complete payment history for " + member.name,
     });
+  };
+
+  const handleApproveMember = async (member) => {
+    try {
+      await updateData("/members", member.id, { ...member, status: "Active" });
+      toast.add("Member approved successfully!");
+      reloadMembers();
+    } catch (err) {
+      toast.add("Error: " + err.message, "error");
+    }
   };
 
   if (loading) return <div style={{ padding: 40, textAlign: "center" }}>Loading...</div>;
@@ -178,6 +207,22 @@ export function Members({ toast, setPreview }) {
                 <div style={{ fontSize: 11, color: "#64748b", marginTop: 2 }}>Square photos work best. (Max 2MB)</div>
               </div>
             </div>
+            
+            <div style={{ gridColumn: "1/-1", display: "flex", gap: 16, alignItems: "center", background: "#f0fdf4", padding: 12, borderRadius: 8, border: "1px dashed #bbf7d0" }}>
+              {form.kycProof ? (
+                <div style={{ padding: '4px 10px', background: '#dcfce7', borderRadius: 4, color: '#166534', fontWeight: 600, fontSize: 12 }}>KYC Attached</div>
+              ) : (
+                 <div style={{ width: 64, height: 64, borderRadius: 8, background: "#dcfce7", display: "flex", alignItems: "center", justifyContent: "center", color: "#166534", fontSize: 12 }}>No Doc</div>
+              )}
+              <div>
+                <label style={{ fontSize: 13, fontWeight: 600, color: "#16a34a", cursor: "pointer" }}>
+                  Upload KYC Proof (Aadhaar / PAN)
+                  <input type="file" accept="image/*" onChange={handleKycUpload} style={{ display: "none" }} />
+                </label>
+                <div style={{ fontSize: 11, color: "#166534", marginTop: 2 }}>Required for identity verification.</div>
+              </div>
+            </div>
+
             {[["Full Name *", "name"], ["Phone *", "phone"], ["Email", "email"], ["PAN *", "pan"], ["Aadhaar *", "aadhaar"], ["DOB", "dob"]].map(([lbl, key]) => (
               <div key={key}>
                 <label style={{ fontSize: 12, fontWeight: 600, color: "#374151", display: "block", marginBottom: 4 }}>{lbl}</label>
@@ -238,8 +283,11 @@ export function Members({ toast, setPreview }) {
                   <div>{fmt(scheme.monthlyInstallment)}/mo · {scheme.duration} months</div>
                 </div>
               )}
-              <Badge text={member.status} color={member.status === "Active" ? "green" : "red"} />
+              <Badge text={member.status} color={member.status === "Active" ? "green" : member.status === "Pending" ? "yellow" : "red"} />
               <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
+                {member.status === "Pending" && (isSuperAdmin || isAdmin) && (
+                   <button onClick={() => handleApproveMember(member)} style={{ padding: "6px 12px", background: "#16a34a", color: "#fff", border: "none", borderRadius: 8, fontWeight: 700, fontSize: 12, cursor: "pointer" }}>Approve</button>
+                )}
                 {scheme && (
                   <button
                     onClick={() => setExpandedMember(isExpanded ? null : member.id)}
@@ -249,7 +297,7 @@ export function Members({ toast, setPreview }) {
                 )}
                 <IconBtn icon={<HiIdentification size={14} />} onClick={() => setPrintingEntity(member)} color="#0ea5e9" title="Print ID" />
                 <IconBtn icon={<HiBookOpen size={14} />} onClick={() => handleLedger(member)} color="#d97706" title="Ledger" />
-                {canEdit && <IconBtn icon={<HiPencil size={14} />} onClick={() => { setEditingMember(member); setForm({ name: member.name, phone: member.phone, email: member.email || "", address: member.address || "", pan: member.pan || "", aadhaar: member.aadhaar || "", groupId: "", photo: member.photo || "", dob: member.dob || "" }); setShowForm(true); }} color="#2563eb" title="Edit" />}
+                {canEdit && <IconBtn icon={<HiPencil size={14} />} onClick={() => { setEditingMember(member); setForm({ name: member.name, phone: member.phone, email: member.email || "", address: member.address || "", pan: member.pan || "", aadhaar: member.aadhaar || "", groupId: getMemberGroup(member)?.id || "", photo: member.photo || "", kycProof: member.kycProof || "", dob: member.dob ? member.dob.split("T")[0] : "" }); setShowForm(true); }} color="#2563eb" title="Edit" />}
                 {canEdit && <IconBtn icon={<HiTrash size={14} />} onClick={() => handleDelete(member.id)} color="#dc2626" title="Delete" />}
               </div>
             </div>

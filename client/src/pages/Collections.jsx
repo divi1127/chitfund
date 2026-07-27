@@ -36,7 +36,17 @@ export function Collections({ toast, setPreview }) {
       })
     : collections;
 
-  const pendingCash = collections.filter(c => c.status === "Pending" && c.mode === "Cash");
+  const pendingCash = collections.filter(c => c.status === "Pending" && c.mode === "Cash" && (!c.partialPayments || c.partialPayments.length === 0));
+  
+  const pendingPartials = collections.flatMap(c => 
+    (c.partialPayments || []).filter(p => p.status === 'Pending').map(p => ({ 
+      ...p, 
+      collectionId: c.id, 
+      memberId: c.memberId, 
+      groupId: c.groupId, 
+      installment: c.installment 
+    }))
+  );
 
   const memberById = (id) => members.find(m => m.id === id);
   const groupById = (id) => groups.find(g => g.id === id);
@@ -91,14 +101,35 @@ export function Collections({ toast, setPreview }) {
     } catch (err) { toast.add("Error: " + err.message, "error"); }
   };
 
+  const handleApprovePartial = async (p) => {
+    if (!confirm(`Approve partial payment ${fmt(p.amount)} (Receipt: ${p.receiptNo})?`)) return;
+    try {
+      await updateData("/collections", `${p.collectionId}/approve-partial/${p.receiptNo}`, {});
+      toast.add("Partial payment approved!");
+      reload();
+    } catch (err) { toast.add("Error: " + err.message, "error"); }
+  };
+
+  const handleViewProof = (proofUrl) => {
+    if (!proofUrl) return toast.add("No proof attached for this payment", "error");
+    const fullUrl = proofUrl.startsWith('http') ? proofUrl : (import.meta.env.VITE_API_BASE || "https://chitfund-cxnp.onrender.com/api").replace('/api', '') + proofUrl;
+    window.open(fullUrl, '_blank');
+  };
+
   const handleGenerate = (c) => {
     if (c.status === "Pending") { toast.add("Cannot generate receipt for pending payment", "error"); return; }
     const m = memberById(c.memberId); const g = groupById(c.groupId);
+    
+    // Check if it has partial payments, use the last one for now, or just provide full receipt
+    const paymentsRow = (c.partialPayments && c.partialPayments.length > 0) 
+       ? c.partialPayments.filter(p=>p.status==='Paid').map(p => [`Partial Payment - ${p.mode}`, fmt(p.amount)])
+       : [["Monthly Chit Installment", fmt(c.amount)]];
+       
     setPreview({
       title: "Collection Receipt", docNo: c.receiptNo || "RCP" + c.id,
       member: m,
       chit: { "Group": g?.name, "Installment": "#" + c.installment, "Payment Mode": c.mode, "Receipt Date": c.date?.split("T")[0] },
-      payments: { headers: ["Description", "Amount"], rows: [["Monthly Chit Installment", fmt(c.amount)], ["Late Fee", "₹0.00"], ["Total", fmt(c.amount)]] },
+      payments: { headers: ["Description", "Amount"], rows: [...paymentsRow, ["Late Fee", "₹0.00"], ["Total Collected so far", fmt(c.amount)]] },
       amount: c.amount, notes: "Thank you for your timely payment.",
     });
   };
@@ -160,6 +191,57 @@ export function Collections({ toast, setPreview }) {
                     <td style={{ padding: "10px 12px", color: "#64748b" }}>{c.date?.split("T")[0]}</td>
                     <td style={{ padding: "10px 12px" }}>
                       <button onClick={() => handleApprove(c)}
+                        style={{ padding: "6px 16px", background: "#16a34a", color: "#fff", border: "none", borderRadius: 8, fontWeight: 700, fontSize: 12, cursor: "pointer" }}>
+                        ✓ Approve
+                      </button>
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
+      )}
+
+      {/* ── Pending Partial / Online Approvals ── */}
+      {canApprove && pendingPartials.length > 0 && (
+        <div style={{ background: "#f0fdf4", border: "1px solid #bbf7d0", borderRadius: 12, padding: 20, marginBottom: 24 }}>
+          <div style={{ fontWeight: 700, fontSize: 14, color: "#166534", marginBottom: 14 }}>
+            ✅ Pending Partial / Online Approvals — {pendingPartials.length} request{pendingPartials.length > 1 ? "s" : ""}
+          </div>
+          <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13 }}>
+            <thead>
+              <tr style={{ background: "#dcfce7" }}>
+                {["Receipt No", "Member", "Group", "Month", "Mode", "Amount", "Proof", "Date", "Action"].map(h => (
+                  <th key={h} style={{ padding: "8px 12px", textAlign: "left", fontWeight: 600, color: "#166534", borderBottom: "1px solid #bbf7d0" }}>{h}</th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {pendingPartials.map(p => {
+                const m = memberById(p.memberId);
+                const g = groupById(p.groupId);
+                return (
+                  <tr key={p.receiptNo} style={{ borderBottom: "1px solid #dcfce7" }}>
+                    <td style={{ padding: "10px 12px", fontWeight: 600 }}>{p.receiptNo}</td>
+                    <td style={{ padding: "10px 12px" }}>
+                      <div style={{ fontWeight: 600 }}>{m?.name || "—"}</div>
+                      <div style={{ fontSize: 11, color: "#166534" }}>{m?.memberId}</div>
+                    </td>
+                    <td style={{ padding: "10px 12px" }}>{g?.name || "—"}</td>
+                    <td style={{ padding: "10px 12px", fontWeight: 700 }}>Month {p.installment}</td>
+                    <td style={{ padding: "10px 12px" }}>{p.mode}</td>
+                    <td style={{ padding: "10px 12px", fontWeight: 800, color: "#166534" }}>{fmt(p.amount)}</td>
+                    <td style={{ padding: "10px 12px" }}>
+                      {p.proof ? (
+                        <button onClick={() => handleViewProof(p.proof)} style={{ color: "#2563eb", textDecoration: "underline", background: "none", border: "none", cursor: "pointer", fontSize: 12 }}>View Proof</button>
+                      ) : (
+                        <span style={{ color: "#9ca3af", fontSize: 12 }}>No Proof</span>
+                      )}
+                    </td>
+                    <td style={{ padding: "10px 12px", color: "#64748b" }}>{p.date?.split("T")[0]}</td>
+                    <td style={{ padding: "10px 12px" }}>
+                      <button onClick={() => handleApprovePartial(p)}
                         style={{ padding: "6px 16px", background: "#16a34a", color: "#fff", border: "none", borderRadius: 8, fontWeight: 700, fontSize: 12, cursor: "pointer" }}>
                         ✓ Approve
                       </button>

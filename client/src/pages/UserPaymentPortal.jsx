@@ -22,6 +22,7 @@ export function UserPaymentPortal({ toast }) {
   const { data: collections, refresh: refreshCollections } = useData('/collections');
   const [showPaymentForm, setShowPaymentForm] = useState(false);
   const [selectedInvoice, setSelectedInvoice] = useState(null);
+  const [uploading, setUploading] = useState(false);
   const [form, setForm] = useState({
     amount: 0,
     paymentMethod: 'UPI',
@@ -29,7 +30,8 @@ export function UserPaymentPortal({ toast }) {
     cardNumber: '',
     expiryDate: '',
     cvv: '',
-    referenceNumber: ''
+    referenceNumber: '',
+    paymentProof: ''
   });
 
   // Find member associated with current user
@@ -78,41 +80,33 @@ export function UserPaymentPortal({ toast }) {
       toast.add("Please select an invoice to pay", "error");
       return;
     }
+    
+    if (parseFloat(form.amount) <= 0 || parseFloat(form.amount) > selectedInvoice.balance) {
+      toast.add(`Amount must be between 1 and ${selectedInvoice.balance}`, "error");
+      return;
+    }
 
     try {
-      const paymentData = {
-        ...selectedInvoice,
-        amountPaid: parseFloat(form.amount),
-
-        balance: selectedInvoice.balance - parseFloat(form.amount),
-        status: parseFloat(form.amount) >= selectedInvoice.balance ? 'Paid' : 'Partially Paid',
-        remarks: `Online payment via user portal - ${form.paymentMethod}`
-      };
-
-      await createData('/invoices', paymentData);
-      
-      // Automatically create collection entry
-      const memberCollections = collections.filter(c => c.memberId === selectedInvoice.memberId);
-      const previousTotal = memberCollections.reduce((sum, c) => sum + (c.amount || 0), 0);
-      
+      // Use the new smart endpoint to handle the whole logic (creating collection and updating conditionally)
       const collectionData = {
         memberId: selectedInvoice.memberId,
         groupId: userGroupId,
+        invoiceNumber: selectedInvoice.invoiceNumber,
         amount: parseFloat(form.amount),
         mode: form.paymentMethod,
         date: new Date().toISOString().split('T')[0],
-        status: 'Paid',
-        installment: userGroup?.currentInstallment || 1,
-        receiptNo: `RCP-${String(Math.floor(Math.random() * 9000) + 1000)}`,
-        cumulativeAmount: previousTotal + parseFloat(form.amount),
-        totalSchemeValue: userScheme?.amount || 0
+        status: 'Pending',
+        installment: selectedInvoice.currentMonth,
+        referenceNumber: form.referenceNumber || form.upiId,
+        paymentProof: form.paymentProof
       };
-      await createData('/collections', collectionData);
       
-      toast.add("Payment successful!");
+      await createData('/collections/member-payment', collectionData);
+      
+      toast.add("Payment submitted for approval!");
       setShowPaymentForm(false);
       setSelectedInvoice(null);
-      setForm({ amount: 0, paymentMethod: 'UPI', upiId: '', cardNumber: '', expiryDate: '', cvv: '', referenceNumber: '' });
+      setForm({ amount: 0, paymentMethod: 'UPI', upiId: '', cardNumber: '', expiryDate: '', cvv: '', referenceNumber: '', paymentProof: '' });
       refreshInvoices();
       refreshCollections();
     } catch (error) {
@@ -370,6 +364,46 @@ export function UserPaymentPortal({ toast }) {
                     <QRCodeCanvas value={`upi://pay?pa=${form.upiId || COMPANY.upiId}&pn=${COMPANY.name}&am=${form.amount}&cu=INR`} size={150} level="H" />
                     <div style={{ fontSize: 12, color: "var(--text-muted)", marginTop: 8 }}>Scan to pay via UPI</div>
                   </div>
+                </div>
+              )}
+              
+              {/* Universal Proof Upload */}
+              {form.paymentMethod !== 'Card' && form.paymentMethod !== 'Net Banking' && (
+                <div style={{ marginBottom: 20, padding: 16, background: "var(--bg-card)", borderRadius: 8, border: '1px dashed var(--border-color)' }}>
+                  <div style={{ fontSize: 14, fontWeight: 600, color: "var(--text-primary)", marginBottom: 12 }}>Upload Payment Proof (Required)</div>
+                  <input
+                    type="file"
+                    accept="image/*"
+                    onChange={async (e) => {
+                      if (!e.target.files?.[0]) return;
+                      setUploading(true);
+                      const formData = new FormData();
+                      formData.append('file', e.target.files[0]);
+                      try {
+                        const API_BASE = import.meta.env.VITE_API_BASE || "https://chitfund-cxnp.onrender.com/api";
+                        const res = await fetch(`${API_BASE}/upload`, {
+                          method: 'POST',
+                          headers: { Authorization: `Bearer ${localStorage.getItem('token')}` },
+                          body: formData
+                        });
+                        const data = await res.json();
+                        setForm({ ...form, paymentProof: data.url });
+                        toast.add("Proof uploaded successfully");
+                      } catch (err) {
+                        toast.add("Upload failed", "error");
+                      } finally {
+                        setUploading(false);
+                      }
+                    }}
+                    style={{ width: "100%", padding: 8, borderRadius: 6, background: "var(--bg-background)", color: "var(--text-primary)" }}
+                  />
+                  {form.paymentProof && (
+                    <div style={{ marginTop: 12, display: "flex", alignItems: "center", gap: 12 }}>
+                      <img src={form.paymentProof.startsWith('http') ? form.paymentProof : (import.meta.env.VITE_API_BASE || "https://chitfund-cxnp.onrender.com/api").replace('/api', '') + form.paymentProof} alt="Proof" style={{ height: 60, borderRadius: 6, border: '1px solid var(--border-color)' }} />
+                      <span style={{ fontSize: 13, color: "#10b981", fontWeight: 600 }}>Proof attached</span>
+                    </div>
+                  )}
+                  {uploading && <div style={{ fontSize: 12, color: "var(--text-muted)", marginTop: 8 }}>Uploading...</div>}
                 </div>
               )}
 

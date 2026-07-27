@@ -13,11 +13,6 @@ export const Footer = ({ onNavigate }) => {
       { label: t('nav_faq'), id: 'faq' },
       { label: t('nav_contact'), id: 'contact' },
     ],
-    [t('footer_schemes')]: [
-      { label: t('footer_scheme1'), id: 'plans' },
-      { label: t('footer_scheme2'), id: 'plans' },
-      { label: t('footer_scheme3'), id: 'plans' },
-    ],
   };
 
   return (
@@ -31,10 +26,10 @@ export const Footer = ({ onNavigate }) => {
           {/* Brand */}
           <div className="sm:col-span-2 lg:col-span-4 space-y-5">
             <button onClick={() => onNavigate('home')} className="flex items-center gap-3 cursor-pointer">
-              <div className="w-12 h-12 rounded-xl bg-white/12 border border-white/10 flex items-center justify-center">
-                <img src={logo} alt="NVS CHIT ENTERPRISES" className="w-10 h-10 object-contain" />
+              <div className="w-14 h-14 bg-white rounded-xl flex items-center justify-center shadow-md shadow-black/10 overflow-hidden">
+                <img src={logo} alt="NVS CHIT ENTERPRISES" className="w-[120%] h-[120%] object-cover object-center" />
               </div>
-              <span className="flex flex-col leading-none">
+              <span className="flex flex-col leading-none text-left">
                 <span className="text-xl font-extrabold tracking-widest text-white">NVS</span>
                 <span className="text-[9px] font-bold tracking-[0.35em] text-white/50 uppercase">CHIT ENTERPRISES</span>
               </span>

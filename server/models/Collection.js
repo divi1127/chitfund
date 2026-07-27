@@ -2,6 +2,7 @@ import mongoose from 'mongoose';
 
 const collectionSchema = new mongoose.Schema({
   id: { type: String, required: true, unique: true },
+  invoiceNumber: { type: String, default: '' },
   memberId: { type: String, required: true },
   groupId: { type: String, required: true },
   amount: { type: Number, required: true },
@@ -20,7 +21,9 @@ const collectionSchema = new mongoose.Schema({
     amount: { type: Number },
     date: { type: Date },
     mode: { type: String },
-    receiptNo: { type: String }
+    receiptNo: { type: String },
+    proof: { type: String, default: '' },
+    status: { type: String, default: 'Pending' }
   }]
 }, { timestamps: true });
 
