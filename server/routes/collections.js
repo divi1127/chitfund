@@ -7,7 +7,7 @@ import Scheme from '../models/Scheme.js';
 import Agent from '../models/Agent.js';
 import PlatformSettings from '../models/PlatformSettings.js';
 import { authenticate, authorize } from '../middleware/auth.js';
-import { generateReceiptNo } from '../utils/idGenerator.js';
+import { generateReceiptNo, generateInvoiceNo } from '../utils/idGenerator.js';
 import { createNotification } from '../utils/notify.js';
 
 const router = express.Router();
@@ -117,7 +117,7 @@ router.post('/', authenticate, authorize('super_admin', 'admin', 'agent'), async
     const group = await Group.findOne({ id: data.groupId });
     const scheme = group ? await Scheme.findOne({ id: group.schemeId }) : null;
 
-    const invoiceNo = 'INV' + new Date().getFullYear() + String(Date.now()).slice(-5);
+    const invoiceNo = await generateInvoiceNo();
     const invoiceData = {
       invoiceNumber: invoiceNo,
       receiptNumber: receiptNo,
@@ -310,7 +310,7 @@ router.put('/:id/approve', authenticate, authorize('super_admin', 'admin'), asyn
     const member = await Member.findOne({ id: collection.memberId });
     const group = await Group.findOne({ id: collection.groupId });
     const scheme = group ? await Scheme.findOne({ id: group.schemeId }) : null;
-    const invoiceNo = 'INV' + new Date().getFullYear() + String(Date.now()).slice(-5);
+    const invoiceNo = await generateInvoiceNo();
 
     await Invoice.create({
       invoiceNumber: invoiceNo,

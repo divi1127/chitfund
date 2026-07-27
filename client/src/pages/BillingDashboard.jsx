@@ -313,7 +313,12 @@ export function BillingDashboard({ toast }) {
             </div>
 
             {user?.role !== 'user' && (
-              <Btn label="Generate Invoice" onClick={() => setShowInvoiceForm(true)} primary style={{ marginTop: 16 }} />
+              <Btn label="Generate Invoice" onClick={() => {
+                const mCurInstall = memberGroup?.currentInstallment || 1;
+                const mMonthAmt = memberScheme?.monthlyAmounts?.find(m => m.month === mCurInstall)?.amount || memberScheme?.monthlyAmounts?.[0]?.amount || 0;
+                setForm(f => ({ ...f, installmentAmount: String(mMonthAmt) }));
+                setShowInvoiceForm(true);
+              }} primary style={{ marginTop: 16 }} />
             )}
           </div>
           );
