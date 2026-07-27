@@ -229,6 +229,9 @@ router.post('/member-payment', authenticate, async (req, res) => {
     const data = req.body;
     const member = await Member.findOne({ id: data.memberId }) || await Member.findOne({ memberId: data.memberId });
     if (!member) return res.status(404).json({ message: 'Member not found' });
+
+    const group = await Group.findOne({ id: data.groupId });
+    const scheme = group ? await Scheme.findOne({ id: group.schemeId }) : null;
     
     // Fetch max divisions setting
     const maxDivisionsSetting = await PlatformSettings.findOne({ key: 'maxPaymentDivisions' });
@@ -252,25 +255,40 @@ router.post('/member-payment', authenticate, async (req, res) => {
       status: 'Pending'
     };
 
+    // ── Also create/update an Invoice so all dashboards see the pending payment ──
+    let inv = await Invoice.findOne({
+      memberId: member.memberId,
+      chitGroup: group?.name || '',
+      currentMonth: Number(data.installment)
+    });
+
     if (collection) {
       // Validate max divisions
       if (collection.partialPayments.length >= maxDivisions) {
          return res.status(400).json({ message: `Maximum partial transactions (${maxDivisions}) reached for this month.` });
       }
       
-      // We don't increase collection's 'amount' or decrease 'pendingBalance' yet because it's pending approval
       collection.partialPayments.push(partialPaymentData);
-      
-      // If collection was fully paid, but they are adding more? That shouldn't happen if UI restricts it.
       await collection.save();
+
+      // Update existing invoice's amountPaid/balance
+      if (inv) {
+        inv.amountPaid = (inv.amountPaid || 0) + paidAmount;
+        inv.balance = Math.max(0, (inv.totalPayable || 0) - inv.amountPaid);
+        inv.receiptNumber = partialReceipt;
+        inv.status = 'Pending';
+        inv.paymentMethod = data.mode;
+        inv.updatedAt = Date.now();
+        await inv.save();
+      }
+      
       console.log(`⏳ Partial payment added: ${partialReceipt} ₹${paidAmount} Month ${data.installment}`);
       return res.status(201).json(collection);
     }
     
     // No collection exists, create one
     const receiptNo = await generateReceiptNo();
-    const invoice = await Invoice.findOne({ invoiceNumber: data.invoiceNumber });
-    const fullAmount = data.fullAmount || (invoice ? invoice.installmentAmount : paidAmount);
+    const fullAmount = data.fullAmount || paidAmount;
 
     collection = await Collection.create({
       id: 'C' + Date.now().toString().slice(-8),
@@ -287,6 +305,49 @@ router.post('/member-payment', authenticate, async (req, res) => {
       pendingBalance: fullAmount,
       partialPayments: [partialPaymentData]
     });
+
+    // Create an Invoice with status Pending so it's visible everywhere
+    if (!inv) {
+      const invNo = await generateInvoiceNo();
+      const curInstall = Number(data.installment) || 1;
+      inv = await Invoice.create({
+        invoiceNumber: invNo,
+        receiptNumber: partialReceipt,
+        date: data.date || new Date(),
+        time: new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' }),
+        branch: 'Online Portal',
+        collectedBy: member.name || 'Customer',
+        memberId: member.memberId,
+        memberName: member.name || '',
+        memberMobile: member.phone || member.mobile || '',
+        memberAddress: member.address || '',
+        memberAadhar: member.aadhaar || '',
+        chitName: scheme?.name || '',
+        chitGroup: group?.name || '',
+        chitNumber: `CHIT-${scheme?.amount || ''}`,
+        totalChitValue: scheme?.amount || 0,
+        monthlyAmount: fullAmount,
+        duration: scheme?.duration || 0,
+        currentMonth: curInstall,
+        dueDate: new Date(Date.now() + 5 * 86400000),
+        installmentAmount: paidAmount,
+        lateFine: 0, discount: 0, previousDue: 0,
+        totalPayable: fullAmount,
+        amountPaid: paidAmount,
+        balance: fullAmount - paidAmount,
+        paymentMethod: data.mode === 'Cash' ? 'Cash' : 'UPI',
+        referenceNumber: data.upiRef || '',
+        paidInstallments: curInstall - 1,
+        remainingInstallments: (scheme?.duration || 0) - curInstall,
+        totalPaid: 0,
+        remainingAmount: (scheme?.amount || 0) - 0,
+        status: 'Pending',
+        remarks: `Partial payment ₹${paidAmount} via ${data.mode}. Receipt: ${partialReceipt}. Awaiting approval.`,
+      });
+      // Store the invoice number in the collection for approval lookups
+      collection.invoiceNumber = invNo;
+      await collection.save();
+    }
     
     console.log(`⏳ New partial collection created: ${receiptNo} with partial ${partialReceipt} ₹${paidAmount} Month ${data.installment}`);
     res.status(201).json(collection);
@@ -376,11 +437,11 @@ router.put('/:id/approve-partial/:receiptNo', authenticate, authorize('super_adm
     // Update invoice
     const invoice = await Invoice.findOne({ invoiceNumber: collection.invoiceNumber });
     if (invoice) {
-       invoice.amountPaid += amountPaid;
+       invoice.amountPaid = (invoice.amountPaid || 0) + amountPaid;
        invoice.balance = Math.max(0, invoice.totalPayable - invoice.amountPaid);
        invoice.status = invoice.balance > 0 ? 'Partially Paid' : 'Paid';
-       // We can record receipt numbers or partial payment notes in remarks
-       invoice.remarks = `Last partial payment: ${receiptNo} approved. Total Paid: ₹${invoice.amountPaid}`;
+       invoice.receiptNumber = receiptNo;
+       invoice.remarks = `Partial payment approved: ${receiptNo} ₹${amountPaid}. Total Paid: ₹${invoice.amountPaid}`;
        await invoice.save();
     }
 
