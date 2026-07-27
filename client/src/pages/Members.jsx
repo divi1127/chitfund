@@ -90,11 +90,9 @@ export function Members({ toast, setPreview }) {
         await updateData("/members", editingMember.id, { ...editingMember, ...form });
         toast.add("Member updated!");
       } else {
-        const memberId = generateMemberId();
         const payload = {
           ...form,
           id: "M" + Date.now().toString().slice(-6),
-          memberId, userId: memberId,
           joined: new Date().toISOString().split("T")[0],
           status: isAgent ? "Pending" : "Active",
           groups: form.groupId ? [form.groupId] : [],

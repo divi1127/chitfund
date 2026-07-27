@@ -24,27 +24,12 @@ export function AddMembers({ toast }) {
     role: 'user'
   });
 
-  // Auto-generate member ID
-  const generateMemberId = () => {
-    const yr = String(new Date().getFullYear()).slice(-2);
-    const prefix = `HRCHIT${yr}`;
-    const existing = members.filter(m => m.memberId && m.memberId.startsWith(prefix));
-    const max = existing.reduce((n, m) => {
-      const num = parseInt(m.memberId.slice(prefix.length), 10);
-      return num > n ? num : n;
-    }, 0);
-    return `${prefix}${String(max + 1).padStart(3, '0')}`;
-  };
-
   const handleSubmit = async (e) => {
     e.preventDefault();
     
     try {
-      const memberId = generateMemberId();
       const memberData = {
         ...form,
-        memberId,
-        userId: memberId,
         status: 'active',
         createdAt: new Date(),
         modules: ['dashboard', 'members', 'schemes', 'groups', 'collections', 'billing', 'auctions', 'accounting', 'profile', 'payments'],
