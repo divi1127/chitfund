@@ -7,7 +7,7 @@ import { InvoiceModal } from "../components/InvoiceModal";
 import { PaymentModal } from "../components/PaymentModal";
 import { useAuth } from "../contexts/AuthContext";
 import { fmt } from "../utils/helpers";
-import { FiUser, FiFileText, FiDollarSign, FiCalendar, FiCreditCard, FiCheckCircle, FiClock, FiAlertCircle, FiTrendingUp } from "react-icons/fi";
+import { FiUser, FiFileText, FiDollarSign, FiCalendar, FiCreditCard, FiCheckCircle, FiClock, FiAlertCircle, FiTrendingUp, FiFilter } from "react-icons/fi";
 
 export function CustomerDashboard({ dark, toast }) {
   const { user } = useAuth();
@@ -15,10 +15,12 @@ export function CustomerDashboard({ dark, toast }) {
   const { data: groups } = useData('/groups');
   const { data: schemes } = useData('/schemes');
   const { data: invoices } = useData('/invoices');
+  const { data: collections } = useData('/collections');
   const { data: auctions } = useData('/auctions');
   const [showInvoicePopup, setShowInvoicePopup] = useState(false);
   const [selectedInvoice, setSelectedInvoice] = useState(null);
   const [payTarget, setPayTarget] = useState(null);
+  const [payHistoryYear, setPayHistoryYear] = useState("all");
 
   const customerId = user?.memberId || user?.userId;
   const userMember = Array.isArray(members) ? members.find(m => m.memberId === customerId) : null;
@@ -26,8 +28,14 @@ export function CustomerDashboard({ dark, toast }) {
   const userGroup = userGroupId && Array.isArray(groups) ? groups.find(g => g.id === userGroupId) : null;
   const userScheme = userGroup && Array.isArray(schemes) ? schemes.find(s => s.id === userGroup.schemeId) : null;
   const userInvoices = Array.isArray(invoices) ? invoices.filter(inv => inv.memberId === customerId) : [];
+  const userCollections = Array.isArray(collections) ? collections.filter(c => c.memberId === customerId) : [];
 
   const outstandingInvoices = userInvoices.filter(inv => inv.status === 'Due' || inv.status === 'Partially Paid' || inv.status === 'Pending');
+
+  const paymentYears = [...new Set(userCollections.map(c => new Date(c.date).getFullYear()))].sort((a, b) => b - a);
+  const filteredPayments = payHistoryYear === "all"
+    ? userCollections
+    : userCollections.filter(c => new Date(c.date).getFullYear() === Number(payHistoryYear));
   const totalOutstanding = outstandingInvoices.reduce((sum, inv) => sum + (inv.balance || inv.totalPayable || 0), 0);
   const totalPaid = userInvoices.reduce((sum, inv) => sum + (inv.amountPaid || 0), 0);
 
@@ -144,15 +152,28 @@ export function CustomerDashboard({ dark, toast }) {
           </div>
 
           <div style={{ background: dark ? "rgba(255,255,255,.05)" : "#fff", border: dark ? "1px solid rgba(255,255,255,.1)" : "1px solid #e5e7eb", borderRadius: 12, padding: 24 }}>
-            <div style={{ fontSize: 16, fontWeight: 600, color: dark ? "#f3f4f6" : "#111", marginBottom: 16 }}>Payment History</div>
-            {userInvoices.length === 0 ? (
-              <div style={{ textAlign: "center", padding: 20, color: dark ? "rgba(255,255,255,.5)" : "#6b7280" }}>No payment history.</div>
+            <div style={{ fontSize: 16, fontWeight: 600, color: dark ? "#f3f4f6" : "#111", marginBottom: 16 }}>Payments</div>
+            {paymentYears.length > 0 && (
+              <div style={{ marginBottom: 12, display: "flex", gap: 8, alignItems: "center" }}>
+                <FiFilter size={14} color={dark ? "rgba(255,255,255,.4)" : "#64748b"} />
+                <select value={payHistoryYear} onChange={e => setPayHistoryYear(e.target.value)}
+                  style={{ padding: "6px 10px", borderRadius: 6, border: "1px solid var(--border-color)", background: dark ? "rgba(255,255,255,.1)" : "#fff", color: dark ? "#f3f4f6" : "#111", fontSize: 12 }}>
+                  <option value="all">All Years</option>
+                  {paymentYears.map(y => <option key={y} value={y}>{y}</option>)}
+                </select>
+              </div>
+            )}
+            {filteredPayments.length === 0 ? (
+              <div style={{ textAlign: "center", padding: 20, color: dark ? "rgba(255,255,255,.5)" : "#6b7280" }}>No payments found.</div>
             ) : (
-              <Table dark={dark} cols={["Invoice", "Date", "Amount Paid", "Mode", "Status"]}
-                rows={userInvoices.slice(0, 10).map(inv => [
-                  inv.invoiceNumber, new Date(inv.date).toLocaleDateString(),
-                  fmt(inv.amountPaid || 0), inv.paymentMethod,
-                  <Badge key={inv._id} text={inv.status} color={inv.status === 'Paid' ? 'green' : inv.status === 'Partially Paid' ? 'yellow' : 'red'} />
+              <Table dark={dark} cols={["Receipt No", "Date", "Amount", "Mode", "Installment", "Status"]}
+                rows={filteredPayments.slice(0, 20).map(c => [
+                  c.receiptNo || c.partialPayments?.[0]?.receiptNo || "—",
+                  new Date(c.date).toLocaleDateString(),
+                  fmt(c.amount || 0),
+                  c.mode || c.partialPayments?.[0]?.mode || "—",
+                  `Month ${c.installment}`,
+                  <Badge key={c._id || c.id} text={c.status} color={c.status === 'Paid' ? 'green' : c.status === 'Partially Paid' ? 'yellow' : 'red'} />
                 ])} />
             )}
           </div>
