@@ -1,191 +1,25 @@
-// Comprehensive Billing Dashboard with Invoice Generation
 import { useState } from "react";
 import { useData } from "../hooks/useData";
-import { createData, updateData, deleteData } from "../utils/api";
 import { SectionHeader } from "../components/SectionHeader";
 import { Table } from "../components/Table";
 import { Badge } from "../components/Badge";
-import { Btn } from "../components/Btn";
-import { Input } from "../components/Input";
 import { useAuth } from "../contexts/AuthContext";
 import { COMPANY } from "../utils/constants";
 import { QRCodeCanvas } from "qrcode.react";
 import { IconBtn } from "../components/IconBtn";
-import { HiEye, HiPrinter, HiReceiptRefund, HiArrowDownTray, HiDevicePhoneMobile, HiEnvelope, HiBanknotes } from "react-icons/hi2";
+import { HiEye, HiPrinter, HiArrowDownTray, HiReceiptRefund } from "react-icons/hi2";
 
 export function BillingDashboard({ toast }) {
   const { user } = useAuth();
-  const { data: members, loading: membersLoading } = useData('/members');
-  const { data: invoices, loading: invoicesLoading, refresh: refreshInvoices } = useData('/invoices');
-  const { data: groups } = useData('/groups');
-  const { data: schemes } = useData('/schemes');
-  const [searchTerm, setSearchTerm] = useState("");
-  const [selectedMember, setSelectedMember] = useState(null);
-  const [showInvoiceForm, setShowInvoiceForm] = useState(false);
-  const [showInvoicePreview, setShowInvoicePreview] = useState(false);
-  const [generatedInvoice, setGeneratedInvoice] = useState(null);
+  const { data: invoices, loading: invoicesLoading } = useData('/invoices');
   const [showReceiptPopup, setShowReceiptPopup] = useState(false);
   const [selectedInvoiceForReceipt, setSelectedInvoiceForReceipt] = useState(null);
-  
-  // Filter members based on logged-in user role and search term
-  const roleFilteredMembers = user?.role === 'customer' 
-    ? members.filter(m => m.memberId === user.userId || m.email === user.email)
-    : members;
-  
-  const filteredMembers = roleFilteredMembers.filter(m => 
-    m.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    m.memberId?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    m.mobile?.includes(searchTerm)
-  );
-  
-  // Filter invoices based on logged-in user role
-  const filteredInvoices = user?.role === 'customer' 
+  const [showInvoicePreview, setShowInvoicePreview] = useState(false);
+  const [previewInvoice, setPreviewInvoice] = useState(null);
+
+  const filteredInvoices = user?.role === 'customer'
     ? invoices.filter(inv => inv.memberId === user.userId || inv.memberName === user.name)
     : invoices;
-
-  const [form, setForm] = useState({
-    installmentAmount: "",
-    lateFine: 0,
-    discount: 0,
-    previousDue: 0,
-    paymentMethod: 'Cash',
-    referenceNumber: '',
-    remarks: ''
-  });
-  const [paymentType, setPaymentType] = useState("full");
-  const [numParts, setNumParts] = useState(2);
-  const [addPaymentTarget, setAddPaymentTarget] = useState(null);
-  const [addPaymentAmount, setAddPaymentAmount] = useState("");
-  const maxDivisions = 10;
-
-  const calculateTotal = () => {
-    return parseFloat(form.installmentAmount) + parseFloat(form.lateFine) - parseFloat(form.discount) + parseFloat(form.previousDue);
-  };
-  const totalPayable = calculateTotal();
-  const partAmount = paymentType === "parts" ? Math.floor(totalPayable / numParts) : totalPayable;
-
-  const handleGenerateInvoice = async () => {
-    if (!selectedMember) {
-      toast.add("Please select a member first", "error");
-      return;
-    }
-
-    // Validate member has required fields
-    if (!selectedMember.memberId || !selectedMember.name || !selectedMember.phone) {
-      toast.add("Selected member is missing required information. Please select a valid member.", "error");
-      return;
-    }
-
-    // Validate payment amount
-    if (!form.installmentAmount || parseFloat(form.installmentAmount) <= 0) {
-      toast.add("Please enter a valid payment amount", "error");
-      return;
-    }
-
-    try {
-      // Get member's group and scheme to calculate correct monthly installment
-      const memberGroupId = selectedMember.groups && selectedMember.groups[0];
-      const memberGroup = memberGroupId ? groups.find(g => g.id === memberGroupId) : null;
-      const memberScheme = memberGroup ? schemes.find(s => s.id === memberGroup.schemeId) : null;
-      
-      const curInstallment = memberGroup?.currentInstallment || 1;
-      const monthlyInstallment = memberScheme ? (memberScheme.monthlyAmounts?.[curInstallment - 1]?.amount || memberScheme.monthlyAmounts?.[0]?.amount || 0) : parseFloat(form.installmentAmount);
-      const duration = memberScheme?.duration || "—";
-      const totalChitValue = memberScheme?.amount || "—";
-      const sumPrevInstallments = memberScheme?.monthlyAmounts?.filter(m => m.month < curInstallment).reduce((s, m) => s + (m.amount || 0), 0) || 0;
-      const sumRemaining = memberScheme?.monthlyAmounts?.filter(m => m.month >= curInstallment).reduce((s, m) => s + (m.amount || 0), 0) || 0;
-
-      const invoiceData = {
-        branch: COMPANY.branch,
-        collectedBy: user.name,
-        memberId: selectedMember.memberId,
-        memberName: selectedMember.name,
-        memberMobile: selectedMember.phone,
-        memberAddress: selectedMember.address || "",
-        memberAadhar: selectedMember.aadhaar || "",
-        chitName: memberScheme?.name || "—",
-        chitGroup: memberGroup?.name || "—",
-        chitNumber: memberGroup && memberScheme ? `CHIT-${memberScheme.amount}-001` : "—",
-        totalChitValue: totalChitValue,
-        monthlyAmount: monthlyInstallment,
-        duration: duration,
-        currentMonth: memberGroup?.currentInstallment || 1,
-        dueDate: new Date(),
-        installmentAmount: monthlyInstallment,
-        lateFine: parseFloat(form.lateFine),
-        discount: parseFloat(form.discount),
-        previousDue: parseFloat(form.previousDue),
-        totalPayable: monthlyInstallment + parseFloat(form.lateFine) - parseFloat(form.discount) + parseFloat(form.previousDue),
-        amountPaid: monthlyInstallment + parseFloat(form.lateFine) - parseFloat(form.discount) + parseFloat(form.previousDue),
-        balance: 0,
-        paymentMethod: form.paymentMethod,
-        referenceNumber: form.referenceNumber,
-        paidInstallments: memberGroup ? memberGroup.currentInstallment - 1 : 0,
-        remainingInstallments: duration !== "—" ? duration - (memberGroup ? memberGroup.currentInstallment - 1 : 0) : 0,
-        totalPaid: sumPrevInstallments,
-        remainingAmount: totalChitValue !== "—" ? totalChitValue - sumPrevInstallments : 0,
-        status: 'Paid',
-        remarks: form.remarks
-      };
-
-      const amountPaidNow = paymentType === "parts" ? partAmount : totalPayable;
-      const balanceNow = totalPayable - amountPaidNow;
-
-      const updatedInvoiceData = {
-        ...invoiceData,
-        amountPaid: amountPaidNow,
-        balance: balanceNow,
-        totalPayable: totalPayable,
-        installmentAmount: totalPayable,
-        status: balanceNow > 0 ? 'Partially Paid' : 'Paid',
-        remarks: balanceNow > 0
-          ? `Part ${1} of ${numParts}: ₹${amountPaidNow} paid. Balance: ₹${balanceNow}. ${form.remarks}`
-          : form.remarks,
-        paymentSplits: [{
-          amount: amountPaidNow,
-          date: new Date().toISOString(),
-          method: form.paymentMethod,
-          reference: form.referenceNumber,
-        }],
-        totalParts: paymentType === "parts" ? numParts : 1,
-        paidParts: paymentType === "parts" ? 1 : 1,
-      };
-
-      const response = await createData('/invoices', updatedInvoiceData);
-      setGeneratedInvoice(response.invoice);
-      setShowInvoicePreview(true);
-      setShowInvoiceForm(false);
-      toast.add(balanceNow > 0 ? `Partial payment recorded! ₹${balanceNow} remaining.` : "Invoice generated successfully!");
-      refreshInvoices();
-    } catch (error) {
-      toast.add("Error generating invoice: " + error.message, "error");
-    }
-  };
-
-  const handleAddPayment = async (invoice) => {
-    if (!addPaymentAmount || parseFloat(addPaymentAmount) <= 0) { toast.add("Enter valid amount", "error"); return; }
-    const addAmt = parseFloat(addPaymentAmount);
-    if (addAmt > (invoice.balance || 0)) { toast.add("Amount exceeds balance", "error"); return; }
-    try {
-      const newBalance = (invoice.balance || 0) - addAmt;
-      const paidParts = (invoice.paidParts || 1) + 1;
-      const splits = [...(invoice.paymentSplits || []), {
-        amount: addAmt, date: new Date().toISOString(), method: 'Cash', reference: '',
-      }];
-      await updateData('/invoices', invoice._id, {
-        amountPaid: (invoice.amountPaid || 0) + addAmt,
-        balance: newBalance,
-        status: newBalance > 0 ? 'Partially Paid' : 'Paid',
-        paidParts,
-        paymentSplits: splits,
-        remarks: `Additional payment ₹${addAmt}. Remaining: ₹${newBalance}.`
-      });
-      toast.add(newBalance > 0 ? `₹${addAmt} added. ₹${newBalance} remaining.` : "Fully paid!");
-      setAddPaymentTarget(null);
-      setAddPaymentAmount("");
-      refreshInvoices();
-    } catch (err) { toast.add("Error: " + err.message, "error"); }
-  };
 
   const getStatusColor = (status) => {
     switch (status) {
@@ -197,301 +31,42 @@ export function BillingDashboard({ toast }) {
     }
   };
 
-  if (membersLoading || invoicesLoading) return <div style={{ padding: 40, textAlign: "center" }}>Loading...</div>;
+  if (invoicesLoading) return <div style={{ padding: 40, textAlign: "center" }}>Loading...</div>;
 
   return (
     <div>
-      <SectionHeader title="Invoice Generation" subtitle="Generate and manage payment invoices"  />
+      <SectionHeader title="Invoices & Payments" subtitle="View all payment invoices" />
 
       <div style={{ display: "grid", gap: 24 }}>
-        {/* Search Section */}
+        {/* Invoices Table */}
         <div style={{ background: "var(--bg-card)", border: "1px solid var(--border-color)", borderRadius: 12, padding: 24 }}>
-          <div style={{ fontSize: 16, fontWeight: 600, color: "var(--text-primary)", marginBottom: 16 }}>Search Member</div>
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(200px,1fr))", gap: 16 }}>
-            <Input 
-              label="Member ID" 
-              value={searchTerm} 
-              onChange={setSearchTerm} 
-              placeholder="Enter Member ID or Mobile" 
-               
-            />
-            <Btn label="Search" onClick={() => {}} primary style={{ marginTop: 24 }} />
-          </div>
-
-          {filteredMembers.length > 0 && (
-            <div style={{ marginTop: 20 }}>
-              <div style={{ fontSize: 14, fontWeight: 600, color: "var(--text-muted)", marginBottom: 12 }}>
-                Found {filteredMembers.length} member(s)
-              </div>
-              <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill,minmax(300px,1fr))", gap: 16 }}>
-                {filteredMembers.map(member => (
-                  <div 
-                    key={member.id}
-                    onClick={() => setSelectedMember(member)}
-                    style={{
-                      background: "var(--bg-card)",
-                      border: selectedMember?.id === member.id ? "2px solid #2563eb" : "1px solid var(--border-color)",
-                      borderRadius: 8,
-                      padding: 16,
-                      cursor: "pointer",
-                      transition: "all .2s ease"
-                    }}
-                  >
-                    <div style={{ fontSize: 15, fontWeight: 600, color: "var(--text-primary)", marginBottom: 8 }}>
-                      {member.name}
-                    </div>
-                    <div style={{ fontSize: 13, color: "var(--text-muted)", marginBottom: 4 }}>
-                      ID: {member.userId || member.memberId}
-                    </div>
-                    <div style={{ fontSize: 13, color: "var(--text-muted)", marginBottom: 4 }}>
-                      Mobile: {member.mobile}
-                    </div>
-                    <div style={{ fontSize: 13, color: "var(--text-muted)" }}>
-                      Address: {member.address}
-                    </div>
-                    <Badge text={member.status || "Active"} color="green" style={{ marginTop: 12 }} />
-                  </div>
-                ))}
-              </div>
-            </div>
+          <div style={{ fontSize: 16, fontWeight: 600, color: "var(--text-primary)", marginBottom: 16 }}>All Invoices</div>
+          {filteredInvoices.length === 0 ? (
+            <div style={{ textAlign: "center", padding: 40, color: "var(--text-muted)" }}>No invoices found.</div>
+          ) : (
+            <Table cols={["Invoice No", "Member", "Amount", "Payment Mode", "Status", "Date", "Actions"]}
+              rows={filteredInvoices.map(inv => [
+                inv.invoiceNumber,
+                inv.memberName,
+                `₹${inv.amountPaid?.toLocaleString()}`,
+                inv.paymentMethod,
+                <Badge key={inv.id} text={inv.status} color={getStatusColor(inv.status)} />,
+                new Date(inv.date).toLocaleDateString(),
+                <div key={inv.id} style={{ display: "flex", gap: 4, flexWrap: "wrap", alignItems: "center" }}>
+                  <IconBtn icon={<HiEye size={14} />} onClick={() => { setPreviewInvoice(inv); setShowInvoicePreview(true); }} color="#2563eb" title="View" />
+                  <IconBtn icon={<HiPrinter size={14} />} onClick={() => window.print()} color="#10b981" title="Print" />
+                  {(inv.status === 'Paid' || inv.status === 'Partially Paid') && (
+                    <IconBtn icon={<HiReceiptRefund size={14} />} onClick={() => { setSelectedInvoiceForReceipt(inv); setShowReceiptPopup(true); }} color="#8b5cf6" title="Receipt" />
+                  )}
+                  <IconBtn icon={<HiArrowDownTray size={14} />} onClick={() => toast.add("Downloading PDF...")} color="#f59e0b" title="Download" />
+                </div>
+              ])} />
           )}
         </div>
 
-        {/* Selected Member Information */}
-        {selectedMember && (() => {
-          const memberGroupId = selectedMember.groups && selectedMember.groups[0];
-          const memberGroup = memberGroupId ? groups.find(g => g.id === memberGroupId) : null;
-          const memberScheme = memberGroup ? schemes.find(s => s.id === memberGroup.schemeId) : null;
-          return (
-          <div style={{ background: "var(--bg-card)", border: "1px solid var(--border-color)", borderRadius: 12, padding: 24 }}>
-            <div style={{ fontSize: 16, fontWeight: 600, color: "var(--text-primary)", marginBottom: 16 }}>Member Information</div>
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(200px,1fr))", gap: 16, marginBottom: 20 }}>
-              <div>
-                <div style={{ fontSize: 12, color: "var(--text-muted)", marginBottom: 4 }}>Member Name</div>
-                <div style={{ fontSize: 15, fontWeight: 600, color: "var(--text-primary)" }}>{selectedMember.name}</div>
-              </div>
-              <div>
-                <div style={{ fontSize: 12, color: "var(--text-muted)", marginBottom: 4 }}>Member ID</div>
-                <div style={{ fontSize: 15, fontWeight: 600, color: "var(--text-primary)" }}>{selectedMember.memberId}</div>
-              </div>
-              <div>
-                <div style={{ fontSize: 12, color: "var(--text-muted)", marginBottom: 4 }}>Mobile</div>
-                <div style={{ fontSize: 15, fontWeight: 600, color: "var(--text-primary)" }}>{selectedMember.mobile}</div>
-              </div>
-              <div>
-                <div style={{ fontSize: 12, color: "var(--text-muted)", marginBottom: 4 }}>Address</div>
-                <div style={{ fontSize: 15, fontWeight: 600, color: "var(--text-primary)" }}>{selectedMember.address}</div>
-              </div>
-            </div>
-
-            <div style={{ fontSize: 16, fontWeight: 600, color: "var(--text-primary)", marginBottom: 16, marginTop: 24 }}>Chit Information</div>
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(200px,1fr))", gap: 16, marginBottom: 20 }}>
-              <div>
-                <div style={{ fontSize: 12, color: "var(--text-muted)", marginBottom: 4 }}>Chit Name</div>
-                <div style={{ fontSize: 15, fontWeight: 600, color: "var(--text-primary)" }}>{memberScheme?.name || "Not Assigned"}</div>
-              </div>
-              <div>
-                <div style={{ fontSize: 12, color: "var(--text-muted)", marginBottom: 4 }}>Chit Group</div>
-                <div style={{ fontSize: 15, fontWeight: 600, color: "var(--text-primary)" }}>{memberGroup?.name || "Not Assigned"}</div>
-              </div>
-              <div>
-                <div style={{ fontSize: 12, color: "var(--text-muted)", marginBottom: 4 }}>Monthly Amount</div>
-                <div style={{ fontSize: 15, fontWeight: 600, color: "var(--text-primary)" }}>₹{(memberScheme?.monthlyAmounts?.[(memberGroup?.currentInstallment || 1) - 1]?.amount || memberScheme?.monthlyAmounts?.[0]?.amount || 0)?.toLocaleString()}</div>
-              </div>
-              <div>
-                <div style={{ fontSize: 12, color: "var(--text-muted)", marginBottom: 4 }}>Current Installment</div>
-                <div style={{ fontSize: 15, fontWeight: 600, color: "var(--text-primary)" }}>{memberGroup?.currentInstallment || "0"}</div>
-              </div>
-              <div>
-                <div style={{ fontSize: 12, color: "var(--text-muted)", marginBottom: 4 }}>Next Due Date</div>
-                <div style={{ fontSize: 15, fontWeight: 600, color: "var(--text-primary)" }}>{memberGroup?.nextDueDate ? new Date(memberGroup.nextDueDate).toLocaleDateString() : "Not Set"}</div>
-              </div>
-              <div>
-                <div style={{ fontSize: 12, color: "var(--text-muted)", marginBottom: 4 }}>Auction Status</div>
-                <Badge text={memberGroup?.status || "Active"} color={memberGroup?.status === "Active" ? "green" : "yellow"} />
-              </div>
-            </div>
-
-            {user?.role !== 'user' && (
-              <Btn label="Generate Invoice" onClick={() => {
-                const mCurInstall = memberGroup?.currentInstallment || 1;
-                const mMonthAmt = memberScheme?.monthlyAmounts?.find(m => m.month === mCurInstall)?.amount || memberScheme?.monthlyAmounts?.[0]?.amount || 0;
-                setForm(f => ({ ...f, installmentAmount: String(mMonthAmt) }));
-                setShowInvoiceForm(true);
-              }} primary style={{ marginTop: 16 }} />
-            )}
-          </div>
-          );
-        })()}
-
-        {/* Invoice Form */}
-        {showInvoiceForm && selectedMember && (
-          <div style={{ background: "var(--bg-card)", border: "1px solid var(--border-color)", borderRadius: 12, padding: 24 }}>
-            <div style={{ fontSize: 16, fontWeight: 600, color: "var(--text-primary)", marginBottom: 16 }}>Billing Section</div>
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(200px,1fr))", gap: 16 }}>
-              <div>
-                <Input label="Monthly Amount" value={form.installmentAmount} onChange={v => setForm({ ...form, installmentAmount: v })}  type="number" />
-              </div>
-              <div>
-                <Input label="Late Fine" value={form.lateFine} onChange={v => setForm({ ...form, lateFine: v })}  type="number" />
-              </div>
-              <div>
-                <Input label="Discount" value={form.discount} onChange={v => setForm({ ...form, discount: v })}  type="number" />
-              </div>
-              <div>
-                <Input label="Other Charges" value={form.previousDue} onChange={v => setForm({ ...form, previousDue: v })}  type="number" />
-              </div>
-            </div>
-
-            <div style={{ marginTop: 16 }}>
-              <div style={{ fontSize: 12, fontWeight: 700, color: "var(--text-muted)", marginBottom: 8, letterSpacing: 0.5 }}>PAYMENT TYPE</div>
-              <div style={{ display: "flex", gap: 10 }}>
-                {[["full", "Pay Full Now"], ["parts", "Split Payment"]].map(([val, lbl]) => (
-                  <button key={val} onClick={() => setPaymentType(val)}
-                    style={{ flex: 1, padding: "10px 8px", borderRadius: 10, border: `2px solid ${paymentType === val ? "#2563eb" : "#e2e8f0"}`, background: paymentType === val ? "#eff6ff" : "var(--bg-card)", color: paymentType === val ? "#1e40af" : "var(--text-primary)", fontWeight: 700, fontSize: 12, cursor: "pointer" }}>
-                    {lbl}
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            {paymentType === "parts" && (
-              <div style={{ background: "#f8fafc", border: "1px solid #e2e8f0", borderRadius: 10, padding: 14, marginTop: 12 }}>
-                <div style={{ fontSize: 12, fontWeight: 600, color: "#374151", marginBottom: 8 }}>Split into how many parts? (max {maxDivisions})</div>
-                <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
-                  {[2, 3, 4, 5, 6, 7, 8, 9, 10].filter(n => n <= maxDivisions).map(n => (
-                    <button key={n} onClick={() => setNumParts(n)}
-                      style={{ width: 40, height: 40, borderRadius: 8, border: `2px solid ${numParts === n ? "#2563eb" : "#e2e8f0"}`, background: numParts === n ? "#2563eb" : "var(--bg-card)", color: numParts === n ? "#fff" : "var(--text-primary)", fontWeight: 700, fontSize: 13, cursor: "pointer" }}>
-                      {n}
-                    </button>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            <div style={{ marginTop: 16, padding: 16, background: paymentType === "parts" ? "#fefce8" : "var(--bg-card)", borderRadius: 8, border: "1px solid var(--border-color)" }}>
-              {paymentType === "parts" ? (
-                <>
-                  <div style={{ fontSize: 13, color: "#92400e", marginBottom: 4 }}>
-                    Paying <strong style={{ fontSize: 16 }}>₹{partAmount.toLocaleString()}</strong> now (part 1 of {numParts})
-                  </div>
-                  <div style={{ fontSize: 12, color: "#a16207" }}>
-                    Total: ₹{totalPayable.toLocaleString()} · Remaining: ₹{(totalPayable - partAmount).toLocaleString()}
-                  </div>
-                </>
-              ) : (
-                <div style={{ fontSize: 18, fontWeight: 700, color: "var(--text-primary)" }}>
-                  Total: ₹{totalPayable.toLocaleString()}
-                </div>
-              )}
-            </div>
-
-            <div style={{ marginTop: 20 }}>
-              <div style={{ fontSize: 14, fontWeight: 600, color: "var(--text-muted)", marginBottom: 12 }}>Payment Mode</div>
-              <div style={{ display: "flex", gap: 12, flexWrap: "wrap" }}>
-                {['Cash', 'UPI', 'Bank', 'Cheque'].map(mode => (
-                  <button
-                    key={mode}
-                    onClick={() => setForm({ ...form, paymentMethod: mode })}
-                    style={{
-                      padding: "10px 20px",
-                      borderRadius: 8,
-                      border: form.paymentMethod === mode ? "2px solid #2563eb" : "1px solid #d1d5db",
-                      background: form.paymentMethod === mode ? "rgba(37, 99, 235, 0.1)" : "var(--bg-card)",
-                      color: "var(--text-primary)",
-                      cursor: "pointer",
-                      fontSize: 14,
-                      fontWeight: form.paymentMethod === mode ? 600 : 400,
-                      transition: "all .2s ease"
-                    }}
-                  >
-                    {mode}
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            <div style={{ marginTop: 16 }}>
-              <Input label="Reference Number" value={form.referenceNumber} onChange={v => setForm({ ...form, referenceNumber: v })}  placeholder="Optional" />
-            </div>
-
-            <div style={{ marginTop: 16 }}>
-              <Input label="Remarks" value={form.remarks} onChange={v => setForm({ ...form, remarks: v })}  placeholder="Payment received successfully" />
-            </div>
-
-            <div style={{ display: "flex", gap: 12, marginTop: 20 }}>
-              <Btn label="Generate Invoice" onClick={handleGenerateInvoice} primary />
-              <Btn label="Cancel" onClick={() => setShowInvoiceForm(false)} />
-            </div>
-          </div>
-        )}
-
         {/* Invoice Preview */}
-        {showInvoicePreview && generatedInvoice && (
-          <InvoicePreview invoice={generatedInvoice}  onClose={() => setShowInvoicePreview(false)} />
-        )}
-
-        {/* Recent Invoices */}
-        <div style={{ background: "var(--bg-card)", border: "1px solid var(--border-color)", borderRadius: 12, padding: 24 }}>
-          <div style={{ fontSize: 16, fontWeight: 600, color: "var(--text-primary)", marginBottom: 16 }}>Recent Invoices</div>
-          <Table  cols={["Invoice No", "Member", "Amount", "Payment Mode", "Status", "Date", "Actions"]}
-            rows={filteredInvoices.slice(0, 10).map(inv => [
-              inv.invoiceNumber,
-              inv.memberName,
-              `₹${inv.amountPaid.toLocaleString()}`,
-              inv.paymentMethod,
-              <Badge key={inv.id} text={inv.status} color={getStatusColor(inv.status)} />,
-              new Date(inv.date).toLocaleDateString(),
-              <div key={inv.id} style={{ display: "flex", gap: 4, flexWrap: "wrap", alignItems: "center" }}>
-                <IconBtn icon={<HiEye size={14} />} onClick={() => { setGeneratedInvoice(inv); setShowInvoicePreview(true); }} color="#2563eb" title="View" />
-                <IconBtn icon={<HiPrinter size={14} />} onClick={() => window.print()} color="#10b981" title="Print" />
-                {(inv.status === 'Paid' || inv.status === 'Partially Paid') && (
-                  <IconBtn icon={<HiReceiptRefund size={14} />} onClick={() => { setSelectedInvoiceForReceipt(inv); setShowReceiptPopup(true); }} color="#8b5cf6" title="Receipt" />
-                )}
-                {inv.status === 'Partially Paid' && (
-                  <IconBtn icon={<HiBanknotes size={14} />} onClick={() => { setAddPaymentTarget(inv); setAddPaymentAmount(""); }} color="#d97706" title="Add Payment" />
-                )}
-                <IconBtn icon={<HiArrowDownTray size={14} />} onClick={() => toast.add("Downloading PDF...")} color="#f59e0b" title="Download" />
-                <IconBtn icon={<HiDevicePhoneMobile size={14} />} onClick={async () => {
-                  try {
-                    await fetch(`/api/invoices/${inv._id}/send-whatsapp`, { method: 'POST' });
-                    toast.add("WhatsApp receipt sent successfully!");
-                  } catch (error) {
-                    toast.add("Error sending WhatsApp receipt", "error");
-                  }
-                }} color="#25D366" title="WhatsApp" />
-                <IconBtn icon={<HiEnvelope size={14} />} onClick={async () => {
-                  try {
-                    await fetch(`/api/invoices/${inv._id}/send-email`, { method: 'POST' });
-                    toast.add("Email receipt sent successfully!");
-                  } catch (error) {
-                    toast.add("Error sending email receipt", "error");
-                  }
-                }} color="#ea4335" title="Email" />
-              </div>
-            ])} />
-        </div>
-
-        {/* Payment History */}
-        {selectedMember && (
-          <div style={{ background: "var(--bg-card)", border: "1px solid var(--border-color)", borderRadius: 12, padding: 24 }}>
-            <div style={{ fontSize: 16, fontWeight: 600, color: "var(--text-primary)", marginBottom: 16 }}>Payment History - {selectedMember.name}</div>
-            {filteredInvoices.filter(inv => inv.memberId === selectedMember.memberId).length === 0 ? (
-              <div style={{ textAlign: "center", padding: 40, color: "var(--text-muted)" }}>
-                No payment history available for this member.
-              </div>
-            ) : (
-              <Table  cols={["Invoice No", "Date", "Amount Paid", "Payment Mode", "Status", "Actions"]}
-                rows={filteredInvoices.filter(inv => inv.memberId === selectedMember.memberId).map(inv => [
-                  inv.invoiceNumber,
-                  new Date(inv.date).toLocaleDateString(),
-                  `₹${inv.amountPaid.toLocaleString()}`,
-                  inv.paymentMethod,
-                  <Badge key={inv.id + "badge"} text={inv.status} color={inv.status === 'Paid' ? 'green' : inv.status === 'Partially Paid' ? 'yellow' : 'red'} />,
-                  <IconBtn key={inv.id + "btn"} icon={<HiReceiptRefund size={14} />} onClick={() => { setSelectedInvoiceForReceipt(inv); setShowReceiptPopup(true); }} color="#8b5cf6" title="Receipt" />
-                ])} />
-            )}
-          </div>
+        {showInvoicePreview && previewInvoice && (
+          <InvoicePreview invoice={previewInvoice} onClose={() => setShowInvoicePreview(false)} />
         )}
 
         {/* Receipt Popup */}
@@ -503,120 +78,84 @@ export function BillingDashboard({ toast }) {
                 <button onClick={() => setShowReceiptPopup(false)} style={{ fontSize: 24, background: "none", border: "none", cursor: "pointer", color: "var(--text-primary)" }}>×</button>
               </div>
 
-                {/* Receipt Header */}
-                <div style={{ textAlign: "center", marginBottom: 32, paddingBottom: 24, borderBottom: "2px solid #2563eb" }}>
-                  <div style={{ fontSize: 28, fontWeight: 800, color: "#2563eb", marginBottom: 8 }}>{COMPANY.name}</div>
-                  <div style={{ fontSize: 13, color: "var(--text-muted)" }}>{COMPANY.address}</div>
-                  <div style={{ fontSize: 13, color: "var(--text-muted)" }}>Tel: {COMPANY.phone} | Email: {COMPANY.email}</div>
-                  <div style={{ fontSize: 13, fontWeight: 700, color: "var(--text-primary)", marginTop: 16, textTransform: "uppercase", letterSpacing: "1px" }}>Official Payment Receipt</div>
+              <div style={{ textAlign: "center", marginBottom: 32, paddingBottom: 24, borderBottom: "2px solid #2563eb" }}>
+                <div style={{ fontSize: 28, fontWeight: 800, color: "#2563eb", marginBottom: 8 }}>{COMPANY.name}</div>
+                <div style={{ fontSize: 13, color: "var(--text-muted)" }}>{COMPANY.address}</div>
+                <div style={{ fontSize: 13, color: "var(--text-muted)" }}>Tel: {COMPANY.phone} | Email: {COMPANY.email}</div>
+                <div style={{ fontSize: 13, fontWeight: 700, color: "var(--text-primary)", marginTop: 16, textTransform: "uppercase", letterSpacing: "1px" }}>Official Payment Receipt</div>
+              </div>
+
+              <div className="receipt-detail-grid" style={{ display: "grid", gap: 20, marginBottom: 32 }}>
+                <style>{`@media (min-width: 640px) { .receipt-detail-grid { grid-template-columns: 1fr 1fr !important; gap: 32px !important; } }`}</style>
+                <div style={{ background: "var(--bg-card)", padding: 20, borderRadius: 12, border: "1px solid var(--border-color)" }}>
+                  <div style={{ fontSize: 12, fontWeight: 700, color: "#2563eb", marginBottom: 12, textTransform: "uppercase" }}>Member Details</div>
+                  <div style={{ marginBottom: 8 }}><span style={{ fontSize: 12, color: "#6b7280" }}>Name:</span> <span style={{ fontSize: 14, fontWeight: 700 }}>{selectedInvoiceForReceipt.memberName}</span></div>
+                  <div style={{ marginBottom: 8 }}><span style={{ fontSize: 12, color: "#6b7280" }}>ID:</span> <span style={{ fontSize: 14, fontWeight: 600 }}>{selectedInvoiceForReceipt.memberId}</span></div>
+                  <div style={{ marginBottom: 8 }}><span style={{ fontSize: 12, color: "#6b7280" }}>Mobile:</span> <span style={{ fontSize: 14, fontWeight: 600 }}>{selectedInvoiceForReceipt.memberMobile}</span></div>
+                  <div style={{ marginBottom: 0 }}><span style={{ fontSize: 12, color: "#6b7280" }}>Scheme:</span> <span style={{ fontSize: 14, fontWeight: 600 }}>{selectedInvoiceForReceipt.chitName}</span></div>
                 </div>
-
-                <div className="receipt-detail-grid" style={{ display: "grid", gap: 20, marginBottom: 32 }}>
-                  <style>{`@media (min-width: 640px) { .receipt-detail-grid { grid-template-columns: 1fr 1fr !important; gap: 32px !important; } }`}</style>
-                   {/* Member Details */}
-                  <div style={{ background: "var(--bg-card)", padding: 20, borderRadius: 12, border: "1px solid var(--border-color)" }}>
-                    <div style={{ fontSize: 12, fontWeight: 700, color: "#2563eb", marginBottom: 12, textTransform: "uppercase" }}>Member Details</div>
-                    <div style={{ marginBottom: 8 }}><span style={{ fontSize: 12, color: "#6b7280" }}>Name:</span> <span style={{ fontSize: 14, fontWeight: 700 }}>{selectedInvoiceForReceipt.memberName}</span></div>
-                    <div style={{ marginBottom: 8 }}><span style={{ fontSize: 12, color: "#6b7280" }}>ID:</span> <span style={{ fontSize: 14, fontWeight: 600 }}>{selectedInvoiceForReceipt.memberId}</span></div>
-                    <div style={{ marginBottom: 8 }}><span style={{ fontSize: 12, color: "#6b7280" }}>Mobile:</span> <span style={{ fontSize: 14, fontWeight: 600 }}>{selectedInvoiceForReceipt.memberMobile}</span></div>
-                    <div style={{ marginBottom: 0 }}><span style={{ fontSize: 12, color: "#6b7280" }}>Scheme:</span> <span style={{ fontSize: 14, fontWeight: 600 }}>{selectedInvoiceForReceipt.chitName}</span></div>
-                  </div>
-
-                  {/* Payment Details */}
-                  <div style={{ background: "var(--bg-card)", padding: 20, borderRadius: 12, border: "1px solid var(--border-color)" }}>
-                    <div style={{ fontSize: 12, fontWeight: 700, color: "#2563eb", marginBottom: 12, textTransform: "uppercase" }}>Transaction Info</div>
-                    <div style={{ marginBottom: 8 }}><span style={{ fontSize: 12, color: "#6b7280" }}>Receipt No:</span> <span style={{ fontSize: 14, fontWeight: 700 }}>{selectedInvoiceForReceipt.receiptNumber}</span></div>
-                    <div style={{ marginBottom: 8 }}><span style={{ fontSize: 12, color: "#6b7280" }}>Date:</span> <span style={{ fontSize: 14, fontWeight: 600 }}>{new Date(selectedInvoiceForReceipt.date).toLocaleDateString()}</span></div>
-                    <div style={{ marginBottom: 8 }}><span style={{ fontSize: 12, color: "#6b7280" }}>Method:</span> <span style={{ fontSize: 14, fontWeight: 600 }}>{selectedInvoiceForReceipt.paymentMethod}</span></div>
-                    <div style={{ marginBottom: 0 }}><span style={{ fontSize: 12, color: "#6b7280" }}>Trans ID:</span> <span style={{ fontSize: 14, fontWeight: 600 }}>{selectedInvoiceForReceipt.referenceNumber || 'N/A'}</span></div>
-                  </div>
+                <div style={{ background: "var(--bg-card)", padding: 20, borderRadius: 12, border: "1px solid var(--border-color)" }}>
+                  <div style={{ fontSize: 12, fontWeight: 700, color: "#2563eb", marginBottom: 12, textTransform: "uppercase" }}>Transaction Info</div>
+                  <div style={{ marginBottom: 8 }}><span style={{ fontSize: 12, color: "#6b7280" }}>Receipt No:</span> <span style={{ fontSize: 14, fontWeight: 700 }}>{selectedInvoiceForReceipt.receiptNumber}</span></div>
+                  <div style={{ marginBottom: 8 }}><span style={{ fontSize: 12, color: "#6b7280" }}>Date:</span> <span style={{ fontSize: 14, fontWeight: 600 }}>{new Date(selectedInvoiceForReceipt.date).toLocaleDateString()}</span></div>
+                  <div style={{ marginBottom: 8 }}><span style={{ fontSize: 12, color: "#6b7280" }}>Method:</span> <span style={{ fontSize: 14, fontWeight: 600 }}>{selectedInvoiceForReceipt.paymentMethod}</span></div>
+                  <div style={{ marginBottom: 0 }}><span style={{ fontSize: 12, color: "#6b7280" }}>Trans ID:</span> <span style={{ fontSize: 14, fontWeight: 600 }}>{selectedInvoiceForReceipt.referenceNumber || 'N/A'}</span></div>
                 </div>
+              </div>
 
-                {/* Amount Table */}
-                <div style={{ marginBottom: 32 }}>
-                  <table style={{ width: "100%", borderCollapse: "collapse" }}>
-                    <thead>
-                      <tr style={{ borderBottom: "2px solid #e2e8f0" }}>
-                        <th style={{ textAlign: "left", padding: "12px", fontSize: 12, color: "#6b7280" }}>Description</th>
-                        <th style={{ textAlign: "right", padding: "12px", fontSize: 12, color: "#6b7280" }}>Amount</th>
-                      </tr>
-                    </thead>
-                    <tbody>
+              <div style={{ marginBottom: 32 }}>
+                <table style={{ width: "100%", borderCollapse: "collapse" }}>
+                  <thead>
+                    <tr style={{ borderBottom: "2px solid #e2e8f0" }}>
+                      <th style={{ textAlign: "left", padding: "12px", fontSize: 12, color: "#6b7280" }}>Description</th>
+                      <th style={{ textAlign: "right", padding: "12px", fontSize: 12, color: "#6b7280" }}>Amount</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr style={{ borderBottom: "1px solid #f1f5f9" }}>
+                      <td style={{ padding: "12px", fontSize: 14 }}>Chit Installment Amount</td>
+                      <td style={{ padding: "12px", textAlign: "right", fontSize: 14, fontWeight: 600 }}>₹{selectedInvoiceForReceipt.installmentAmount?.toLocaleString()}</td>
+                    </tr>
+                    {selectedInvoiceForReceipt.previousDue > 0 && (
                       <tr style={{ borderBottom: "1px solid #f1f5f9" }}>
-                        <td style={{ padding: "12px", fontSize: 14 }}>Chit Installment Amount</td>
-                        <td style={{ padding: "12px", textAlign: "right", fontSize: 14, fontWeight: 600 }}>₹{selectedInvoiceForReceipt.installmentAmount?.toLocaleString()}</td>
+                        <td style={{ padding: "12px", fontSize: 14 }}>Previous Arrears</td>
+                        <td style={{ padding: "12px", textAlign: "right", fontSize: 14, fontWeight: 600 }}>₹{selectedInvoiceForReceipt.previousDue?.toLocaleString()}</td>
                       </tr>
-                      {selectedInvoiceForReceipt.previousDue > 0 && (
-                        <tr style={{ borderBottom: "1px solid #f1f5f9" }}>
-                          <td style={{ padding: "12px", fontSize: 14 }}>Previous Arrears</td>
-                          <td style={{ padding: "12px", textAlign: "right", fontSize: 14, fontWeight: 600 }}>₹{selectedInvoiceForReceipt.previousDue?.toLocaleString()}</td>
-                        </tr>
-                      )}
-                      {selectedInvoiceForReceipt.lateFine > 0 && (
-                        <tr style={{ borderBottom: "1px solid #f1f5f9" }}>
-                          <td style={{ padding: "12px", fontSize: 14 }}>Late Fee / Penal Interest</td>
-                          <td style={{ padding: "12px", textAlign: "right", fontSize: 14, fontWeight: 600 }}>₹{selectedInvoiceForReceipt.lateFine?.toLocaleString()}</td>
-                        </tr>
-                      )}
-                      <tr style={{ background: "#2563eb", color: "#fff" }}>
-                        <td style={{ padding: "16px", fontSize: 16, fontWeight: 700, borderRadius: "0 0 0 12px" }}>Total Paid Amount</td>
-                        <td style={{ padding: "16px", textAlign: "right", fontSize: 20, fontWeight: 800, borderRadius: "0 0 12px 0" }}>₹{selectedInvoiceForReceipt.amountPaid?.toLocaleString()}</td>
+                    )}
+                    {selectedInvoiceForReceipt.lateFine > 0 && (
+                      <tr style={{ borderBottom: "1px solid #f1f5f9" }}>
+                        <td style={{ padding: "12px", fontSize: 14 }}>Late Fee / Penal Interest</td>
+                        <td style={{ padding: "12px", textAlign: "right", fontSize: 14, fontWeight: 600 }}>₹{selectedInvoiceForReceipt.lateFine?.toLocaleString()}</td>
                       </tr>
-                    </tbody>
-                  </table>
-                </div>
+                    )}
+                    <tr style={{ background: "#2563eb", color: "#fff" }}>
+                      <td style={{ padding: "16px", fontSize: 16, fontWeight: 700, borderRadius: "0 0 0 12px" }}>Total Paid Amount</td>
+                      <td style={{ padding: "16px", textAlign: "right", fontSize: 20, fontWeight: 800, borderRadius: "0 0 12px 0" }}>₹{selectedInvoiceForReceipt.amountPaid?.toLocaleString()}</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
 
-                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-end" }}>
-                  <div style={{ textAlign: "center" }}>
-                    <QRCodeCanvas value={selectedInvoiceForReceipt.verificationUrl || `VERIFY-${selectedInvoiceForReceipt.invoiceNumber}`} size={100} level="H" />
-                    <div style={{ fontSize: 10, color: "#6b7280", marginTop: 4 }}>Scan to Verify</div>
-                  </div>
-                  <div style={{ textAlign: "center" }}>
-                    <div style={{ width: 150, borderBottom: "1px solid #000", marginBottom: 8 }}></div>
-                    <div style={{ fontSize: 12, fontWeight: 600 }}>Authorized Signatory</div>
-                  </div>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-end" }}>
+                <div style={{ textAlign: "center" }}>
+                  <QRCodeCanvas value={selectedInvoiceForReceipt.verificationUrl || `VERIFY-${selectedInvoiceForReceipt.invoiceNumber}`} size={100} level="H" />
+                  <div style={{ fontSize: 10, color: "#6b7280", marginTop: 4 }}>Scan to Verify</div>
                 </div>
+                <div style={{ textAlign: "center" }}>
+                  <div style={{ width: 150, borderBottom: "1px solid #000", marginBottom: 8 }}></div>
+                  <div style={{ fontSize: 12, fontWeight: 600 }}>Authorized Signatory</div>
+                </div>
+              </div>
 
-                <div style={{ display: "flex", gap: 12, marginTop: 40 }}>
-                  <button onClick={() => window.print()} style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 6, flex: 1, padding: "10px 20px", borderRadius: 8, border: "none", background: "#2563eb", color: "#fff", cursor: "pointer", fontSize: 13, fontWeight: 600 }}><HiPrinter size={16} /> Print</button>
-                  <button onClick={() => toast.add("Downloading professional PDF...")} style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 6, flex: 1, padding: "10px 20px", borderRadius: 8, border: "none", background: "#10b981", color: "#fff", cursor: "pointer", fontSize: 13, fontWeight: 600 }}><HiArrowDownTray size={16} /> Download</button>
-                  <button onClick={() => setShowReceiptPopup(false)} style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 6, flex: 1, padding: "10px 20px", borderRadius: 8, border: "1px solid var(--border-color)", background: "transparent", color: "var(--text-primary)", cursor: "pointer", fontSize: 13, fontWeight: 600 }}>Close</button>
-                </div>
+              <div style={{ display: "flex", gap: 12, marginTop: 40 }}>
+                <button onClick={() => window.print()} style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 6, flex: 1, padding: "10px 20px", borderRadius: 8, border: "none", background: "#2563eb", color: "#fff", cursor: "pointer", fontSize: 13, fontWeight: 600 }}><HiPrinter size={16} /> Print</button>
+                <button onClick={() => toast.add("Downloading professional PDF...")} style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 6, flex: 1, padding: "10px 20px", borderRadius: 8, border: "none", background: "#10b981", color: "#fff", cursor: "pointer", fontSize: 13, fontWeight: 600 }}><HiArrowDownTray size={16} /> Download</button>
+                <button onClick={() => setShowReceiptPopup(false)} style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 6, flex: 1, padding: "10px 20px", borderRadius: 8, border: "1px solid var(--border-color)", background: "transparent", color: "var(--text-primary)", cursor: "pointer", fontSize: 13, fontWeight: 600 }}>Close</button>
+              </div>
             </div>
           </div>
         )}
       </div>
-
-      {/* ── Add Payment Modal ── */}
-      {addPaymentTarget && (
-        <div style={{ position: "fixed", top: 0, left: 0, right: 0, bottom: 0, background: "rgba(0,0,0,0.5)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 1000 }}>
-          <div style={{ background: "var(--bg-card)", borderRadius: 12, padding: 24, maxWidth: 420, width: "90%" }}>
-            <div style={{ fontSize: 15, fontWeight: 700, color: "var(--text-primary)", marginBottom: 4 }}>Add Payment</div>
-            <div style={{ fontSize: 12, color: "var(--text-muted)", marginBottom: 16 }}>
-              {addPaymentTarget.memberName} — {addPaymentTarget.invoiceNumber}
-            </div>
-            <div style={{ background: "#fefce8", border: "1px solid #fde68a", borderRadius: 8, padding: "12px 16px", marginBottom: 16 }}>
-              <div style={{ fontSize: 13, color: "#92400e", marginBottom: 4 }}>
-                Balance: <strong>₹{(addPaymentTarget.balance || 0).toLocaleString()}</strong>
-              </div>
-              <div style={{ fontSize: 12, color: "#a16207" }}>
-                Paid: ₹{(addPaymentTarget.amountPaid || 0).toLocaleString()} of ₹{(addPaymentTarget.totalPayable || 0).toLocaleString()}
-                {addPaymentTarget.totalParts > 1 && <span> · Part {addPaymentTarget.paidParts || 1} of {addPaymentTarget.totalParts}</span>}
-              </div>
-            </div>
-            <div style={{ marginBottom: 14 }}>
-              <label style={{ fontSize: 12, fontWeight: 600, color: "var(--text-secondary)", display: "block", marginBottom: 4 }}>Amount to Pay (₹)</label>
-              <input type="number" value={addPaymentAmount} onChange={e => setAddPaymentAmount(e.target.value)}
-                placeholder={`Max ₹${(addPaymentTarget.balance || 0).toLocaleString()}`}
-                style={{ width: "100%", padding: "10px 12px", borderRadius: 8, border: "1px solid var(--border-color)", background: "var(--bg-input)", color: "var(--text-primary)", fontSize: 13, boxSizing: "border-box" }} />
-            </div>
-            <div style={{ display: "flex", gap: 10 }}>
-              <Btn label="Record Payment" onClick={() => handleAddPayment(addPaymentTarget)} primary />
-              <Btn label="Cancel" onClick={() => setAddPaymentTarget(null)} />
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 }
@@ -638,7 +177,6 @@ function InvoicePreview({ invoice, onClose }) {
           <button onClick={onClose} style={{ fontSize: 24, background: "none", border: "none", cursor: "pointer", color: "#111" }}>×</button>
         </div>
 
-        {/* Invoice Header */}
         <div style={{ textAlign: "center", marginBottom: 24, paddingBottom: 24, borderBottom: "2px solid #e5e7eb" }}>
           <div style={{ fontSize: 24, fontWeight: 700, color: "#111", marginBottom: 8 }}>{COMPANY.name}</div>
           <div style={{ fontSize: 12, color: "#6b7280", marginBottom: 4 }}>{COMPANY.address}</div>
@@ -646,7 +184,6 @@ function InvoicePreview({ invoice, onClose }) {
           <div style={{ fontSize: 12, color: "#6b7280" }}>GSTIN: {COMPANY.gstin}</div>
         </div>
 
-        {/* Invoice Details */}
         <div className="invoice-detail-grid" style={{ display: "grid", gap: 16, marginBottom: 24, paddingBottom: 24, borderBottom: "2px solid #e5e7eb" }}>
           <style>{`@media (min-width: 640px) { .invoice-detail-grid { grid-template-columns: 1fr 1fr !important; gap: 20px !important; } }`}</style>
           <div>
@@ -675,7 +212,6 @@ function InvoicePreview({ invoice, onClose }) {
           </div>
         </div>
 
-        {/* Member Details */}
         <div style={{ marginBottom: 24, paddingBottom: 24, borderBottom: "2px solid #e5e7eb" }}>
           <div style={{ fontSize: 14, fontWeight: 700, color: "#111", marginBottom: 12 }}>MEMBER DETAILS</div>
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(200px,1fr))", gap: 12 }}>
@@ -698,7 +234,6 @@ function InvoicePreview({ invoice, onClose }) {
           </div>
         </div>
 
-        {/* Chit Details */}
         <div style={{ marginBottom: 24, paddingBottom: 24, borderBottom: "2px solid #e5e7eb" }}>
           <div style={{ fontSize: 14, fontWeight: 700, color: "#111", marginBottom: 12 }}>CHIT DETAILS</div>
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(200px,1fr))", gap: 12 }}>
@@ -716,11 +251,11 @@ function InvoicePreview({ invoice, onClose }) {
             </div>
             <div>
               <div style={{ fontSize: 12, color: "#6b7280", marginBottom: 4 }}>Total Chit Value</div>
-              <div style={{ fontSize: 14, fontWeight: 600, color: "#111" }}>₹{invoice.totalChitValue.toLocaleString()}</div>
+              <div style={{ fontSize: 14, fontWeight: 600, color: "#111" }}>₹{invoice.totalChitValue?.toLocaleString()}</div>
             </div>
             <div>
               <div style={{ fontSize: 12, color: "#6b7280", marginBottom: 4 }}>Monthly Amount</div>
-              <div style={{ fontSize: 14, fontWeight: 600, color: "#111" }}>₹{invoice.monthlyAmount.toLocaleString()}</div>
+              <div style={{ fontSize: 14, fontWeight: 600, color: "#111" }}>₹{invoice.monthlyAmount?.toLocaleString()}</div>
             </div>
             <div>
               <div style={{ fontSize: 12, color: "#6b7280", marginBottom: 4 }}>Duration</div>
@@ -729,39 +264,38 @@ function InvoicePreview({ invoice, onClose }) {
           </div>
         </div>
 
-        {/* Payment Details */}
         <div style={{ marginBottom: 24, paddingBottom: 24, borderBottom: "2px solid #e5e7eb" }}>
           <div style={{ fontSize: 14, fontWeight: 700, color: "#111", marginBottom: 12 }}>PAYMENT DETAILS</div>
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(200px,1fr))", gap: 12, marginBottom: 16 }}>
             <div>
               <div style={{ fontSize: 12, color: "#6b7280", marginBottom: 4 }}>Installment Amount</div>
-              <div style={{ fontSize: 14, fontWeight: 600, color: "#111" }}>₹{invoice.installmentAmount.toLocaleString()}</div>
+              <div style={{ fontSize: 14, fontWeight: 600, color: "#111" }}>₹{invoice.installmentAmount?.toLocaleString()}</div>
             </div>
             <div>
               <div style={{ fontSize: 12, color: "#6b7280", marginBottom: 4 }}>Late Fine</div>
-              <div style={{ fontSize: 14, fontWeight: 600, color: "#111" }}>₹{invoice.lateFine.toLocaleString()}</div>
+              <div style={{ fontSize: 14, fontWeight: 600, color: "#111" }}>₹{invoice.lateFine?.toLocaleString()}</div>
             </div>
             <div>
               <div style={{ fontSize: 12, color: "#6b7280", marginBottom: 4 }}>Discount</div>
-              <div style={{ fontSize: 14, fontWeight: 600, color: "#111" }}>₹{invoice.discount.toLocaleString()}</div>
+              <div style={{ fontSize: 14, fontWeight: 600, color: "#111" }}>₹{invoice.discount?.toLocaleString()}</div>
             </div>
             <div>
               <div style={{ fontSize: 12, color: "#6b7280", marginBottom: 4 }}>Previous Due</div>
-              <div style={{ fontSize: 14, fontWeight: 600, color: "#111" }}>₹{invoice.previousDue.toLocaleString()}</div>
+              <div style={{ fontSize: 14, fontWeight: 600, color: "#111" }}>₹{invoice.previousDue?.toLocaleString()}</div>
             </div>
           </div>
           <div style={{ background: "#f9fafb", padding: 16, borderRadius: 8, marginBottom: 16 }}>
             <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 8 }}>
               <span style={{ fontSize: 14, color: "#6b7280" }}>Total Payable</span>
-              <span style={{ fontSize: 16, fontWeight: 600, color: "#111" }}>₹{invoice.totalPayable.toLocaleString()}</span>
+              <span style={{ fontSize: 16, fontWeight: 600, color: "#111" }}>₹{invoice.totalPayable?.toLocaleString()}</span>
             </div>
             <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 8 }}>
               <span style={{ fontSize: 14, color: "#6b7280" }}>Amount Paid</span>
-              <span style={{ fontSize: 16, fontWeight: 600, color: "#111" }}>₹{invoice.amountPaid.toLocaleString()}</span>
+              <span style={{ fontSize: 16, fontWeight: 600, color: "#111" }}>₹{invoice.amountPaid?.toLocaleString()}</span>
             </div>
             <div style={{ display: "flex", justifyContent: "space-between" }}>
               <span style={{ fontSize: 14, color: "#6b7280" }}>Balance</span>
-              <span style={{ fontSize: 16, fontWeight: 600, color: "#111" }}>₹{invoice.balance.toLocaleString()}</span>
+              <span style={{ fontSize: 16, fontWeight: 600, color: "#111" }}>₹{invoice.balance?.toLocaleString()}</span>
             </div>
           </div>
           <div className="receipt-grid sm-grid-2" style={{ display: "grid", gap: 12 }}>
@@ -777,7 +311,6 @@ function InvoicePreview({ invoice, onClose }) {
           </div>
         </div>
 
-        {/* Account Status */}
         <div style={{ marginBottom: 24, paddingBottom: 24, borderBottom: "2px solid #e5e7eb" }}>
           <div style={{ fontSize: 14, fontWeight: 700, color: "#111", marginBottom: 12 }}>ACCOUNT STATUS</div>
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(200px,1fr))", gap: 12 }}>
@@ -791,22 +324,20 @@ function InvoicePreview({ invoice, onClose }) {
             </div>
             <div>
               <div style={{ fontSize: 12, color: "#6b7280", marginBottom: 4 }}>Total Paid</div>
-              <div style={{ fontSize: 14, fontWeight: 600, color: "#111" }}>₹{invoice.totalPaid.toLocaleString()}</div>
+              <div style={{ fontSize: 14, fontWeight: 600, color: "#111" }}>₹{invoice.totalPaid?.toLocaleString()}</div>
             </div>
             <div>
               <div style={{ fontSize: 12, color: "#6b7280", marginBottom: 4 }}>Remaining Amount</div>
-              <div style={{ fontSize: 14, fontWeight: 600, color: "#111" }}>₹{invoice.remainingAmount.toLocaleString()}</div>
+              <div style={{ fontSize: 14, fontWeight: 600, color: "#111" }}>₹{invoice.remainingAmount?.toLocaleString()}</div>
             </div>
           </div>
         </div>
 
-        {/* Remarks */}
         <div style={{ marginBottom: 24, paddingBottom: 24, borderBottom: "2px solid #e5e7eb" }}>
           <div style={{ fontSize: 14, fontWeight: 700, color: "#111", marginBottom: 12 }}>REMARKS</div>
           <div style={{ fontSize: 14, color: "#6b7280" }}>{invoice.remarks || 'Payment received successfully.'}</div>
         </div>
 
-        {/* Status */}
         <div style={{ marginBottom: 24, paddingBottom: 24, borderBottom: "2px solid #e5e7eb" }}>
           <div style={{ display: "flex", justifyContent: "center", alignItems: "center", gap: 8 }}>
             <div style={{ width: 12, height: 12, borderRadius: "50%", background: statusColors[invoice.status] }}></div>
@@ -814,7 +345,6 @@ function InvoicePreview({ invoice, onClose }) {
           </div>
         </div>
 
-        {/* Company Payment Details */}
         <div style={{ marginBottom: 24, paddingBottom: 24, borderBottom: "2px solid #e5e7eb" }}>
           <div style={{ fontSize: 14, fontWeight: 700, color: "#111", marginBottom: 12 }}>COMPANY PAYMENT DETAILS</div>
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(250px,1fr))", gap: 12 }}>
@@ -831,76 +361,14 @@ function InvoicePreview({ invoice, onClose }) {
               <div style={{ fontSize: 14, fontWeight: 600, color: "#111" }}>{COMPANY.ifscCode}</div>
             </div>
             <div>
-              <div style={{ fontSize: 12, color: "#6b7280", marginBottom: 4 }}>UPI ID</div>
-              <div style={{ fontSize: 14, fontWeight: 600, color: "#111" }}>{COMPANY.upiId}</div>
+              <div style={{ fontSize: 12, color: "#6b7280", marginBottom: 4 }}>Branch</div>
+              <div style={{ fontSize: 14, fontWeight: 600, color: "#111" }}>{COMPANY.bankBranch}</div>
             </div>
           </div>
         </div>
 
-        {/* QR Code Section */}
-        <div style={{ marginBottom: 24, paddingBottom: 24, borderBottom: "2px solid #e5e7eb", textAlign: "center" }}>
-          <div style={{ fontSize: 14, fontWeight: 700, color: "#111", marginBottom: 12 }}>Scan to Pay / Verify Invoice</div>
-          <div style={{ display: "flex", justifyContent: "center", marginBottom: 12 }}>
-            <QRCodeCanvas 
-              value={`upi://pay?pa=${COMPANY.upiId}&pn=${COMPANY.name}&am=${invoice.amountPaid}&cu=INR`}
-              size={128}
-              level="H"
-            />
-          </div>
-          <div style={{ fontSize: 12, color: "#6b7280" }}>
-            Invoice Number: {invoice.invoiceNumber}
-          </div>
-          <div style={{ fontSize: 12, color: "#6b7280", marginTop: 4 }}>
-            Verification: <a href={invoice.verificationUrl} target="_blank" rel="noopener noreferrer" style={{ color: "#2563eb" }}>{invoice.verificationUrl}</a>
-          </div>
-        </div>
-
-        {/* Signatures */}
-        <div className="signatures-grid" style={{ display: "grid", gap: 24, marginTop: 40 }}>
-          <style>{`@media (min-width: 640px) { .signatures-grid { grid-template-columns: 1fr 1fr !important; gap: 40px !important; } }`}</style>
-          <div>
-            <div style={{ fontSize: 12, color: "#6b7280", marginBottom: 40 }}>Collector Signature</div>
-            <div style={{ height: 2, background: "#e5e7eb" }}></div>
-          </div>
-          <div>
-            <div style={{ fontSize: 12, color: "#6b7280", marginBottom: 40 }}>Member Signature</div>
-            <div style={{ height: 2, background: "#e5e7eb" }}></div>
-          </div>
-        </div>
-
-        {/* Thank You */}
-        <div style={{ textAlign: "center", marginTop: 32, fontSize: 14, color: "#6b7280" }}>
-          Thank You for Your Payment
-        </div>
-
-        {/* Action Buttons */}
-        <div style={{ display: "flex", gap: 10, marginTop: 24, justifyContent: "center", flexWrap: "wrap" }}>
-          <button onClick={() => window.print()} style={{ display: "inline-flex", alignItems: "center", gap: 6, padding: "10px 20px", borderRadius: 8, border: "none", background: "#2563eb", color: "#fff", cursor: "pointer", fontSize: 13, fontWeight: 600, transition: "all .2s" }}>
-            <HiPrinter size={16} /> Print
-          </button>
-          <button onClick={() => toast.add("Downloading PDF...")} style={{ display: "inline-flex", alignItems: "center", gap: 6, padding: "10px 20px", borderRadius: 8, border: "none", background: "#10b981", color: "#fff", cursor: "pointer", fontSize: 13, fontWeight: 600, transition: "all .2s" }}>
-            <HiArrowDownTray size={16} /> Download
-          </button>
-          <button onClick={async () => {
-            try {
-              await fetch(`/api/invoices/${invoice._id}/send-whatsapp`, { method: 'POST' });
-              toast.add("WhatsApp receipt sent successfully!");
-            } catch (error) {
-              toast.add("Error sending WhatsApp receipt", "error");
-            }
-          }} style={{ display: "inline-flex", alignItems: "center", gap: 6, padding: "10px 20px", borderRadius: 8, border: "none", background: "#25D366", color: "#fff", cursor: "pointer", fontSize: 13, fontWeight: 600, transition: "all .2s" }}>
-            <HiDevicePhoneMobile size={16} /> WhatsApp
-          </button>
-          <button onClick={async () => {
-            try {
-              await fetch(`/api/invoices/${invoice._id}/send-email`, { method: 'POST' });
-              toast.add("Email receipt sent successfully!");
-            } catch (error) {
-              toast.add("Error sending email receipt", "error");
-            }
-          }} style={{ display: "inline-flex", alignItems: "center", gap: 6, padding: "10px 20px", borderRadius: 8, border: "none", background: "#ea4335", color: "#fff", cursor: "pointer", fontSize: 13, fontWeight: 600, transition: "all .2s" }}>
-            <HiEnvelope size={16} /> Email
-          </button>
+        <div style={{ display: "flex", justifyContent: "center", gap: 12, marginTop: 8 }}>
+          <button onClick={onClose} style={{ padding: "12px 32px", background: "#2563eb", color: "#fff", border: "none", borderRadius: 8, fontWeight: 600, cursor: "pointer", fontSize: 14 }}>Close</button>
         </div>
       </div>
     </div>

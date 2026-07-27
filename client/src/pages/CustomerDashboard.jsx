@@ -1,10 +1,10 @@
 import { useState } from "react";
 import { useData } from "../hooks/useData";
-import { createData } from "../utils/api";
 import { SectionHeader } from "../components/SectionHeader";
 import { Table } from "../components/Table";
 import { Badge } from "../components/Badge";
 import { InvoiceModal } from "../components/InvoiceModal";
+import { PaymentModal } from "../components/PaymentModal";
 import { useAuth } from "../contexts/AuthContext";
 import { fmt } from "../utils/helpers";
 import { FiUser, FiFileText, FiDollarSign, FiCalendar, FiCreditCard, FiCheckCircle, FiClock, FiAlertCircle, FiTrendingUp } from "react-icons/fi";
@@ -18,7 +18,7 @@ export function CustomerDashboard({ dark, toast }) {
   const { data: auctions } = useData('/auctions');
   const [showInvoicePopup, setShowInvoicePopup] = useState(false);
   const [selectedInvoice, setSelectedInvoice] = useState(null);
-  const [generating, setGenerating] = useState(false);
+  const [payTarget, setPayTarget] = useState(null);
 
   const customerId = user?.memberId || user?.userId;
   const userMember = Array.isArray(members) ? members.find(m => m.memberId === customerId) : null;
@@ -55,39 +55,6 @@ export function CustomerDashboard({ dark, toast }) {
     const status = isPaid ? 'Paid' : isDueNow ? 'Due Now' : isOverdue ? 'Overdue' : 'Upcoming';
     return { month: monthNum, amount: ma.amount || monthlyInstallment || 0, auctionAmount: ma.auctionAmount || 0, invoice: existingInvoice, status };
   });
-
-  const handleGenerateInvoice = async (monthNum, amount) => {
-    try {
-      toast.add("Generating invoice...");
-      const invoiceData = {
-        invoiceNumber: `INV-${new Date().getFullYear()}-${Math.floor(Math.random() * 9000) + 1000}`,
-        receiptNumber: `RCPT-${Math.floor(Math.random() * 9000) + 1000}`,
-        date: new Date(), time: new Date().toLocaleTimeString(),
-        branch: "Madurai HQ", collectedBy: "Online Portal",
-        memberId: customerId, memberName: userMember?.name || user?.name,
-        memberMobile: userMember?.phone || user?.phone || "",
-        memberAddress: userMember?.address || "",
-        memberAadhar: userMember?.aadhaar || "",
-        chitName: userScheme?.name || '', chitGroup: userGroup?.name || '',
-        chitNumber: `CHIT-${userScheme?.amount || ''}`,
-        totalChitValue: userScheme?.amount || 0, monthlyAmount: amount,
-        duration: userScheme?.duration || 0, currentMonth: monthNum,
-        dueDate: new Date(Date.now() + 5 * 86400000),
-        installmentAmount: amount, lateFine: 0, discount: 0, previousDue: 0,
-        totalPayable: amount, amountPaid: 0, balance: amount,
-        paymentMethod: 'Pending', referenceNumber: '',
-        paidInstallments: 0, remainingInstallments: (userScheme?.duration || 0) - monthNum,
-        totalPaid: 0, remainingAmount: (userScheme?.amount || 0) - amount,
-        status: 'Pending', remarks: `Installment ${monthNum}`
-      };
-      const result = await createData('/invoices', invoiceData);
-      toast.add("Invoice generated!", "success");
-      return result.invoice || result;
-    } catch (err) {
-      toast.add("Error: " + err.message, "error");
-      return null;
-    }
-  };
 
   return (
     <div>
@@ -139,16 +106,10 @@ export function CustomerDashboard({ dark, toast }) {
                         {s.status === 'Paid' ? (
                           <span style={{ fontSize: 11, color: "#10b981", fontWeight: 600 }}>Paid ✓</span>
                         ) : s.status === 'Due Now' || s.status === 'Overdue' ? (
-                          <button onClick={async () => {
-                            if (generating) return;
-                            if (s.invoice) { setSelectedInvoice(s.invoice); setShowInvoicePopup(true); }
-                            else {
-                              setGenerating(true);
-                              const newInv = await handleGenerateInvoice(s.month, s.amount);
-                              setGenerating(false);
-                              if (newInv) { setSelectedInvoice(newInv); setShowInvoicePopup(true); }
-                            }
-                          }} style={{ padding: "6px 14px", background: "#2563eb", color: "#fff", border: "none", borderRadius: 6, fontSize: 11, fontWeight: 600, cursor: "pointer" }}>Pay Now</button>
+                          <button onClick={() => setPayTarget({
+                            member: userMember, group: userGroup,
+                            scheme: userScheme, installment: { month: s.month }
+                          })} style={{ padding: "6px 14px", background: "#2563eb", color: "#fff", border: "none", borderRadius: 6, fontSize: 11, fontWeight: 600, cursor: "pointer" }}>Pay Now</button>
                         ) : (
                           <span style={{ fontSize: 11, color: dark ? "rgba(255,255,255,.4)" : "#9ca3af" }}>Upcoming</span>
                         )}
@@ -208,6 +169,17 @@ export function CustomerDashboard({ dark, toast }) {
         <InvoiceModal invoice={selectedInvoice} dark={dark}
           onClose={() => { setShowInvoicePopup(false); setSelectedInvoice(null); }}
           onPaymentSuccess={() => { window.location.reload(); }} toast={toast} />
+      )}
+
+      {payTarget && (
+        <PaymentModal
+          member={payTarget.member}
+          group={payTarget.group}
+          scheme={payTarget.scheme}
+          installment={payTarget.installment}
+          onClose={() => setPayTarget(null)}
+          onSuccess={() => { setPayTarget(null); window.location.reload(); }}
+        />
       )}
     </div>
   );
