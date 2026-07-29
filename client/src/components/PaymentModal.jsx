@@ -147,12 +147,18 @@ export function PaymentModal({ member, group, scheme, installment, onClose, onSu
         </div>
 
         <div style={{ padding: 24 }}>
-          <div style={{ background: "#f8fafc", borderRadius: 10, padding: "14px 16px", marginBottom: 16 }}>
-            <div style={{ fontSize: 11, fontWeight: 800, color: "#94a3b8", letterSpacing: 1.2, marginBottom: 10 }}>INVOICE DETAILS</div>
-            <InfoRow l="Member Name" v={member.name} />
+          <div style={{ background: "#f0fdf4", border: "1px solid #bbf7d0", borderRadius: 10, padding: "14px 16px", marginBottom: 16 }}>
+            <div style={{ fontSize: 11, fontWeight: 800, color: "#16a34a", letterSpacing: 1.2, marginBottom: 10 }}>CUSTOMER DETAILS</div>
+            <InfoRow l="Name" v={member.name} />
             <InfoRow l="Member ID" v={member.memberId} />
+            {member.phone && <InfoRow l="Phone" v={member.phone} />}
+            {member.email && <InfoRow l="Email" v={member.email} />}
+            {member.address && <InfoRow l="Address" v={member.address} />}
             <InfoRow l="Group" v={group.name} />
             <InfoRow l="Scheme" v={scheme.name} />
+          </div>
+          <div style={{ background: "#f8fafc", borderRadius: 10, padding: "14px 16px", marginBottom: 16 }}>
+            <div style={{ fontSize: 11, fontWeight: 800, color: "#94a3b8", letterSpacing: 1.2, marginBottom: 10 }}>INVOICE DETAILS</div>
             <InfoRow l="Installment" v={`Month ${installment.month} of ${scheme.duration}`} />
             <InfoRow l="Due Date" v={dueDate} />
           </div>
