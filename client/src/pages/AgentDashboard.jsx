@@ -169,6 +169,73 @@ export function AgentDashboard({ dark, toast }) {
         </div>
       )}
 
+      {myCustomers.length > 0 && Array.isArray(groups) && groups.length > 0 && (
+        <div style={{ background: dark ? "rgba(255,255,255,.05)" : "#fff", border: dark ? "1px solid rgba(255,255,255,.1)" : "1px solid #e5e7eb", borderRadius: 12, padding: 20, marginBottom: 20 }}>
+          <div style={{ fontSize: 14, fontWeight: 600, color: dark ? "#f3f4f6" : "#111", marginBottom: 14 }}>Customers' Installment Schedule</div>
+          {groups.map(g => {
+            const s = Array.isArray(schemes) ? schemes.find(sc => sc.id === g.schemeId) : null;
+            if (!s) return null;
+            const groupCustomers = myCustomers.filter(m => m.groups?.includes(g.id));
+            if (groupCustomers.length === 0) return null;
+            const months = s.monthlyAmounts?.length ? s.monthlyAmounts : Array.from({ length: s.duration }, (_, i) => ({ month: i + 1, amount: 0, auctionAmount: 0 }));
+            return (
+              <div key={g.id} style={{ marginBottom: 16, padding: 12, background: dark ? "rgba(255,255,255,.03)" : "#f8fafc", borderRadius: 8 }}>
+                <div style={{ fontWeight: 700, fontSize: 13, color: dark ? "#f3f4f6" : "#0f172a", marginBottom: 8 }}>{g.name} ({s.name}) — {groupCustomers.length} customer(s)</div>
+                {groupCustomers.map(customer => {
+                  const paidMonths = Array.isArray(collections) ? collections.filter(c => c.memberId === customer.memberId && c.status === 'Paid').map(c => Number(c.installment)) : [];
+                  const pendingMonths = Array.isArray(collections) ? collections.filter(c => c.memberId === customer.memberId && c.status === 'Pending').map(c => Number(c.installment)) : [];
+                  const now = new Date();
+                  return (
+                    <div key={customer.memberId} style={{ marginBottom: 10, padding: 10, background: dark ? "rgba(255,255,255,.05)" : "#fff", borderRadius: 6, border: "1px solid " + (dark ? "rgba(255,255,255,.08)" : "#e5e7eb") }}>
+                      <div style={{ fontWeight: 600, fontSize: 12, color: dark ? "#e2e8f0" : "#0f172a", marginBottom: 6 }}>{customer.name} ({customer.memberId}) — {customer.phone}</div>
+                      <div style={{ overflowX: "auto" }}>
+                        <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 11 }}>
+                          <thead>
+                            <tr style={{ background: dark ? "rgba(255,255,255,.03)" : "#f8fafc" }}>
+                              {["Month", "Due", "Amount", "Status", ""].map(h => <th key={h} style={{ padding: "4px 8px", textAlign: "left", color: dark ? "rgba(255,255,255,.4)" : "#64748b", fontWeight: 600, borderBottom: "1px solid " + (dark ? "rgba(255,255,255,.08)" : "#e5e7eb") }}>{h}</th>)}
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {months.map(m => {
+                              const paid = paidMonths.includes(m.month);
+                              const pending = pendingMonths.includes(m.month);
+                              const due = new Date(customer.joined || now);
+                              due.setMonth(due.getMonth() + m.month - 1);
+                              due.setDate(5);
+                              const overdue = !paid && !pending && due < now;
+                              return (
+                                <tr key={m.month} style={{ borderBottom: "1px solid " + (dark ? "rgba(255,255,255,.04)" : "#f1f5f9"), background: paid ? "#f0fdf4" : pending ? "#fffbeb" : overdue ? "#fef2f2" : "transparent" }}>
+                                  <td style={{ padding: "4px 8px", fontWeight: 600 }}>Month {m.month}</td>
+                                  <td style={{ padding: "4px 8px", color: overdue ? "#dc2626" : dark ? "rgba(255,255,255,.4)" : "#64748b" }}>{due.toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" })}</td>
+                                  <td style={{ padding: "4px 8px", fontWeight: 600 }}>{fmt(m.amount)}</td>
+                                  <td style={{ padding: "4px 8px" }}>
+                                    {paid ? <Badge text="Paid" color="green" /> : pending ? <Badge text="Pending" color="yellow" /> : overdue ? <Badge text="Overdue" color="red" /> : <Badge text="Due" color="orange" />}
+                                  </td>
+                                  <td style={{ padding: "4px 8px" }}>
+                                    {!paid && !pending && (
+                                      <button onClick={() => setPayTarget({ member: customer, group: g, scheme: s, installment: m })}
+                                        style={{ padding: "3px 10px", background: "#2563eb", color: "#fff", border: "none", borderRadius: 5, fontSize: 10, fontWeight: 600, cursor: "pointer" }}>
+                                        Pay Now
+                                      </button>
+                                    )}
+                                    {pending && <span style={{ fontSize: 10, color: "#92400e" }}>Awaiting</span>}
+                                    {paid && <span style={{ fontSize: 10, color: "#16a34a", fontWeight: 600 }}>✓</span>}
+                                  </td>
+                                </tr>
+                              );
+                            })}
+                          </tbody>
+                        </table>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            );
+          })}
+        </div>
+      )}
+
       <div style={{ background: dark ? "rgba(255,255,255,.05)" : "#fff", border: dark ? "1px solid rgba(255,255,255,.1)" : "1px solid #e5e7eb", borderRadius: 12, padding: 20 }}>
         <div style={{ fontSize: 14, fontWeight: 600, color: dark ? "#f3f4f6" : "#111", marginBottom: 14 }}>Commission Summary</div>
         {myCommissions.length > 0 ? (
