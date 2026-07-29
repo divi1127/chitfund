@@ -28,12 +28,19 @@ export function SubAdminDashboard({ dark, toast }) {
   const monthlyCollectionsAmount = monthlyCollections.reduce((sum, c) => sum + (c.amount || 0), 0);
   const pendingKyc = Array.isArray(kyc) ? kyc.filter(k => k.status === 'pending').length : 0;
 
-  const chartData = [
-    { l: "Jan", v: 180000 }, { l: "Feb", v: 220000 }, { l: "Mar", v: 195000 },
-    { l: "Apr", v: 260000 }, { l: "May", v: 310000 }, { l: "Jun", v: 285000 },
-  ];
+  const chartYear = 2026;
+  const monthlyMap = {};
+  collections.forEach(c => {
+    const d = new Date(c.date);
+    if (d.getFullYear() !== chartYear) return;
+    const key = d.getMonth();
+    if (!monthlyMap[key]) monthlyMap[key] = 0;
+    monthlyMap[key] += c.amount || 0;
+  });
+  const monthNames = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+  const chartData = monthNames.map((l, i) => ({ l, v: monthlyMap[i] || 0 }));
 
-  const memberById = (id) => members.find((m) => m.id === id);
+  const memberById = (id) => members.find((m) => m.memberId === id || m.id === id);
   const groupById = (id) => groups.find((g) => g.id === id);
 
   return (

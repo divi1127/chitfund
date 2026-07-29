@@ -41,9 +41,11 @@ export function SuperAdminDashboard({ dark, toast }) {
   const totalBranches = branches?.length || 0;
   const totalAdmins = users?.filter(u => u.role === 'admin').length || 0;
 
+  const chartYear = 2026;
   const monthlyMap = {};
   collections.forEach(c => {
     const d = new Date(c.date);
+    if (d.getFullYear() !== chartYear) return;
     const key = d.getMonth();
     if (!monthlyMap[key]) monthlyMap[key] = 0;
     monthlyMap[key] += c.amount || 0;
@@ -74,7 +76,7 @@ export function SuperAdminDashboard({ dark, toast }) {
       <div className="d-grid d-grid-2-1" style={{ marginBottom: 20 }}>
         <div style={{ background: dark ? "rgba(255,255,255,.05)" : "#fff", border: dark ? "1px solid rgba(255,255,255,.1)" : "1px solid #e5e7eb", borderRadius: 12, padding: 20 }}>
           <div style={{ fontSize: 14, fontWeight: 600, color: dark ? "#f3f4f6" : "#111", marginBottom: 4 }}>Monthly Collections Trend</div>
-          <div style={{ fontSize: 12, color: dark ? "rgba(255,255,255,.4)" : "#9ca3af", marginBottom: 16 }}>Jan  Jun 2024</div>
+          <div style={{ fontSize: 12, color: dark ? "rgba(255,255,255,.4)" : "#9ca3af", marginBottom: 16 }}>Jan - Dec 2026</div>
           <div style={{ display: "flex", alignItems: "flex-end", gap: 8, height: 160, padding: "0 4px" }}>
             {chartData.map((d, i) => (
               <div key={i} style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", gap: 4 }}>

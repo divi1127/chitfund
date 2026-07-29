@@ -53,6 +53,18 @@ export function AdminDashboard({ dark, toast }) {
     return d.toDateString() === new Date().toDateString();
   });
 
+  const chartYear = 2026;
+  const monthlyMap = {};
+  collections.forEach(c => {
+    const d = new Date(c.date);
+    if (d.getFullYear() !== chartYear) return;
+    const key = d.getMonth();
+    if (!monthlyMap[key]) monthlyMap[key] = 0;
+    monthlyMap[key] += c.amount || 0;
+  });
+  const monthNames = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+  const chartData = monthNames.map((l, i) => ({ l, v: monthlyMap[i] || 0 }));
+
   const groupById = (id) => groups.find((g) => g.id === id);
 
   return (
@@ -93,11 +105,12 @@ export function AdminDashboard({ dark, toast }) {
 
       <div className="d-grid d-grid-2" style={{ marginBottom: 20 }}>
         <div style={{ background: dark ? "rgba(255,255,255,.05)" : "#fff", border: dark ? "1px solid rgba(255,255,255,.1)" : "1px solid #e5e7eb", borderRadius: 12, padding: 20 }}>
-          <div style={{ fontSize: 14, fontWeight: 600, color: dark ? "#f3f4f6" : "#111", marginBottom: 14 }}>Monthly Collections Trend</div>
-          <div style={{ display: "flex", alignItems: "flex-end", gap: 8, height: 120, padding: "0 4px" }}>
-            {[{ l: "This Month", v: monthlyCollectionsAmount }, { l: "Last Month", v: 0 }].map((d, i) => (
+          <div style={{ fontSize: 14, fontWeight: 600, color: dark ? "#f3f4f6" : "#111", marginBottom: 4 }}>Monthly Collections Trend</div>
+          <div style={{ fontSize: 12, color: dark ? "rgba(255,255,255,.4)" : "#9ca3af", marginBottom: 16 }}>Jan - Dec {chartYear}</div>
+          <div style={{ display: "flex", alignItems: "flex-end", gap: 8, height: 140, padding: "0 4px" }}>
+            {chartData.map((d, i) => (
               <div key={i} style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", gap: 4 }}>
-                <div style={{ fontSize: 10, color: dark ? "rgba(255,255,255,.5)" : "#6b7280" }}>{fmt(d.v)}</div>
+                <div style={{ fontSize: 10, color: dark ? "rgba(255,255,255,.5)" : "#6b7280" }}>{(d.v / 1000).toFixed(0)}k</div>
                 <div style={{ width: "100%", height: `${Math.min((d.v / 500000) * 100, 100)}px`, background: "linear-gradient(180deg, #8b5cf6, #6d28d9)", borderRadius: "4px 4px 0 0", minHeight: 10 }} />
                 <div style={{ fontSize: 10, color: dark ? "rgba(255,255,255,.5)" : "#6b7280" }}>{d.l}</div>
               </div>

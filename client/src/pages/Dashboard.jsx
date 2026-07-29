@@ -115,9 +115,11 @@ export function Dashboard({ toast }) {
     }
   };
 
+  const chartYear = 2026;
   const monthlyMap = {};
   collections.forEach(c => {
     const d = new Date(c.date);
+    if (d.getFullYear() !== chartYear) return;
     const key = d.getMonth();
     if (!monthlyMap[key]) monthlyMap[key] = 0;
     monthlyMap[key] += c.amount || 0;
@@ -125,7 +127,7 @@ export function Dashboard({ toast }) {
   const monthNames = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
   const chartData = monthNames.map((l, i) => ({ l, v: monthlyMap[i] || 0 }));
 
-  const memberById = (id) => members.find((m) => m.id === id);
+  const memberById = (id) => members.find((m) => m.memberId === id || m.id === id);
   const schemeById = (id) => schemes.find((s) => s.id === id);
   const groupById = (id) => groups.find((g) => g.id === id);
 
@@ -332,7 +334,7 @@ export function Dashboard({ toast }) {
         {/* Collections chart */}
         <div style={{ background: "var(--bg-card)", border: "1px solid var(--border-color)", borderRadius: 12, padding: 20 }}>
           <div style={{ fontSize: 14, fontWeight: 600, color: "var(--text-primary)", marginBottom: 4 }}>Monthly Collections</div>
-          <div style={{ fontSize: 12, color: "var(--text-muted-2)", marginBottom: 16 }}>{new Date().getFullYear()}</div>
+          <div style={{ fontSize: 12, color: "var(--text-muted-2)", marginBottom: 16 }}>{chartYear}</div>
           <MiniBarChart data={chartData}  />
         </div>
         {/* Upcoming auctions */}

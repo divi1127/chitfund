@@ -351,17 +351,11 @@ export function Members({ toast, setPreview }) {
                             </td>
                             <td style={{ padding: "10px 12px" }}>
                               {!paid && !pending ? (
-                                isUser ? (
-                                  <button
-                                    onClick={() => setPayTarget({ member, group, scheme, installment: m })}
-                                    style={{ padding: "6px 14px", background: "#2563eb", color: "#fff", border: "none", borderRadius: 8, fontSize: 12, fontWeight: 700, cursor: "pointer" }}>
-                                    Pay ₹{m.amount.toLocaleString("en-IN")}
-                                  </button>
-                                ) : (
-                                  <span style={{ background: overdue ? "#fee2e2" : "#f1f5f9", color: overdue ? "#dc2626" : "#64748b", borderRadius: 6, padding: "3px 10px", fontSize: 12, fontWeight: 600 }}>
-                                    {overdue ? "Overdue" : "Due"}
-                                  </span>
-                                )
+                                <button
+                                  onClick={() => setPayTarget({ member, group, scheme, installment: m })}
+                                  style={{ padding: "6px 14px", background: "#2563eb", color: "#fff", border: "none", borderRadius: 8, fontSize: 12, fontWeight: 700, cursor: "pointer" }}>
+                                  Pay ₹{m.amount.toLocaleString("en-IN")}
+                                </button>
                               ) : pending ? (
                                 <span style={{ fontSize: 12, color: "#92400e" }}>Awaiting approval</span>
                               ) : (

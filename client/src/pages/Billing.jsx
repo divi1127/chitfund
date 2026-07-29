@@ -8,8 +8,10 @@ import { COMPANY } from "../utils/constants";
 import { fmt, numberToWords, genId } from "../utils/helpers";
 import { HiXMark, HiPlus, HiEye, HiArrowDownTray } from "react-icons/hi2";
 import { IconBtn } from "../components/IconBtn";
+import { useAuth } from "../contexts/AuthContext";
 
 export function Billing({ toast, setPreview }) {
+  const { user } = useAuth();
   const { data: members } = useData('/members');
   const { data: groups } = useData('/groups');
   const { data: schemes } = useData('/schemes');
@@ -19,8 +21,13 @@ export function Billing({ toast, setPreview }) {
   const [items, setItems] = useState([{ desc: "", qty: 1, rate: "" }]);
   const [note, setNote] = useState("");
 
-  const memberById = (id) => members.find((m) => m.id === id);
-  const groupById = (id) => groups.find((g) => g.id === id);
+  const isAgent = user?.role === 'agent';
+  const agentId = user?.agentId || user?.userId;
+  const filteredMembers = isAgent ? members.filter(m => m.agentId === agentId) : members;
+  const filteredGroups = isAgent ? groups.filter(g => filteredMembers.some(m => m.groups?.includes(g.id))) : groups;
+
+  const memberById = (id) => filteredMembers.find((m) => m.memberId === id || m.id === id);
+  const groupById = (id) => filteredGroups.find((g) => g.id === id);
   const schemeById = (id) => schemes.find((s) => s.id === id);
 
   const total = items.reduce((s, i) => s + (Number(i.qty) * Number(i.rate) || 0), 0);
@@ -124,8 +131,8 @@ Thank you for your business!
       <SectionHeader title="Billing & Invoicing" subtitle="Generate GST invoices and bills" />
       <div style={{ background: "var(--bg-card)", border: "1px solid var(--border-color)", borderRadius: 12, padding: 24 }}>
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(220px,1fr))", gap: "0 20px" }}>
-          <Input label="Member" value={memberId} onChange={setMemberId} options={members.map(m => ({ value: m.id, label: m.name }))} />
-          <Input label="Group" value={groupId} onChange={setGroupId} options={groups.map(g => ({ value: g.id, label: g.name }))} />
+          <Input label="Member" value={memberId} onChange={setMemberId} options={filteredMembers.map(m => ({ value: m.id, label: m.name }))} />
+          <Input label="Group" value={groupId} onChange={setGroupId} options={filteredGroups.map(g => ({ value: g.id, label: g.name }))} />
           <Input label="Payment Mode" value={paymentMode} onChange={setPaymentMode} options={["Cash", "Online", "Cheque", "DD", "UPI"].map(v => ({ value: v, label: v }))} />
         </div>
 

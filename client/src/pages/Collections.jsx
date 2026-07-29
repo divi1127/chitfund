@@ -48,7 +48,7 @@ export function Collections({ toast, setPreview }) {
     }))
   );
 
-  const memberById = (id) => members.find(m => m.id === id);
+  const memberById = (id) => members.find(m => m.memberId === id || m.id === id);
   const groupById = (id) => groups.find(g => g.id === id);
 
   const validateForm = () => {

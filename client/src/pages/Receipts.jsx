@@ -9,12 +9,15 @@ import { useAuth } from "../contexts/AuthContext";
 export function Receipts({ dark, toast }) {
   const { user } = useAuth();
   const { data: collections, loading, error, refetch } = useData('/collections');
+  const { data: members } = useData('/members');
   const [search, setSearch] = useState("");
 
   const customerId = user?.memberId || user?.userId;
   const userCollections = user?.role === 'customer'
     ? (Array.isArray(collections) ? collections.filter(c => c.memberId === customerId) : [])
     : (Array.isArray(collections) ? collections : []);
+
+  const memberById = (id) => members?.find(m => m.memberId === id || m.id === id);
 
   const filtered = userCollections.filter(c =>
     !search || c.receiptNo?.toLowerCase().includes(search.toLowerCase())
@@ -30,11 +33,13 @@ export function Receipts({ dark, toast }) {
       </div>
       <div style={{ background: dark ? "rgba(255,255,255,.05)" : "#fff", border: dark ? "1px solid rgba(255,255,255,.1)" : "1px solid #e5e7eb", borderRadius: 12, padding: 20 }}>
         <Table dark={dark} cols={["Receipt No", "Date", "Customer", "Amount", "Mode", "Installment", "Status"]}
-          rows={filtered.map(c => [
+          rows={filtered.map(c => {
+            const m = memberById(c.memberId);
+            return [
             c.receiptNo || " ", new Date(c.date).toLocaleDateString(),
-            c.memberId, fmt(c.amount), c.mode, `Month ${c.installment}`,
+            m?.name || c.memberId, fmt(c.amount), c.mode, `Month ${c.installment}`,
             <Badge key={c._id || c.id} text={c.status} color={c.status === 'Paid' ? 'green' : c.status === 'Partially Paid' ? 'yellow' : 'red'} />
-          ])} />
+          ];})} />
       </div>
     </div>
   );
