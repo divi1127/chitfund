@@ -11,12 +11,12 @@ export function PaymentModal({ member, group, scheme, installment, onClose, onSu
   const [upiProof, setUpiProof] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
-  const [step, setStep] = useState("invoice");
+  const [step, setStep] = useState("start");
   const [paymentType, setPaymentType] = useState("full");
-  const [numParts, setNumParts] = useState(10);
   const [selectedBlock, setSelectedBlock] = useState(null);
   const [existingCollection, setExistingCollection] = useState(null);
-  const maxDivisions = 10;
+
+  const BLOCKS = 10;
 
   useEffect(() => {
     (async () => {
@@ -28,38 +28,29 @@ export function PaymentModal({ member, group, scheme, installment, onClose, onSu
           c.groupId === group.id &&
           Number(c.installment) === Number(installment.month)
         ) : null;
-        if (found) {
-          setExistingCollection(found);
-          const paidParts = found.partialPayments?.filter(p => p.status === 'Paid').length || 0;
-          const totalParts = found.partialPayments?.length || 0;
-          if (paidParts > 0 || totalParts > 0) {
-            setPaymentType("parts");
-            setNumParts(Math.max(totalParts || 2, paidParts + 1));
-          }
-        }
+        if (found) setExistingCollection(found);
       } catch (_) {}
     })();
   }, [member.memberId, group.id, installment.month]);
 
   const monthData = scheme?.monthlyAmounts?.find(m => m.month === installment.month)
     ?? { amount: 0, auctionAmount: 0 };
-  const amount = monthData.amount;
+  const totalAmount = monthData.amount;
+  const blockValue = totalAmount / BLOCKS;
 
-  const pendingBalance = existingCollection?.pendingBalance != null
-    ? existingCollection.pendingBalance
-    : amount;
-  const paidSoFar = existingCollection
+  const paidAmount = existingCollection
     ? (existingCollection.partialPayments || []).filter(p => p.status === 'Paid').reduce((s, p) => s + (p.amount || 0), 0)
     : 0;
-  const approvedPartCount = existingCollection
-    ? (existingCollection.partialPayments || []).filter(p => p.status === 'Paid').length
-    : 0;
-  const lockedTotalParts = existingCollection?.partialPayments?.length || 0;
+  const paidBlocks = Math.round(paidAmount / (blockValue || 1));
+  const balanceAmount = Math.max(0, totalAmount - paidAmount);
+  const isFullyPaid = existingCollection?.status === 'Paid' || (paidBlocks >= BLOCKS && totalAmount > 0);
+  const hasPartialPayment = paidAmount > 0;
 
-  const isLocked = approvedPartCount > 0 || lockedTotalParts > 0;
-
-  const partAmount = paymentType === "full" ? pendingBalance : Math.floor(pendingBalance / (numParts - approvedPartCount));
-  const payAmount = paymentType === "full" ? pendingBalance : Math.floor(pendingBalance / Math.max(1, numParts - approvedPartCount));
+  const payAmount = paymentType === "parts"
+    ? blockValue
+    : paymentType === "balance"
+      ? balanceAmount
+      : totalAmount;
 
   const dueDate = (() => {
     const d = new Date(member.joined || new Date());
@@ -86,9 +77,9 @@ export function PaymentModal({ member, group, scheme, installment, onClose, onSu
         memberId: member.id,
         groupId: group.id,
         amount: payAmount,
-        fullAmount: amount,
-        paymentType,
-        numParts: paymentType === "parts" ? numParts : undefined,
+        fullAmount: totalAmount,
+        paymentType: paymentType === "parts" ? "parts" : "full",
+        numParts: paymentType === "parts" ? BLOCKS : undefined,
         installment: installment.month,
         mode,
         date: new Date().toISOString().split("T")[0],
@@ -115,25 +106,63 @@ export function PaymentModal({ member, group, scheme, installment, onClose, onSu
     </div>
   );
 
-  if (step === "success") return (
-    <div style={overlay}>
-      <div style={{ ...card, padding: 40, textAlign: "center" }}>
-        <div style={{ fontSize: 56, marginBottom: 12 }}>{mode === "UPI" ? "✅" : "🕐"}</div>
-        <div style={{ fontSize: 20, fontWeight: 800, color: "#0f172a", marginBottom: 8 }}>
-          {mode === "UPI" ? "Payment Recorded!" : "Pending Admin Approval"}
+  if (step === "success") {
+    const isNowFullyPaid = paymentType !== "parts" || payAmount >= balanceAmount || isFullyPaid;
+    const newPaidAmount = isNowFullyPaid ? totalAmount : paidAmount + payAmount;
+    const newBalance = Math.max(0, totalAmount - newPaidAmount);
+    return (
+      <div style={overlay}>
+        <div style={{ ...card, padding: 40, textAlign: "center" }}>
+          <div style={{ fontSize: 56, marginBottom: 12 }}>
+            {isNowFullyPaid ? "✅" : "✅"}
+          </div>
+          <div style={{ fontSize: 20, fontWeight: 800, color: "#0f172a", marginBottom: 8 }}>
+            {isNowFullyPaid
+              ? "Installment Paid Successfully"
+              : "Payment Recorded!"}
+          </div>
+          <div style={{ fontSize: 14, color: "#64748b", lineHeight: 1.7, marginBottom: 28 }}>
+            {isNowFullyPaid
+              ? <>All {BLOCKS} blocks have been paid for <strong>Month {installment.month}</strong>.</>
+              : <>Payment of <strong>{fmt(payAmount)}</strong> for <strong>Month {installment.month}</strong> submitted.<br />{mode === "UPI" ? "Receipt will be available once verified." : "Status will change to <strong>Paid</strong> once admin approves."}</>
+            }
+          </div>
+          <div style={{ display: "flex", gap: 16, justifyContent: "center", marginBottom: 24 }}>
+            <div style={{ background: "#f0fdf4", borderRadius: 10, padding: "12px 20px", textAlign: "center" }}>
+              <div style={{ fontSize: 11, color: "#16a34a", fontWeight: 600 }}>Paid Amount</div>
+              <div style={{ fontSize: 18, fontWeight: 800, color: "#15803d" }}>{fmt(newPaidAmount)}</div>
+            </div>
+            <div style={{ background: "#fef2f2", borderRadius: 10, padding: "12px 20px", textAlign: "center" }}>
+              <div style={{ fontSize: 11, color: "#ef4444", fontWeight: 600 }}>Balance</div>
+              <div style={{ fontSize: 18, fontWeight: 800, color: "#dc2626" }}>{fmt(newBalance)}</div>
+            </div>
+          </div>
+          <button onClick={onClose} style={{ padding: "12px 32px", background: "#2563eb", color: "#fff", border: "none", borderRadius: 10, fontWeight: 700, cursor: "pointer", fontSize: 14 }}>
+            Done
+          </button>
         </div>
-        <div style={{ fontSize: 14, color: "#64748b", lineHeight: 1.7, marginBottom: 28 }}>
-          {mode === "UPI"
-            ? <>UPI payment of <strong>{fmt(payAmount)}</strong> for <strong>Month {installment.month}</strong>{paymentType === "parts" ? <> (part {approvedPartCount + 1} of {numParts})</> : ""} submitted.<br />Receipt will be available once verified.</>
-            : <>Your cash payment request of <strong>{fmt(payAmount)}</strong> for <strong>Month {installment.month}</strong>{paymentType === "parts" ? <> (part {approvedPartCount + 1} of {numParts})</> : ""} is submitted.<br />Status will change to <strong>Paid</strong> once admin approves.</>
-          }
-        </div>
-        <button onClick={onClose} style={{ padding: "12px 32px", background: "#2563eb", color: "#fff", border: "none", borderRadius: 10, fontWeight: 700, cursor: "pointer", fontSize: 14 }}>
-          Done
-        </button>
       </div>
-    </div>
-  );
+    );
+  }
+
+  const buttons = (() => {
+    if (isFullyPaid) {
+      return {
+        left: { label: "Paid ✅", disabled: true, action: null },
+        right: { label: "Completed", disabled: true, action: null },
+      };
+    }
+    if (hasPartialPayment) {
+      return {
+        left: { label: `Pay Balance Amount ${fmt(balanceAmount)}`, action: "balance" },
+        right: { label: "Continue Part Payment", action: "parts" },
+      };
+    }
+    return {
+      left: { label: `Pay Full Amount ${fmt(totalAmount)}`, action: "full" },
+      right: { label: "Pay in Parts", action: "parts" },
+    };
+  })();
 
   return (
     <div style={overlay} onClick={e => e.target === e.currentTarget && onClose()}>
@@ -158,86 +187,158 @@ export function PaymentModal({ member, group, scheme, installment, onClose, onSu
             <InfoRow l="Group" v={group.name} />
             <InfoRow l="Scheme" v={scheme.name} />
           </div>
+
           <div style={{ background: "#f8fafc", borderRadius: 10, padding: "14px 16px", marginBottom: 16 }}>
             <div style={{ fontSize: 11, fontWeight: 800, color: "#94a3b8", letterSpacing: 1.2, marginBottom: 10 }}>INVOICE DETAILS</div>
             <InfoRow l="Installment" v={`Month ${installment.month} of ${scheme.duration}`} />
             <InfoRow l="Due Date" v={dueDate} />
           </div>
 
-          {isLocked && (
-            <div style={{ background: "#fefce8", border: "1px solid #fde68a", borderRadius: 10, padding: 12, marginBottom: 16, fontSize: 13, color: "#92400e" }}>
-              Already started — split into <strong>{lockedTotalParts} parts</strong>.
-              Paid: <strong>{fmt(paidSoFar)}</strong> · Remaining: <strong>{fmt(pendingBalance)}</strong>
+          <div style={{ background: "linear-gradient(135deg,#eff6ff,#dbeafe)", border: "1px solid #bfdbfe", borderRadius: 12, padding: 16, marginBottom: 16 }}>
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 12, textAlign: "center" }}>
+              <div>
+                <div style={{ fontSize: 11, fontWeight: 700, color: "#3b82f6", letterSpacing: 0.5, marginBottom: 4 }}>Total Installment</div>
+                <div style={{ fontSize: 22, fontWeight: 800, color: "#1e40af" }}>{fmt(totalAmount)}</div>
+              </div>
+              <div>
+                <div style={{ fontSize: 11, fontWeight: 700, color: "#16a34a", letterSpacing: 0.5, marginBottom: 4 }}>Paid Amount</div>
+                <div style={{ fontSize: 22, fontWeight: 800, color: "#15803d" }}>{fmt(paidAmount)}</div>
+              </div>
+              <div>
+                <div style={{ fontSize: 11, fontWeight: 700, color: "#ef4444", letterSpacing: 0.5, marginBottom: 4 }}>Balance Amount</div>
+                <div style={{ fontSize: 22, fontWeight: 800, color: "#dc2626" }}>{fmt(balanceAmount)}</div>
+              </div>
             </div>
-          )}
-
-          <div style={{ background: "#eff6ff", border: "1px solid #bfdbfe", borderRadius: 10, padding: 16, textAlign: "center", marginBottom: 16 }}>
-            <div style={{ fontSize: 11, fontWeight: 700, color: "#3b82f6", letterSpacing: 1, marginBottom: 4 }}>AMOUNT PAYABLE</div>
-            <div style={{ fontSize: 36, fontWeight: 800, color: "#1e40af" }}>{fmt(payAmount)}</div>
-            {paymentType === "parts" && pendingBalance > 0 && (
-              <div style={{ fontSize: 12, color: "#64748b", marginTop: 4 }}>
-                Part {approvedPartCount + 1} of {numParts} · Total: {fmt(pendingBalance)}
-              </div>
-            )}
-            {monthData.auctionAmount > 0 && (
-              <div style={{ fontSize: 12, color: "#7c3aed", marginTop: 4, fontWeight: 600 }}>
-                Auction Amount: {fmt(monthData.auctionAmount)}
-              </div>
-            )}
           </div>
 
-          {!isLocked && user?.role !== 'agent' && (
+          {!isFullyPaid && (
             <div style={{ marginBottom: 16 }}>
-              <div style={{ fontSize: 12, fontWeight: 700, color: "#64748b", marginBottom: 8, letterSpacing: 0.5 }}>PAYMENT OPTION</div>
               <div style={{ display: "flex", gap: 10 }}>
-                {[["full", "Pay Full Amount"], ["parts", "Pay in Parts"]].map(([val, lbl]) => (
-                  <button key={val} onClick={() => { setPaymentType(val); setNumParts(10); setSelectedBlock(null); }}
-                    style={{ flex: 1, padding: "10px 8px", borderRadius: 10, border: `2px solid ${paymentType === val ? "#2563eb" : "#e2e8f0"}`, background: paymentType === val ? "#eff6ff" : "#fff", color: paymentType === val ? "#1e40af" : "#374151", fontWeight: 700, fontSize: 12, cursor: "pointer" }}>
-                    {lbl}
+                {[buttons.left, buttons.right].map((btn, idx) => (
+                  <button key={idx} onClick={() => {
+                    if (!btn.disabled && btn.action) {
+                      setPaymentType(btn.action);
+                      if (btn.action === "full" || btn.action === "balance") {
+                        setStep("pay");
+                      } else {
+                        setSelectedBlock(null);
+                      }
+                    }
+                  }}
+                    disabled={btn.disabled}
+                    style={{
+                      flex: 1, padding: "12px 8px", borderRadius: 10,
+                      border: `2px solid ${paymentType === btn.action && step === "start" ? "#2563eb" : btn.disabled ? "#d1d5db" : "#e2e8f0"}`,
+                      background: btn.disabled ? "#f3f4f6"
+                        : paymentType === btn.action && step === "start" ? "#eff6ff"
+                        : "#fff",
+                      color: btn.disabled ? "#9ca3af"
+                        : paymentType === btn.action && step === "start" ? "#1e40af"
+                        : "#374151",
+                      fontWeight: 700, fontSize: 12, cursor: btn.disabled ? "not-allowed" : "pointer",
+                      opacity: btn.disabled ? 0.6 : 1
+                    }}>
+                    {btn.label}
                   </button>
                 ))}
               </div>
             </div>
           )}
 
-          {paymentType === "parts" && user?.role !== "agent" && (
-            <div style={{ background: "#f8fafc", border: "1px solid #e2e8f0", borderRadius: 10, padding: 14, marginBottom: 16 }}>
-              <div style={{ fontSize: 12, fontWeight: 600, color: "#374151", marginBottom: 12 }}>Select Payment Block (Partial Payments)</div>
-              {isLocked && (
-                <div style={{ fontSize: 13, color: "#d97706", marginBottom: 12, background: "#fef3c7", padding: "8px 12px", borderRadius: 6 }}>
-                  You have already made partial payments towards this installment.
-                </div>
-              )}
-              <div style={{ display: "grid", gridTemplateColumns: "repeat(5, 1fr)", gap: 8 }}>
-                {Array.from({ length: 10 }, (_, i) => {
-                  const isPaid = isLocked && i < approvedPartCount;
-                  const isSelected = selectedBlock === i;
-                  return (
-                    <button key={i} onClick={() => { if (!isPaid) { setNumParts(10); setSelectedBlock(i); } }}
-                      disabled={isPaid}
-                      style={{ width: "100%", height: 36, borderRadius: 8, border: `2px solid ${isPaid ? "#d1d5db" : isSelected ? "#2563eb" : "#e2e8f0"}`, background: isPaid ? "#d1d5db" : isSelected ? "#2563eb" : "#fff", color: isPaid ? "#9ca3af" : isSelected ? "#fff" : "#374151", fontWeight: 700, fontSize: 13, cursor: isPaid ? "not-allowed" : "pointer", opacity: isPaid ? 0.5 : 1 }}>
-                      {i + 1}
-                    </button>
-                  );
-                })}
-              </div>
-              <div style={{ marginTop: 10, background: "#eff6ff", borderRadius: 8, padding: "10px 14px", fontSize: 13 }}>
-                <span style={{ color: "#64748b" }}>Each block is </span>
-                <strong style={{ color: "#1e40af", fontSize: 15 }}>{fmt(Math.floor(amount / 10))}</strong>
-                <div style={{ fontSize: 11, color: "#94a3b8", marginTop: 4 }}>Total: {fmt(amount)}</div>
-              </div>
+          {isFullyPaid && (
+            <div style={{ background: "#f0fdf4", border: "1px solid #bbf7d0", borderRadius: 10, padding: 16, textAlign: "center", marginBottom: 16 }}>
+              <div style={{ fontSize: 16, fontWeight: 800, color: "#16a34a" }}>✅ This Month's Installment Completed</div>
+              <div style={{ fontSize: 13, color: "#15803d", marginTop: 4 }}>All {BLOCKS} blocks have been paid successfully.</div>
             </div>
           )}
 
-          {step === "invoice" && (
-            <button onClick={() => setStep("pay")}
-              style={{ width: "100%", padding: 14, background: "#2563eb", color: "#fff", border: "none", borderRadius: 10, fontSize: 15, fontWeight: 700, cursor: "pointer" }}>
-              Proceed to Pay {fmt(payAmount)} →
-            </button>
+          {step === "start" && (
+            <>
+              <div style={{ background: "#f8fafc", border: "1px solid #e2e8f0", borderRadius: 10, padding: 14, marginBottom: 16 }}>
+                <div style={{ fontSize: 12, fontWeight: 600, color: "#374151", marginBottom: 12 }}>
+                  Payment Blocks
+                  {!isFullyPaid && paymentType === "parts" && (
+                    <span style={{ color: "#2563eb", marginLeft: 8, fontSize: 11, fontWeight: 400 }}>Select a block to pay</span>
+                  )}
+                </div>
+                <div style={{ display: "grid", gridTemplateColumns: "repeat(5, 1fr)", gap: 8 }}>
+                  {Array.from({ length: BLOCKS }, (_, i) => {
+                    const isBlockPaid = i < paidBlocks;
+                    const isBlockSelected = selectedBlock === i;
+                    let bg, borderColor, textColor, cursor, content;
+                    if (isBlockPaid) {
+                      bg = "#16a34a";
+                      borderColor = "#16a34a";
+                      textColor = "#fff";
+                      cursor = "default";
+                      content = "✓";
+                    } else if (isBlockSelected && paymentType === "parts") {
+                      bg = "#2563eb";
+                      borderColor = "#2563eb";
+                      textColor = "#fff";
+                      cursor = "pointer";
+                      content = String(i + 1);
+                    } else if (paymentType === "parts" && !isFullyPaid) {
+                      bg = "#fff";
+                      borderColor = "#e2e8f0";
+                      textColor = "#374151";
+                      cursor = "pointer";
+                      content = String(i + 1);
+                    } else {
+                      bg = "#f8fafc";
+                      borderColor = "#e2e8f0";
+                      textColor = "#94a3b8";
+                      cursor = "default";
+                      content = String(i + 1);
+                    }
+                    return (
+                      <button key={i} onClick={() => {
+                        if (!isBlockPaid && !isFullyPaid && paymentType === "parts") {
+                          setSelectedBlock(selectedBlock === i ? null : i);
+                        }
+                      }}
+                        disabled={isBlockPaid || isFullyPaid || paymentType !== "parts"}
+                        style={{
+                          width: "100%", height: 40, borderRadius: 8,
+                          border: `2px solid ${borderColor}`,
+                          background: bg,
+                          color: textColor,
+                          fontWeight: 700, fontSize: 14,
+                          cursor: isBlockPaid || paymentType !== "parts" ? "default" : "pointer",
+                          transition: "all 0.15s",
+                          display: "flex", alignItems: "center", justifyContent: "center"
+                        }}>
+                        {content}
+                      </button>
+                    );
+                  })}
+                </div>
+                <div style={{ marginTop: 10, background: "#eff6ff", borderRadius: 8, padding: "10px 14px", fontSize: 13 }}>
+                  <span style={{ color: "#64748b" }}>Each block </span>
+                  <strong style={{ color: "#1e40af", fontSize: 15 }}>{fmt(blockValue)}</strong>
+                  <span style={{ color: "#64748b" }}> · {paidBlocks} of {BLOCKS} blocks paid</span>
+                </div>
+              </div>
+
+              {(paymentType === "full" || paymentType === "balance" || selectedBlock !== null) && !isFullyPaid && (
+                <button onClick={() => setStep("pay")}
+                  style={{ width: "100%", padding: 14, background: "#2563eb", color: "#fff", border: "none", borderRadius: 10, fontSize: 15, fontWeight: 700, cursor: "pointer" }}>
+                  Proceed to Pay {fmt(payAmount)} →
+                </button>
+              )}
+            </>
           )}
 
           {step === "pay" && (
             <>
+              <div style={{ background: "#eff6ff", border: "1px solid #bfdbfe", borderRadius: 10, padding: 14, textAlign: "center", marginBottom: 16 }}>
+                <div style={{ fontSize: 11, fontWeight: 700, color: "#3b82f6", letterSpacing: 0.5 }}>AMOUNT TO PAY</div>
+                <div style={{ fontSize: 28, fontWeight: 800, color: "#1e40af", marginTop: 4 }}>{fmt(payAmount)}</div>
+                <div style={{ fontSize: 12, color: "#64748b", marginTop: 4 }}>
+                  {paymentType === "parts" ? `Block ${selectedBlock + 1} of ${BLOCKS}` : `Remaining balance of Month ${installment.month}`}
+                </div>
+              </div>
+
               <div style={{ fontSize: 13, fontWeight: 700, color: "#374151", marginBottom: 10 }}>Choose Payment Mode</div>
               <div style={{ display: "flex", gap: 10, marginBottom: 18 }}>
                 {[["UPI", "📱 UPI / Online"], ["Cash", "💵 Cash"]].map(([val, lbl]) => (
@@ -293,7 +394,7 @@ export function PaymentModal({ member, group, scheme, installment, onClose, onSu
               )}
 
               <div style={{ display: "flex", gap: 10, marginTop: 4 }}>
-                <button onClick={() => setStep("invoice")}
+                <button onClick={() => { setStep("start"); setError(""); setMode(""); }}
                   style={{ flex: 1, padding: 12, background: "#f1f5f9", color: "#374151", border: "1px solid #e2e8f0", borderRadius: 10, fontWeight: 600, cursor: "pointer", fontSize: 13 }}>
                   ← Back
                 </button>
