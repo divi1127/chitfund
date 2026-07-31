@@ -422,7 +422,9 @@ router.put('/:id/approve-partial/:receiptNo', authenticate, authorize('super_adm
     const partialIndex = collection.partialPayments.findIndex(p => p.receiptNo === receiptNo);
     if (partialIndex === -1) return res.status(404).json({ message: 'Partial payment not found' });
     if (collection.partialPayments[partialIndex].status === 'Paid') {
-      return res.status(400).json({ message: 'Already approved' });
+      // Idempotent: already approved — return success so UI stays consistent
+      console.log(`ℹ️ Partial payment ${receiptNo} was already approved — returning success`);
+      return res.json(collection);
     }
 
     const amountPaid = collection.partialPayments[partialIndex].amount;

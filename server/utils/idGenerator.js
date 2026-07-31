@@ -75,15 +75,31 @@ export const generateMemberPassword = () => {
 export const generateReceiptNo = async () => {
   const year = new Date().getFullYear();
   const prefix = `RCT-NVS-${year}`;
-  const existing = await Collection.find({ receiptNo: new RegExp(`^${prefix}`) })
-    .sort({ receiptNo: -1 })
-    .limit(1);
+
+  // Collect ALL used receipt numbers: top-level AND nested partial payment receipts
+  const allCollections = await Collection.find({
+    $or: [
+      { receiptNo: new RegExp(`^${prefix}`) },
+      { 'partialPayments.receiptNo': new RegExp(`^${prefix}`) }
+    ]
+  });
+
+  const usedNums = new Set();
+  for (const col of allCollections) {
+    if (col.receiptNo && col.receiptNo.startsWith(prefix)) {
+      const n = parseInt(col.receiptNo.slice(prefix.length), 10);
+      if (!isNaN(n)) usedNums.add(n);
+    }
+    for (const p of (col.partialPayments || [])) {
+      if (p.receiptNo && p.receiptNo.startsWith(prefix)) {
+        const n = parseInt(p.receiptNo.slice(prefix.length), 10);
+        if (!isNaN(n)) usedNums.add(n);
+      }
+    }
+  }
 
   let nextNum = 1;
-  if (existing.length > 0 && existing[0].receiptNo) {
-    const num = parseInt(existing[0].receiptNo.slice(prefix.length), 10);
-    if (!isNaN(num)) nextNum = num + 1;
-  }
+  while (usedNums.has(nextNum)) nextNum++;
 
   const newId = `${prefix}${String(nextNum).padStart(2, '0')}`;
   console.log(`✅ ID Gen: Generated receipt no - ${newId}`);
