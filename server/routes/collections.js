@@ -419,42 +419,56 @@ router.put('/:id/approve-partial/:receiptNo', authenticate, authorize('super_adm
     const collection = await Collection.findOne({ id });
     if (!collection) return res.status(404).json({ message: 'Collection not found' });
 
-    const partialIndex = collection.partialPayments.findIndex(p => p.receiptNo === receiptNo);
-    if (partialIndex === -1) return res.status(404).json({ message: 'Partial payment not found' });
-    if (collection.partialPayments[partialIndex].status === 'Paid') {
-      // Idempotent: already approved — return success so UI stays consistent
-      console.log(`ℹ️ Partial payment ${receiptNo} was already approved — returning success`);
+    // Find ALL partials matching this receipt (handles DB duplicates)
+    const matchingIndices = collection.partialPayments.reduce((acc, p, i) => {
+      if (p.receiptNo === receiptNo) acc.push(i);
+      return acc;
+    }, []);
+
+    if (matchingIndices.length === 0)
+      return res.status(404).json({ message: 'Partial payment not found' });
+
+    // Check if ALL matching are already paid (idempotency)
+    const allAlreadyPaid = matchingIndices.every(i => collection.partialPayments[i].status === 'Paid');
+    if (allAlreadyPaid) {
+      console.log(`ℹ️ Partial payment ${receiptNo} was already fully approved — returning success`);
       return res.json(collection);
     }
 
-    const amountPaid = collection.partialPayments[partialIndex].amount;
-    
-    // Update collection
-    collection.partialPayments[partialIndex].status = 'Paid';
-    collection.amount += amountPaid;
+    // Approve ALL pending entries with this receiptNo (deduplication fix)
+    let totalApprovedAmount = 0;
+    for (const i of matchingIndices) {
+      if (collection.partialPayments[i].status !== 'Paid') {
+        totalApprovedAmount += collection.partialPayments[i].amount || 0;
+        collection.partialPayments[i].status = 'Paid';
+      }
+    }
+
+    collection.amount += totalApprovedAmount;
     collection.pendingBalance = Math.max(0, collection.fullInstallmentAmount - collection.amount);
     collection.status = collection.pendingBalance > 0 ? 'Partially Paid' : 'Paid';
     collection.markModified('partialPayments');
     await collection.save();
-    
-    // Update invoice
+
+    // Update linked invoice
     const invoice = await Invoice.findOne({ invoiceNumber: collection.invoiceNumber });
     if (invoice) {
-       invoice.amountPaid = (invoice.amountPaid || 0) + amountPaid;
-       invoice.balance = Math.max(0, invoice.totalPayable - invoice.amountPaid);
-       invoice.status = invoice.balance > 0 ? 'Partially Paid' : 'Paid';
-       invoice.receiptNumber = receiptNo;
-       invoice.remarks = `Partial payment approved: ${receiptNo} ₹${amountPaid}. Total Paid: ₹${invoice.amountPaid}`;
-       await invoice.save();
+      invoice.amountPaid = (invoice.amountPaid || 0) + totalApprovedAmount;
+      invoice.balance = Math.max(0, invoice.totalPayable - invoice.amountPaid);
+      invoice.status = invoice.balance > 0 ? 'Partially Paid' : 'Paid';
+      invoice.receiptNumber = receiptNo;
+      invoice.remarks = `Partial payment approved: ${receiptNo} ₹${totalApprovedAmount}. Total Paid: ₹${invoice.amountPaid}`;
+      await invoice.save();
     }
 
-    console.log(`✅ Partial payment approved: ${receiptNo} by ${req.user.userId}`);
+    console.log(`✅ Partial payment approved: ${receiptNo} (${matchingIndices.length} entries) by ${req.user.userId}`);
     res.json(collection);
   } catch (error) {
     console.error('❌ approve-partial error:', error.message);
     res.status(500).json({ message: error.message });
   }
 });
+
 
 router.delete('/:id', authenticate, authorize('super_admin'), async (req, res) => {
   try {

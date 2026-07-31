@@ -41,10 +41,18 @@ export function PaymentModal({ member, group, scheme, installment, agentInfo, on
   const paidAmount = existingCollection
     ? (existingCollection.partialPayments || []).filter(p => p.status === 'Paid').reduce((s, p) => s + (p.amount || 0), 0)
     : 0;
+  const pendingAmount = existingCollection
+    ? (existingCollection.partialPayments || []).filter(p => p.status === 'Pending').reduce((s, p) => s + (p.amount || 0), 0)
+    : 0;
+  
+  const totalSubmittedAmount = paidAmount + pendingAmount;
   const paidBlocks = Math.round(paidAmount / (blockValue || 1));
-  const balanceAmount = Math.max(0, totalAmount - paidAmount);
-  const isFullyPaid = existingCollection?.status === 'Paid' || (paidBlocks >= BLOCKS && totalAmount > 0);
-  const hasPartialPayment = paidAmount > 0;
+  const pendingBlocks = Math.round(pendingAmount / (blockValue || 1));
+  const totalSubmittedBlocks = paidBlocks + pendingBlocks;
+
+  const balanceAmount = Math.max(0, totalAmount - totalSubmittedAmount);
+  const isFullyPaid = existingCollection?.status === 'Paid' || (totalSubmittedBlocks >= BLOCKS && totalAmount > 0);
+  const hasPartialPayment = totalSubmittedAmount > 0;
 
   const payAmount = paymentType === "parts"
     ? blockValue
@@ -261,7 +269,7 @@ export function PaymentModal({ member, group, scheme, installment, agentInfo, on
           {isFullyPaid && (
             <div style={{ background: "#f0fdf4", border: "1px solid #bbf7d0", borderRadius: 10, padding: 16, textAlign: "center", marginBottom: 16 }}>
               <div style={{ fontSize: 16, fontWeight: 800, color: "#16a34a" }}>✅ This Month's Installment Completed</div>
-              <div style={{ fontSize: 13, color: "#15803d", marginTop: 4 }}>All {BLOCKS} blocks have been paid successfully.</div>
+              <div style={{ fontSize: 13, color: "#15803d", marginTop: 4 }}>All {BLOCKS} blocks have been submitted/paid.</div>
             </div>
           )}
 
@@ -277,6 +285,7 @@ export function PaymentModal({ member, group, scheme, installment, agentInfo, on
                 <div style={{ display: "grid", gridTemplateColumns: "repeat(5, 1fr)", gap: 8 }}>
                   {Array.from({ length: BLOCKS }, (_, i) => {
                     const isBlockPaid = i < paidBlocks;
+                    const isBlockPending = !isBlockPaid && i < totalSubmittedBlocks;
                     const isBlockSelected = selectedBlock === i;
                     let bg, borderColor, textColor, cursor, content;
                     if (isBlockPaid) {
@@ -285,6 +294,12 @@ export function PaymentModal({ member, group, scheme, installment, agentInfo, on
                       textColor = "#fff";
                       cursor = "default";
                       content = "✓";
+                    } else if (isBlockPending) {
+                      bg = "#fef9c3";
+                      borderColor = "#fef08a";
+                      textColor = "#a16207";
+                      cursor = "default";
+                      content = "⏳";
                     } else if (isBlockSelected && paymentType === "parts") {
                       bg = "#2563eb";
                       borderColor = "#2563eb";
@@ -306,18 +321,18 @@ export function PaymentModal({ member, group, scheme, installment, agentInfo, on
                     }
                     return (
                       <button key={i} onClick={() => {
-                        if (!isBlockPaid && !isFullyPaid && paymentType === "parts") {
+                        if (!isBlockPaid && !isBlockPending && !isFullyPaid && paymentType === "parts") {
                           setSelectedBlock(selectedBlock === i ? null : i);
                         }
                       }}
-                        disabled={isBlockPaid || isFullyPaid || paymentType !== "parts"}
+                        disabled={isBlockPaid || isBlockPending || isFullyPaid || paymentType !== "parts"}
                         style={{
                           width: "100%", height: 40, borderRadius: 8,
                           border: `2px solid ${borderColor}`,
                           background: bg,
                           color: textColor,
                           fontWeight: 700, fontSize: 14,
-                          cursor: isBlockPaid || paymentType !== "parts" ? "default" : "pointer",
+                          cursor: (isBlockPaid || isBlockPending || paymentType !== "parts") ? "default" : "pointer",
                           transition: "all 0.15s",
                           display: "flex", alignItems: "center", justifyContent: "center"
                         }}>
@@ -329,7 +344,7 @@ export function PaymentModal({ member, group, scheme, installment, agentInfo, on
                 <div style={{ marginTop: 10, background: "#eff6ff", borderRadius: 8, padding: "10px 14px", fontSize: 13 }}>
                   <span style={{ color: "#64748b" }}>Each block </span>
                   <strong style={{ color: "#1e40af", fontSize: 15 }}>{fmt(blockValue)}</strong>
-                  <span style={{ color: "#64748b" }}> · {paidBlocks} of {BLOCKS} blocks paid</span>
+                  <span style={{ color: "#64748b" }}> · {totalSubmittedBlocks} of {BLOCKS} blocks submitted</span>
                 </div>
               </div>
 

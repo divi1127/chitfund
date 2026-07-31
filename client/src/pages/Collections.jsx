@@ -25,6 +25,7 @@ function CollectionTable({
   rows, members, groups, schemes, searchTerm,
   canEdit, canApprove, approvedCashIds,
   handleGenerate, handleEdit, handleDelete, handleApprove,
+  isAgentCollection,  // when true, show Agent ID in member column instead of Member ID
 }) {
   const memberById = (id) => members.find(m => m.memberId === id || m.id === id);
   const groupById  = (id) => groups.find(g => g.id === id);
@@ -56,11 +57,15 @@ function CollectionTable({
         const s = g ? schemes.find(sc => sc.id === g.schemeId) : null;
         const optimisticallyApproved = approvedCashIds.has(c.id);
         const displayStatus = optimisticallyApproved ? "Paid" : c.status;
+        // For agent collections, show Agent ID (not Member ID)
+        const subId = isAgentCollection
+          ? (m?.agentId || m?.memberId || "—")
+          : (m?.memberId || "—");
         return [
           c.receiptNo || "—",
           <div key={c.id + "mn"}>
             <div style={{ fontWeight: 600, fontSize: 13 }}>{m?.name || "—"}</div>
-            <div style={{ fontSize: 11, color: "#64748b" }}>{m?.memberId || "—"}</div>
+            <div style={{ fontSize: 11, color: "#64748b" }}>{subId}</div>
           </div>,
           g?.name || "—",
           "#" + c.installment,
@@ -161,7 +166,9 @@ export function Collections({ toast, setPreview }) {
     !approvedCashIds.has(c.id)
   );
 
-  const pendingPartials = collections.flatMap(c =>
+  // Deduplicate by receiptNo — if same receipt exists in multiple places (DB bug),
+  // only show ONE approve button for it (the first one found).
+  const pendingPartialsRaw = collections.flatMap(c =>
     (c.partialPayments || [])
       .filter(p => p.status === "Pending" && !approvedPartialReceipts.has(p.receiptNo))
       .map(p => ({
@@ -172,6 +179,13 @@ export function Collections({ toast, setPreview }) {
         installment: c.installment,
       }))
   );
+  // Keep only the first occurrence of each receiptNo
+  const seenReceipts = new Set();
+  const pendingPartials = pendingPartialsRaw.filter(p => {
+    if (seenReceipts.has(p.receiptNo)) return false;
+    seenReceipts.add(p.receiptNo);
+    return true;
+  });
 
   const memberById = (id) => members.find(m => m.memberId === id || m.id === id);
   const groupById  = (id) => groups.find(g => g.id === id);
@@ -476,6 +490,7 @@ export function Collections({ toast, setPreview }) {
                 searchTerm={searchTerm}
                 canEdit={false} canApprove={false}
                 approvedCashIds={approvedCashIds}
+                isAgentCollection
                 handleGenerate={handleGenerate}
                 handleEdit={handleEdit} handleDelete={handleDelete} handleApprove={handleApprove}
               />
@@ -561,6 +576,7 @@ export function Collections({ toast, setPreview }) {
                 searchTerm={searchTerm}
                 canEdit={canEdit} canApprove={canApprove}
                 approvedCashIds={approvedCashIds}
+                isAgentCollection
                 handleGenerate={handleGenerate}
                 handleEdit={handleEdit} handleDelete={handleDelete} handleApprove={handleApprove}
               />
