@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { createData } from "../utils/api";
+import { createData, fetchData } from "../utils/api";
 import { fmt } from "../utils/helpers";
 import { COMPANY } from "../utils/constants";
 import { useAuth } from "../contexts/AuthContext";
@@ -21,10 +21,9 @@ export function PaymentModal({ member, group, scheme, installment, agentInfo, on
   useEffect(() => {
     (async () => {
       try {
-        const res = await fetch(`/api/collections`);
-        const all = await res.json();
+        const all = await fetchData("/collections");
         const found = Array.isArray(all) ? all.find(c =>
-          c.memberId === member.memberId &&
+          (c.memberId === member.memberId || c.memberId === member.id) &&
           c.groupId === group.id &&
           Number(c.installment) === Number(installment.month)
         ) : null;
@@ -185,13 +184,13 @@ export function PaymentModal({ member, group, scheme, installment, agentInfo, on
 
         <div style={{ padding: 24 }}>
           <div style={{ background: "#f0fdf4", border: "1px solid #bbf7d0", borderRadius: 10, padding: "14px 16px", marginBottom: 16 }}>
-            {user?.role === 'agent' ? (
+            {user?.role === 'agent' && (member.agentId === user.agentId || member.memberId === user.agentId) ? (
               <>
                 <div style={{ fontSize: 11, fontWeight: 800, color: "#16a34a", letterSpacing: 1.2, marginBottom: 10 }}>AGENT DETAILS</div>
                 <InfoRow l="Name" v={agentInfo?.name || member.name} />
                 <InfoRow l="Agent ID" v={agentInfo?.agentId || member.agentId || "—"} />
-                {agentInfo?.phone && <InfoRow l="Phone" v={agentInfo.phone} />}
-                {agentInfo?.branch && <InfoRow l="Branch" v={agentInfo.branch} />}
+                {(agentInfo?.phone || member.phone) && <InfoRow l="Phone" v={agentInfo?.phone || member.phone} />}
+                {(agentInfo?.branch || member.branch) && <InfoRow l="Branch" v={agentInfo?.branch || member.branch} />}
                 <InfoRow l="Group" v={group.name} />
                 <InfoRow l="Scheme" v={scheme.name} />
               </>
