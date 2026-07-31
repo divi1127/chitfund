@@ -24,6 +24,9 @@ export function Collections({ toast, setPreview }) {
   const [editingCollection, setEditingCollection] = useState(null);
   const [form, setForm] = useState({ memberId: "", groupId: "", amount: "", mode: "", date: "", installment: "" });
   const [errors, setErrors] = useState({});
+  // Optimistic UI: track locally-approved IDs so buttons vanish immediately
+  const [approvedCashIds, setApprovedCashIds] = useState(new Set());
+  const [approvedPartialReceipts, setApprovedPartialReceipts] = useState(new Set());
 
   const isSuperAdmin = user?.role === "super_admin";
   const isAdmin = user?.role === "admin";
@@ -36,16 +39,23 @@ export function Collections({ toast, setPreview }) {
       })
     : collections;
 
-  const pendingCash = collections.filter(c => c.status === "Pending" && c.mode === "Cash" && (!c.partialPayments || c.partialPayments.length === 0));
-  
-  const pendingPartials = collections.flatMap(c => 
-    (c.partialPayments || []).filter(p => p.status === 'Pending').map(p => ({ 
-      ...p, 
-      collectionId: c.id, 
-      memberId: c.memberId, 
-      groupId: c.groupId, 
-      installment: c.installment 
-    }))
+  const pendingCash = collections.filter(c =>
+    c.status === "Pending" &&
+    c.mode === "Cash" &&
+    (!c.partialPayments || c.partialPayments.length === 0) &&
+    !approvedCashIds.has(c.id)   // hide optimistically-approved ones
+  );
+
+  const pendingPartials = collections.flatMap(c =>
+    (c.partialPayments || [])
+      .filter(p => p.status === 'Pending' && !approvedPartialReceipts.has(p.receiptNo))
+      .map(p => ({
+        ...p,
+        collectionId: c.id,
+        memberId: c.memberId,
+        groupId: c.groupId,
+        installment: c.installment
+      }))
   );
 
   const memberById = (id) => members.find(m => m.memberId === id || m.id === id);
@@ -100,6 +110,8 @@ export function Collections({ toast, setPreview }) {
     setIsProcessing(true);
     try {
       await updateData("/collections", `${c.id}/approve`, {});
+      // Optimistic: hide the button immediately
+      setApprovedCashIds(prev => new Set([...prev, c.id]));
       toast.add("Cash payment approved!");
       reload();
     } catch (err) { toast.add("Error: " + err.message, "error"); }
@@ -112,6 +124,8 @@ export function Collections({ toast, setPreview }) {
     setIsProcessing(true);
     try {
       await updateData("/collections", `${p.collectionId}/approve-partial/${p.receiptNo}`, {});
+      // Optimistic: hide the button immediately
+      setApprovedPartialReceipts(prev => new Set([...prev, p.receiptNo]));
       toast.add("Partial payment approved!");
       reload();
     } catch (err) { toast.add("Error: " + err.message, "error"); }
