@@ -9,74 +9,197 @@ import { Btn } from "../components/Btn";
 import { Input } from "../components/Input";
 import { fmt } from "../utils/helpers";
 import { useAuth } from "../contexts/AuthContext";
-import { FiDollarSign, FiCalendar, FiCheckCircle, FiBarChart2 } from "react-icons/fi";
+import { FiDollarSign, FiCalendar, FiCheckCircle, FiBarChart2, FiUser, FiUsers } from "react-icons/fi";
 import { HiReceiptRefund, HiPencil, HiTrash, HiCheckBadge } from "react-icons/hi2";
 import { IconBtn } from "../components/IconBtn";
 
+// ── Status badge helper ─────────────────────────────────────────────────────
+function statusBadge(status) {
+  if (status === "Paid") return <Badge text="Paid" color="green" />;
+  if (status === "Partially Paid") return <Badge text="Partially Paid" color="orange" />;
+  return <Badge text={status || "Pending"} color="yellow" />;
+}
+
+// ── Shared collection table ─────────────────────────────────────────────────
+function CollectionTable({
+  rows, members, groups, schemes, searchTerm,
+  canEdit, canApprove, approvedCashIds,
+  handleGenerate, handleEdit, handleDelete, handleApprove,
+}) {
+  const memberById = (id) => members.find(m => m.memberId === id || m.id === id);
+  const groupById  = (id) => groups.find(g => g.id === id);
+
+  const filtered = rows.filter(c => {
+    if (!searchTerm) return true;
+    const m = memberById(c.memberId); const g = groupById(c.groupId);
+    const t = searchTerm.toLowerCase();
+    return (
+      c.receiptNo?.toLowerCase().includes(t) ||
+      m?.name?.toLowerCase().includes(t) ||
+      g?.name?.toLowerCase().includes(t)
+    );
+  });
+
+  if (!filtered.length) {
+    return (
+      <div style={{ textAlign: "center", padding: "32px 0", color: "#94a3b8", fontSize: 13 }}>
+        No collections found.
+      </div>
+    );
+  }
+
+  return (
+    <Table
+      cols={["Receipt No", "Member", "Group", "Month", "Scheme Amt", "Paid", "Date", "Mode", "Status", "Actions"]}
+      rows={filtered.map(c => {
+        const m = memberById(c.memberId); const g = groupById(c.groupId);
+        const s = g ? schemes.find(sc => sc.id === g.schemeId) : null;
+        const optimisticallyApproved = approvedCashIds.has(c.id);
+        const displayStatus = optimisticallyApproved ? "Paid" : c.status;
+        return [
+          c.receiptNo || "—",
+          <div key={c.id + "mn"}>
+            <div style={{ fontWeight: 600, fontSize: 13 }}>{m?.name || "—"}</div>
+            <div style={{ fontSize: 11, color: "#64748b" }}>{m?.memberId || "—"}</div>
+          </div>,
+          g?.name || "—",
+          "#" + c.installment,
+          fmt(s?.monthlyAmounts?.[0]?.amount || 0),
+          fmt(c.amount),
+          c.date?.split("T")[0],
+          c.mode,
+          statusBadge(displayStatus),
+          <div key={c.id + "act"} style={{ display: "flex", gap: 6 }}>
+            <IconBtn
+              icon={<HiReceiptRefund size={14} />}
+              onClick={() => handleGenerate(c)}
+              color={c.status === "Pending" ? "#9ca3af" : "#d97706"}
+              title={c.status === "Pending" ? "Pending" : "Receipt"}
+            />
+            {canApprove && c.status === "Pending" && c.mode === "Cash" && !optimisticallyApproved && (
+              <IconBtn icon={<HiCheckBadge size={14} />} onClick={() => handleApprove(c)} color="#16a34a" title="Approve Cash" />
+            )}
+            {canEdit && <IconBtn icon={<HiPencil size={14} />} onClick={() => handleEdit(c)} color="#2563eb" title="Edit" />}
+            {canEdit && <IconBtn icon={<HiTrash size={14} />} onClick={() => handleDelete(c.id)} color="#dc2626" title="Delete" />}
+          </div>,
+        ];
+      })}
+    />
+  );
+}
+
+// ── Main Component ──────────────────────────────────────────────────────────
 export function Collections({ toast, setPreview }) {
   const { user } = useAuth();
   const { data: collections, loading, refresh: reload } = useData("/collections");
   const { data: members } = useData("/members");
-  const { data: groups } = useData("/groups");
+  const { data: groups }  = useData("/groups");
   const { data: schemes } = useData("/schemes");
-  const [searchTerm, setSearchTerm] = useState("");
-  const [showForm, setShowForm] = useState(false);
+
+  const [searchTerm, setSearchTerm]           = useState("");
+  const [activeTab, setActiveTab] = useState("customers"); // management: "customers"|"agents", agent: "mine"|"customers"
+  const [showForm, setShowForm]               = useState(false);
   const [editingCollection, setEditingCollection] = useState(null);
   const [form, setForm] = useState({ memberId: "", groupId: "", amount: "", mode: "", date: "", installment: "" });
-  const [errors, setErrors] = useState({});
-  // Optimistic UI: track locally-approved IDs so buttons vanish immediately
-  const [approvedCashIds, setApprovedCashIds] = useState(new Set());
+  const [errors, setErrors]       = useState({});
+  const [isProcessing, setIsProcessing] = useState(false);
+
+  // Optimistic UI
+  const [approvedCashIds, setApprovedCashIds]               = useState(new Set());
   const [approvedPartialReceipts, setApprovedPartialReceipts] = useState(new Set());
 
   const isSuperAdmin = user?.role === "super_admin";
-  const isAdmin = user?.role === "admin";
-  const canEdit = isSuperAdmin;
-  const canApprove = isSuperAdmin || isAdmin;
+  const isAdmin      = user?.role === "admin";
+  const isAgent      = user?.role === "agent";
+  const isCustomer   = user?.role === "customer";
+  const canEdit      = isSuperAdmin;
+  const canApprove   = isSuperAdmin || isAdmin || isAgent;
+  const isManagement = isSuperAdmin || isAdmin; // can see all sections
 
-  const filteredCollections = user?.role === "customer"
-    ? collections.filter(c => {
-        return c.memberId === user.memberId || c.memberId === user.userId;
-      })
-    : collections;
+  // ── Identify who is an agent-member (has agentId field on member record) ─
+  const agentOwnMember = isAgent
+    ? members.find(m => m.agentId === user.agentId || m.agentId === user.userId)
+    : null;
+  const agentOwnMemberId = agentOwnMember?.memberId;
 
+  // Agent member IDs = members that have an agentId (they are enrolled in groups as members)
+  const agentMemberIds = isManagement
+    ? new Set(members.filter(m => m.agentId).map(m => m.memberId))
+    : new Set();
+
+  // ── Split collections by role ─────────────────────────────────────────────
+  // For management: agentCollections = collections belonging to agent-members
+  const agentCollections = isManagement
+    ? collections.filter(c => agentMemberIds.has(c.memberId))
+    : [];
+
+  const customerOnlyCollections = isManagement
+    ? collections.filter(c => !agentMemberIds.has(c.memberId))
+    : [];
+
+  const myOwnCollections = isAgent && agentOwnMemberId
+    ? collections.filter(c => c.memberId === agentOwnMemberId)
+    : [];
+
+  const customerCollections = isAgent
+    ? collections.filter(c => c.memberId !== agentOwnMemberId)
+    : [];
+
+  const filteredCollections = isCustomer
+    ? collections.filter(c => c.memberId === user.memberId || c.memberId === user.userId)
+    : isAgent
+      ? (activeTab === "mine" ? myOwnCollections : customerCollections)
+      : isManagement
+        ? (activeTab === "agents" ? agentCollections : customerOnlyCollections)
+        : collections;
+
+  // ── Pending approvals ─────────────────────────────────────────────────────
   const pendingCash = collections.filter(c =>
     c.status === "Pending" &&
     c.mode === "Cash" &&
     (!c.partialPayments || c.partialPayments.length === 0) &&
-    !approvedCashIds.has(c.id)   // hide optimistically-approved ones
+    !approvedCashIds.has(c.id)
   );
 
   const pendingPartials = collections.flatMap(c =>
     (c.partialPayments || [])
-      .filter(p => p.status === 'Pending' && !approvedPartialReceipts.has(p.receiptNo))
+      .filter(p => p.status === "Pending" && !approvedPartialReceipts.has(p.receiptNo))
       .map(p => ({
         ...p,
         collectionId: c.id,
         memberId: c.memberId,
         groupId: c.groupId,
-        installment: c.installment
+        installment: c.installment,
       }))
   );
 
   const memberById = (id) => members.find(m => m.memberId === id || m.id === id);
-  const groupById = (id) => groups.find(g => g.id === id);
+  const groupById  = (id) => groups.find(g => g.id === id);
 
+  // ── Form validation ───────────────────────────────────────────────────────
   const validateForm = () => {
     const e = {};
-    if (!form.memberId) e.memberId = "Member is required";
-    if (!form.groupId) e.groupId = "Group is required";
-    if (!form.amount || isNaN(form.amount) || Number(form.amount) <= 0) e.amount = "Valid amount is required";
-    if (!form.mode) e.mode = "Payment mode is required";
-    if (!form.date) e.date = "Date is required";
-    if (!form.installment || isNaN(form.installment) || Number(form.installment) <= 0) e.installment = "Valid installment number is required";
+    if (!form.memberId)   e.memberId   = "Member is required";
+    if (!form.groupId)    e.groupId    = "Group is required";
+    if (!form.amount || isNaN(form.amount) || Number(form.amount) <= 0) e.amount = "Valid amount required";
+    if (!form.mode)       e.mode       = "Payment mode is required";
+    if (!form.date)       e.date       = "Date is required";
+    if (!form.installment || isNaN(form.installment) || Number(form.installment) <= 0) e.installment = "Valid installment number required";
     setErrors(e);
     return !Object.keys(e).length;
   };
 
+  // ── Handlers ──────────────────────────────────────────────────────────────
   const handleSubmit = async () => {
     if (!validateForm()) return;
     try {
-      const data = { ...form, id: editingCollection ? editingCollection.id : "C" + Date.now().toString().slice(-6), amount: Number(form.amount), installment: Number(form.installment), status: "Paid" };
+      const data = {
+        ...form,
+        id: editingCollection ? editingCollection.id : "C" + Date.now().toString().slice(-6),
+        amount: Number(form.amount),
+        installment: Number(form.installment),
+        status: "Paid",
+      };
       if (editingCollection) {
         await updateData("/collections", editingCollection.id, data);
         toast.add("Collection updated!");
@@ -102,17 +225,14 @@ export function Collections({ toast, setPreview }) {
     catch (err) { toast.add(err.message, "error"); }
   };
 
-  const [isProcessing, setIsProcessing] = useState(false);
-
   const handleApprove = async (c) => {
     if (isProcessing) return;
     if (!confirm(`Approve cash payment ${fmt(c.amount)} for Month ${c.installment}?`)) return;
     setIsProcessing(true);
     try {
       await updateData("/collections", `${c.id}/approve`, {});
-      // Optimistic: hide the button immediately
       setApprovedCashIds(prev => new Set([...prev, c.id]));
-      toast.add("Cash payment approved!");
+      toast.add("Cash payment approved! Status → Paid ✅");
       reload();
     } catch (err) { toast.add("Error: " + err.message, "error"); }
     finally { setIsProcessing(false); }
@@ -120,38 +240,34 @@ export function Collections({ toast, setPreview }) {
 
   const handleApprovePartial = async (p) => {
     if (isProcessing) return;
-    if (!confirm(`Approve partial payment ${fmt(p.amount)} (Receipt: ${p.receiptNo})?`)) return;
+    if (!confirm(`Approve ₹${p.amount} (Receipt: ${p.receiptNo})?`)) return;
     setIsProcessing(true);
     try {
       await updateData("/collections", `${p.collectionId}/approve-partial/${p.receiptNo}`, {});
-      // Optimistic: hide the button immediately
       setApprovedPartialReceipts(prev => new Set([...prev, p.receiptNo]));
-      toast.add("Partial payment approved!");
+      toast.add("Partial payment approved! Status → Paid ✅");
       reload();
     } catch (err) { toast.add("Error: " + err.message, "error"); }
     finally { setIsProcessing(false); }
   };
 
   const handleViewProof = (proofUrl) => {
-    if (!proofUrl) return toast.add("No proof attached for this payment", "error");
-    const fullUrl = proofUrl.startsWith('http') ? proofUrl : (import.meta.env.VITE_API_BASE || "https://chitfund-cxnp.onrender.com/api").replace('/api', '') + proofUrl;
-    window.open(fullUrl, '_blank');
+    if (!proofUrl) return toast.add("No proof attached", "error");
+    const base = (import.meta.env.VITE_API_BASE || "https://chitfund-cxnp.onrender.com/api").replace("/api", "");
+    window.open(proofUrl.startsWith("http") ? proofUrl : base + proofUrl, "_blank");
   };
 
   const handleGenerate = (c) => {
     if (c.status === "Pending") { toast.add("Cannot generate receipt for pending payment", "error"); return; }
     const m = memberById(c.memberId); const g = groupById(c.groupId);
-    
-    // Check if it has partial payments, use the last one for now, or just provide full receipt
-    const paymentsRow = (c.partialPayments && c.partialPayments.length > 0) 
-       ? c.partialPayments.filter(p=>p.status==='Paid').map(p => [`Partial Payment - ${p.mode}`, fmt(p.amount)])
-       : [["Monthly Chit Installment", fmt(c.amount)]];
-       
+    const paymentsRow = (c.partialPayments && c.partialPayments.length > 0)
+      ? c.partialPayments.filter(p => p.status === "Paid").map(p => [`Partial Payment - ${p.mode}`, fmt(p.amount)])
+      : [["Monthly Chit Installment", fmt(c.amount)]];
     setPreview({
       title: "Collection Receipt", docNo: c.receiptNo || "RCP" + c.id,
       member: m,
       chit: { "Group": g?.name, "Installment": "#" + c.installment, "Payment Mode": c.mode, "Receipt Date": c.date?.split("T")[0] },
-      payments: { headers: ["Description", "Amount"], rows: [...paymentsRow, ["Late Fee", "₹0.00"], ["Total Collected so far", fmt(c.amount)]] },
+      payments: { headers: ["Description", "Amount"], rows: [...paymentsRow, ["Late Fee", "₹0.00"], ["Total Collected", fmt(c.amount)]] },
       amount: c.amount, notes: "Thank you for your timely payment.",
     });
   };
@@ -159,26 +275,45 @@ export function Collections({ toast, setPreview }) {
   if (loading) return <div style={{ padding: 40, textAlign: "center" }}>Loading...</div>;
 
   const now = new Date();
-  const thisMonthCollections = filteredCollections.filter(c => {
+  const statsBase = isAgent ? collections : filteredCollections;
+  const thisMonthCount = statsBase.filter(c => {
     const d = new Date(c.date);
     return d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear();
+  }).length;
+
+  // ── Tab button style ──────────────────────────────────────────────────────
+  const tabStyle = (active) => ({
+    padding: "8px 20px", borderRadius: 8, border: "none", cursor: "pointer", fontWeight: 700, fontSize: 13,
+    background: active ? "#2563eb" : "#f1f5f9",
+    color: active ? "#fff" : "#64748b",
+    transition: "all 0.15s",
   });
 
   return (
     <div>
       <SectionHeader
         title="Monthly Collections"
-        subtitle={user?.role === "customer" ? "My Collection History" : "Record and manage installment collections"}
-        actions={user?.role !== "customer" ? [<Btn key="add" label="+ Record Collection" primary onClick={() => { setEditingCollection(null); setForm({ memberId: "", groupId: "", amount: "", mode: "", date: new Date().toISOString().split("T")[0], installment: "" }); setShowForm(true); }} />] : []}
+        subtitle={
+          isCustomer ? "My Collection History" :
+          isAgent    ? "My Installments & Customer Collections" :
+                       "Record and manage installment collections"
+        }
+        actions={!isCustomer ? [
+          <Btn key="add" label="+ Record Collection" primary
+            onClick={() => { setEditingCollection(null); setForm({ memberId: "", groupId: "", amount: "", mode: "", date: new Date().toISOString().split("T")[0], installment: "" }); setShowForm(true); }} />,
+        ] : []}
       />
 
-      {/* Stats */}
-      {user?.role !== "customer" && (
+      {/* ── Stats ── */}
+      {!isCustomer && (
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(180px,1fr))", gap: 16, marginBottom: 24 }}>
-          <StatCard label="Total Collections" value={filteredCollections.length} sub="All time" color="blue" icon={<FiBarChart2 size={22} />} />
-          <StatCard label="This Month" value={thisMonthCollections.length} sub="Current month" color="green" icon={<FiCalendar size={22} />} />
-          <StatCard label="Total Collected" value={fmt(filteredCollections.reduce((s, c) => s + (c.amount || 0), 0))} sub="Cumulative" color="purple" icon={<FiDollarSign size={22} />} />
-          <StatCard label="Paid" value={filteredCollections.filter(c => c.status === "Paid").length} sub="Completed" color="orange" icon={<FiCheckCircle size={22} />} />
+          <StatCard label="Total Collections" value={statsBase.length} sub="All time" color="blue" icon={<FiBarChart2 size={22} />} />
+          <StatCard label="This Month" value={thisMonthCount} sub="Current month" color="green" icon={<FiCalendar size={22} />} />
+          <StatCard label="Total Collected" value={fmt(statsBase.reduce((s, c) => s + (c.amount || 0), 0))} sub="Cumulative" color="purple" icon={<FiDollarSign size={22} />} />
+          <StatCard label="Paid" value={statsBase.filter(c => c.status === "Paid").length} sub="Completed" color="orange" icon={<FiCheckCircle size={22} />} />
+          {isAgent && (
+            <StatCard label="Pending Approvals" value={pendingPartials.length + pendingCash.length} sub="Awaiting your action" color="red" icon={<FiUsers size={22} />} />
+          )}
         </div>
       )}
 
@@ -198,8 +333,7 @@ export function Collections({ toast, setPreview }) {
             </thead>
             <tbody>
               {pendingCash.map(c => {
-                const m = memberById(c.memberId);
-                const g = groupById(c.groupId);
+                const m = memberById(c.memberId); const g = groupById(c.groupId);
                 return (
                   <tr key={c.id} style={{ borderBottom: "1px solid #fef9c3" }}>
                     <td style={{ padding: "10px 12px", fontWeight: 600 }}>{c.receiptNo || "—"}</td>
@@ -209,12 +343,12 @@ export function Collections({ toast, setPreview }) {
                     </td>
                     <td style={{ padding: "10px 12px" }}>{g?.name || "—"}</td>
                     <td style={{ padding: "10px 12px", fontWeight: 700 }}>Month {c.installment}</td>
-                    <td style={{ padding: "10px 12px", fontWeight: 800, color: "#0f172a" }}>{fmt(c.amount)}</td>
+                    <td style={{ padding: "10px 12px", fontWeight: 800 }}>{fmt(c.amount)}</td>
                     <td style={{ padding: "10px 12px", color: "#64748b" }}>{c.date?.split("T")[0]}</td>
                     <td style={{ padding: "10px 12px" }}>
-                      <button onClick={() => handleApprove(c)}
-                        style={{ padding: "6px 16px", background: "#16a34a", color: "#fff", border: "none", borderRadius: 8, fontWeight: 700, fontSize: 12, cursor: "pointer" }}>
-                        ✓ Approve
+                      <button onClick={() => handleApprove(c)} disabled={isProcessing}
+                        style={{ padding: "6px 16px", background: "#16a34a", color: "#fff", border: "none", borderRadius: 8, fontWeight: 700, fontSize: 12, cursor: "pointer", opacity: isProcessing ? 0.6 : 1 }}>
+                        ✓ Approve → Paid
                       </button>
                     </td>
                   </tr>
@@ -229,7 +363,7 @@ export function Collections({ toast, setPreview }) {
       {canApprove && pendingPartials.length > 0 && (
         <div style={{ background: "#f0fdf4", border: "1px solid #bbf7d0", borderRadius: 12, padding: 20, marginBottom: 24 }}>
           <div style={{ fontWeight: 700, fontSize: 14, color: "#166534", marginBottom: 14 }}>
-            ✅ Pending Partial / Online Approvals — {pendingPartials.length} request{pendingPartials.length > 1 ? "s" : ""}
+            💳 Pending Partial / Online Approvals — {pendingPartials.length} request{pendingPartials.length > 1 ? "s" : ""}
           </div>
           <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13 }}>
             <thead>
@@ -241,8 +375,7 @@ export function Collections({ toast, setPreview }) {
             </thead>
             <tbody>
               {pendingPartials.map(p => {
-                const m = memberById(p.memberId);
-                const g = groupById(p.groupId);
+                const m = memberById(p.memberId); const g = groupById(p.groupId);
                 return (
                   <tr key={p.receiptNo} style={{ borderBottom: "1px solid #dcfce7" }}>
                     <td style={{ padding: "10px 12px", fontWeight: 600 }}>{p.receiptNo}</td>
@@ -255,17 +388,15 @@ export function Collections({ toast, setPreview }) {
                     <td style={{ padding: "10px 12px" }}>{p.mode}</td>
                     <td style={{ padding: "10px 12px", fontWeight: 800, color: "#166534" }}>{fmt(p.amount)}</td>
                     <td style={{ padding: "10px 12px" }}>
-                      {p.proof ? (
-                        <button onClick={() => handleViewProof(p.proof)} style={{ color: "#2563eb", textDecoration: "underline", background: "none", border: "none", cursor: "pointer", fontSize: 12 }}>View Proof</button>
-                      ) : (
-                        <span style={{ color: "#9ca3af", fontSize: 12 }}>No Proof</span>
-                      )}
+                      {p.proof
+                        ? <button onClick={() => handleViewProof(p.proof)} style={{ color: "#2563eb", textDecoration: "underline", background: "none", border: "none", cursor: "pointer", fontSize: 12 }}>View Proof</button>
+                        : <span style={{ color: "#9ca3af", fontSize: 12 }}>No Proof</span>}
                     </td>
                     <td style={{ padding: "10px 12px", color: "#64748b" }}>{p.date?.split("T")[0]}</td>
                     <td style={{ padding: "10px 12px" }}>
-                      <button onClick={() => handleApprovePartial(p)}
-                        style={{ padding: "6px 16px", background: "#16a34a", color: "#fff", border: "none", borderRadius: 8, fontWeight: 700, fontSize: 12, cursor: "pointer" }}>
-                        ✓ Approve
+                      <button onClick={() => handleApprovePartial(p)} disabled={isProcessing}
+                        style={{ padding: "6px 16px", background: "#16a34a", color: "#fff", border: "none", borderRadius: 8, fontWeight: 700, fontSize: 12, cursor: "pointer", opacity: isProcessing ? 0.6 : 1 }}>
+                        ✓ Approve → Paid
                       </button>
                     </td>
                   </tr>
@@ -276,15 +407,15 @@ export function Collections({ toast, setPreview }) {
         </div>
       )}
 
-      {/* Search */}
-      {user?.role !== "customer" && (
+      {/* ── Search ── */}
+      {!isCustomer && (
         <div style={{ background: "#fff", border: "1px solid #e5e7eb", borderRadius: 12, padding: 16, marginBottom: 20 }}>
           <Input label="Search by Member, Group or Receipt" value={searchTerm} onChange={setSearchTerm} placeholder="Type to filter..." />
         </div>
       )}
 
-      {/* Add/Edit Form */}
-      {showForm && user?.role !== "customer" && (
+      {/* ── Add/Edit Form ── */}
+      {showForm && !isCustomer && (
         <div style={{ background: "#f8fafc", border: "1px solid #e5e7eb", borderRadius: 12, padding: 24, marginBottom: 24 }}>
           <div style={{ fontSize: 15, fontWeight: 600, marginBottom: 16 }}>{editingCollection ? "Edit Collection" : "Record Collection"}</div>
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(200px,1fr))", gap: "0 20px" }}>
@@ -320,35 +451,123 @@ export function Collections({ toast, setPreview }) {
         </div>
       )}
 
-      {/* Table */}
-      <Table
-        cols={["Receipt No", "Member", "User ID", "Group", "Month", "Scheme Amt", "Paid", "Date", "Mode", "Status", "Actions"]}
-        rows={filteredCollections.filter(c => {
-          if (!searchTerm) return true;
-          const m = memberById(c.memberId); const g = groupById(c.groupId);
-          const t = searchTerm.toLowerCase();
-          return c.receiptNo?.toLowerCase().includes(t) || m?.name?.toLowerCase().includes(t) || g?.name?.toLowerCase().includes(t);
-        }).map(c => {
-          const m = memberById(c.memberId); const g = groupById(c.groupId);
-          const s = g ? schemes.find(sc => sc.id === g.schemeId) : null;
-          return [
-            c.receiptNo || "—", m?.name || "—", m?.userId || "—", g?.name || "—",
-            "#" + c.installment,
-            fmt(s?.monthlyAmounts?.[0]?.amount || 0),
-            fmt(c.amount),
-            c.date?.split("T")[0], c.mode,
-            <Badge key={c.id + "s"} text={c.status} color={c.status === "Paid" ? "green" : "yellow"} />,
-            <div key={c.id + "a"} style={{ display: "flex", gap: 6 }}>
-              <IconBtn icon={<HiReceiptRefund size={14} />} onClick={() => handleGenerate(c)} color={c.status === "Pending" ? "#9ca3af" : "#d97706"} title={c.status === "Pending" ? "Pending" : "Receipt"} />
-              {canApprove && c.status === "Pending" && c.mode === "Cash" && (
-                <IconBtn icon={<HiCheckBadge size={14} />} onClick={() => handleApprove(c)} color="#16a34a" title="Approve Cash" />
-              )}
-              {canEdit && <IconBtn icon={<HiPencil size={14} />} onClick={() => handleEdit(c)} color="#2563eb" title="Edit" />}
-              {canEdit && <IconBtn icon={<HiTrash size={14} />} onClick={() => handleDelete(c.id)} color="#dc2626" title="Delete" />}
-            </div>,
-          ];
-        })}
-      />
+      {/* ── AGENT: My Collections / Customer Collections ── */}
+      {isAgent && (
+        <>
+          <div style={{ display: "flex", gap: 10, marginBottom: 16 }}>
+            <button style={tabStyle(activeTab === "mine")} onClick={() => setActiveTab("mine")}>
+              <FiUser style={{ marginRight: 6, verticalAlign: "middle" }} />
+              My Collections ({myOwnCollections.length})
+            </button>
+            <button style={tabStyle(activeTab === "customers")} onClick={() => setActiveTab("customers")}>
+              <FiUsers style={{ marginRight: 6, verticalAlign: "middle" }} />
+              Customer Collections ({customerCollections.length})
+            </button>
+          </div>
+
+          {activeTab === "mine" && (
+            <div>
+              <div style={{ fontSize: 13, color: "#64748b", marginBottom: 12, fontWeight: 500 }}>
+                📋 Your own chit installment payment history
+              </div>
+              <CollectionTable
+                rows={myOwnCollections}
+                members={members} groups={groups} schemes={schemes}
+                searchTerm={searchTerm}
+                canEdit={false} canApprove={false}
+                approvedCashIds={approvedCashIds}
+                handleGenerate={handleGenerate}
+                handleEdit={handleEdit} handleDelete={handleDelete} handleApprove={handleApprove}
+              />
+            </div>
+          )}
+
+          {activeTab === "customers" && (
+            <div>
+              <div style={{ fontSize: 13, color: "#64748b", marginBottom: 12, fontWeight: 500 }}>
+                👥 Collections from customers registered under you — approve pending payments here
+              </div>
+              <CollectionTable
+                rows={customerCollections}
+                members={members} groups={groups} schemes={schemes}
+                searchTerm={searchTerm}
+                canEdit={false} canApprove={canApprove}
+                approvedCashIds={approvedCashIds}
+                handleGenerate={handleGenerate}
+                handleEdit={handleEdit} handleDelete={handleDelete} handleApprove={handleApprove}
+              />
+            </div>
+          )}
+        </>
+      )}
+
+      {/* ── CUSTOMER: Own history only ── */}
+      {isCustomer && (
+        <div>
+          <div style={{ fontSize: 13, color: "#64748b", marginBottom: 12, fontWeight: 500 }}>
+            📋 Your installment payment history
+          </div>
+          <CollectionTable
+            rows={filteredCollections}
+            members={members} groups={groups} schemes={schemes}
+            searchTerm=""
+            canEdit={false} canApprove={false}
+            approvedCashIds={approvedCashIds}
+            handleGenerate={handleGenerate}
+            handleEdit={() => {}} handleDelete={() => {}} handleApprove={() => {}}
+          />
+        </div>
+      )}
+
+      {/* ── SUPER ADMIN / ADMIN: Agent Collections + Customer Collections tabs ── */}
+      {isManagement && (
+        <>
+          <div style={{ display: "flex", gap: 10, marginBottom: 16, flexWrap: "wrap" }}>
+            <button style={tabStyle(activeTab === "customers")} onClick={() => setActiveTab("customers")}>
+              <FiUsers style={{ marginRight: 6, verticalAlign: "middle" }} />
+              Customer Collections ({customerOnlyCollections.length})
+            </button>
+            <button style={tabStyle(activeTab === "agents")} onClick={() => setActiveTab("agents")}>
+              <FiUser style={{ marginRight: 6, verticalAlign: "middle" }} />
+              Agent Collections ({agentCollections.length})
+            </button>
+          </div>
+
+          {activeTab === "customers" && (
+            <div>
+              <div style={{ fontSize: 13, color: "#64748b", marginBottom: 12, fontWeight: 500 }}>
+                👥 All customer installment collections — approve pending payments here
+              </div>
+              <CollectionTable
+                rows={customerOnlyCollections}
+                members={members} groups={groups} schemes={schemes}
+                searchTerm={searchTerm}
+                canEdit={canEdit} canApprove={canApprove}
+                approvedCashIds={approvedCashIds}
+                handleGenerate={handleGenerate}
+                handleEdit={handleEdit} handleDelete={handleDelete} handleApprove={handleApprove}
+              />
+            </div>
+          )}
+
+          {activeTab === "agents" && (
+            <div>
+              <div style={{ fontSize: 13, color: "#64748b", marginBottom: 12, fontWeight: 500 }}>
+                🧑‍💼 Agent chit installment collections — approve agent payments here
+              </div>
+              <CollectionTable
+                rows={agentCollections}
+                members={members} groups={groups} schemes={schemes}
+                searchTerm={searchTerm}
+                canEdit={canEdit} canApprove={canApprove}
+                approvedCashIds={approvedCashIds}
+                handleGenerate={handleGenerate}
+                handleEdit={handleEdit} handleDelete={handleDelete} handleApprove={handleApprove}
+              />
+            </div>
+          )}
+        </>
+      )}
     </div>
   );
 }

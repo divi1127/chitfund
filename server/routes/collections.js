@@ -358,7 +358,7 @@ router.post('/member-payment', authenticate, async (req, res) => {
 });
 
 // ── Admin approve cash payment ──────────────────────────────────────────────
-router.put('/:id/approve', authenticate, authorize('super_admin', 'admin'), async (req, res) => {
+router.put('/:id/approve', authenticate, authorize('super_admin', 'admin', 'agent'), async (req, res) => {
   try {
     const collection = await Collection.findOneAndUpdate(
       { id: req.params.id, status: 'Pending' },
