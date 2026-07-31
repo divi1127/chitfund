@@ -432,6 +432,7 @@ router.put('/:id/approve-partial/:receiptNo', authenticate, authorize('super_adm
     collection.amount += amountPaid;
     collection.pendingBalance = Math.max(0, collection.fullInstallmentAmount - collection.amount);
     collection.status = collection.pendingBalance > 0 ? 'Partially Paid' : 'Paid';
+    collection.markModified('partialPayments');
     await collection.save();
     
     // Update invoice

@@ -92,22 +92,30 @@ export function Collections({ toast, setPreview }) {
     catch (err) { toast.add(err.message, "error"); }
   };
 
+  const [isProcessing, setIsProcessing] = useState(false);
+
   const handleApprove = async (c) => {
+    if (isProcessing) return;
     if (!confirm(`Approve cash payment ${fmt(c.amount)} for Month ${c.installment}?`)) return;
+    setIsProcessing(true);
     try {
       await updateData("/collections", `${c.id}/approve`, {});
       toast.add("Cash payment approved!");
       reload();
     } catch (err) { toast.add("Error: " + err.message, "error"); }
+    finally { setIsProcessing(false); }
   };
 
   const handleApprovePartial = async (p) => {
+    if (isProcessing) return;
     if (!confirm(`Approve partial payment ${fmt(p.amount)} (Receipt: ${p.receiptNo})?`)) return;
+    setIsProcessing(true);
     try {
       await updateData("/collections", `${p.collectionId}/approve-partial/${p.receiptNo}`, {});
       toast.add("Partial payment approved!");
       reload();
     } catch (err) { toast.add("Error: " + err.message, "error"); }
+    finally { setIsProcessing(false); }
   };
 
   const handleViewProof = (proofUrl) => {
