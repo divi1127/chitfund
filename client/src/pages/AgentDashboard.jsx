@@ -1,5 +1,6 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useData } from "../hooks/useData";
+import { fetchData } from "../utils/api";
 import { SectionHeader } from "../components/SectionHeader";
 import { StatCard } from "../components/StatCard";
 import { Table } from "../components/Table";
@@ -18,9 +19,14 @@ export function AgentDashboard({ dark, toast }) {
   const { data: schemes } = useData('/schemes');
   const { data: groups } = useData('/groups');
 
+  // Fetch actual agent record (not the member record) for display in modal
+  const [agentRecord, setAgentRecord] = useState(null);
   const agentId = user?.agentId || user?.userId;
+  useEffect(() => {
+    if (!agentId) return;
+    fetchData(`/agents/${agentId}`).then(setAgentRecord).catch(() => {});
+  }, [agentId]);
 
-  // Agent's own Member record (auto-created when group assigned)
   const mySelfRecord = Array.isArray(members) ? members.find(m => m.agentId === agentId) : null;
   const myOwnMemberId = mySelfRecord?.memberId;
 
@@ -188,6 +194,7 @@ export function AgentDashboard({ dark, toast }) {
           group={payTarget.group}
           scheme={payTarget.scheme}
           installment={payTarget.installment}
+          agentInfo={agentRecord}
           onClose={() => setPayTarget(null)}
           onSuccess={() => { setPayTarget(null); window.location.reload(); }}
         />

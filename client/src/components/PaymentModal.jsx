@@ -4,7 +4,7 @@ import { fmt } from "../utils/helpers";
 import { COMPANY } from "../utils/constants";
 import { useAuth } from "../contexts/AuthContext";
 
-export function PaymentModal({ member, group, scheme, installment, onClose, onSuccess }) {
+export function PaymentModal({ member, group, scheme, installment, agentInfo, onClose, onSuccess }) {
   const { user } = useAuth();
   const [mode, setMode] = useState("");
   const [upiRef, setUpiRef] = useState("");
@@ -177,15 +177,28 @@ export function PaymentModal({ member, group, scheme, installment, onClose, onSu
 
         <div style={{ padding: 24 }}>
           <div style={{ background: "#f0fdf4", border: "1px solid #bbf7d0", borderRadius: 10, padding: "14px 16px", marginBottom: 16 }}>
-            <div style={{ fontSize: 11, fontWeight: 800, color: "#16a34a", letterSpacing: 1.2, marginBottom: 10 }}>{user?.role === 'agent' ? 'AGENT DETAILS' : 'CUSTOMER DETAILS'}</div>
-            <InfoRow l="Name" v={member.name} />
-            {user?.role === 'agent' && member.agentId && <InfoRow l="Agent ID" v={member.agentId} />}
-            <InfoRow l="Member ID" v={member.memberId} />
-            {member.phone && <InfoRow l="Phone" v={member.phone} />}
-            {member.email && <InfoRow l="Email" v={member.email} />}
-            {member.address && <InfoRow l="Address" v={member.address} />}
-            <InfoRow l="Group" v={group.name} />
-            <InfoRow l="Scheme" v={scheme.name} />
+            {user?.role === 'agent' ? (
+              <>
+                <div style={{ fontSize: 11, fontWeight: 800, color: "#16a34a", letterSpacing: 1.2, marginBottom: 10 }}>AGENT DETAILS</div>
+                <InfoRow l="Name" v={agentInfo?.name || member.name} />
+                <InfoRow l="Agent ID" v={agentInfo?.agentId || member.agentId || "—"} />
+                {agentInfo?.phone && <InfoRow l="Phone" v={agentInfo.phone} />}
+                {agentInfo?.branch && <InfoRow l="Branch" v={agentInfo.branch} />}
+                <InfoRow l="Group" v={group.name} />
+                <InfoRow l="Scheme" v={scheme.name} />
+              </>
+            ) : (
+              <>
+                <div style={{ fontSize: 11, fontWeight: 800, color: "#16a34a", letterSpacing: 1.2, marginBottom: 10 }}>CUSTOMER DETAILS</div>
+                <InfoRow l="Name" v={member.name} />
+                <InfoRow l="Member ID" v={member.memberId} />
+                {member.phone && <InfoRow l="Phone" v={member.phone} />}
+                {member.email && <InfoRow l="Email" v={member.email} />}
+                {member.address && <InfoRow l="Address" v={member.address} />}
+                <InfoRow l="Group" v={group.name} />
+                <InfoRow l="Scheme" v={scheme.name} />
+              </>
+            )}
           </div>
 
           <div style={{ background: "#f8fafc", borderRadius: 10, padding: "14px 16px", marginBottom: 16 }}>
