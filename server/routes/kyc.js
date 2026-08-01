@@ -1,5 +1,6 @@
 import express from 'express';
 import KYC from '../models/KYC.js';
+import Member from '../models/Member.js';
 import { authenticateToken } from '../middleware/auth.js';
 import { requireRole } from '../middleware/rbac.js';
 import { logAudit } from '../utils/audit.js';
@@ -8,6 +9,25 @@ const router = express.Router();
 
 router.get('/', authenticateToken, async (req, res) => {
   try {
+    const unreviewedMembers = await Member.find({ aadhaar: { $exists: true, $ne: '' } });
+    for (const m of unreviewedMembers) {
+      const extKyc = await KYC.findOne({ memberId: m.memberId });
+      if (!extKyc) {
+         try {
+           await new KYC({
+             memberId: m.memberId,
+             memberName: m.name,
+             aadhaarNumber: m.aadhaar,
+             panNumber: m.pan || '',
+             aadhaarDoc: m.kycProof || '',
+             status: 'pending'
+           }).save();
+         } catch (e) {
+           // Skip if there's an error syncing this member
+         }
+      }
+    }
+
     let filter = {};
     if (req.query.status) filter.status = req.query.status;
     if (req.user.role === 'customer') {

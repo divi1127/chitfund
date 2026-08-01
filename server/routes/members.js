@@ -5,6 +5,7 @@ import User from '../models/User.js';
 import Group from '../models/Group.js';
 import Scheme from '../models/Scheme.js';
 import Invoice from '../models/Invoice.js';
+import KYC from '../models/KYC.js';
 import { authenticate, authorize } from '../middleware/auth.js';
 import { generateCustomerId, generatePasswordFromDob, generateInvoiceNo } from '../utils/idGenerator.js';
 import { createNotification } from '../utils/notify.js';
@@ -48,7 +49,7 @@ router.get('/:id', authenticate, async (req, res) => {
 
 router.post('/', authenticate, authorize('super_admin', 'admin', 'agent'), async (req, res) => {
   try {
-    const { name, phone, email, address, aadhaar, pan, dob, photo, groupId, agentId } = req.body;
+    const { name, phone, email, address, aadhaar, pan, dob, photo, groupId, agentId, kycProof } = req.body;
 
     if (!name || !phone || !address || !aadhaar) {
       return res.status(400).json({ message: 'Name, phone, address, and aadhaar are required' });
@@ -94,6 +95,7 @@ router.post('/', authenticate, authorize('super_admin', 'admin', 'agent'), async
       pan: pan || '',
       dob: dob || null,
       photo: photo || '',
+      kycProof: kycProof || '',
       password: autoPassword,
       status: 'Active',
       groups: groupId ? [groupId] : [],
@@ -179,6 +181,20 @@ router.post('/', authenticate, authorize('super_admin', 'admin', 'agent'), async
       } catch (invError) {
         console.error('Invoice creation error:', invError.message);
       }
+    }
+
+    try {
+      const kycData = {
+        memberId,
+        memberName: name,
+        aadhaarNumber: aadhaar || '',
+        panNumber: pan || '',
+        aadhaarDoc: kycProof || '',
+        status: 'pending'
+      };
+      await new KYC(kycData).save();
+    } catch (kycErr) {
+      console.error('Failed to auto-create KYC:', kycErr.message);
     }
 
     await createNotification({
