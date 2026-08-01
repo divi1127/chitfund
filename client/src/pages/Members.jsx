@@ -215,9 +215,9 @@ export function Members({ toast, setPreview }) {
               <div>
                 <label style={{ fontSize: 13, fontWeight: 600, color: "#16a34a", cursor: "pointer" }}>
                   Upload KYC Proof (Aadhaar / PAN)
-                  <input type="file" accept="image/*" onChange={handleKycUpload} style={{ display: "none" }} />
+                  <input type="file" accept="image/*,application/pdf" onChange={handleKycUpload} style={{ display: "none" }} />
                 </label>
-                <div style={{ fontSize: 11, color: "#166534", marginTop: 2 }}>Required for identity verification.</div>
+                <div style={{ fontSize: 11, color: "#166534", marginTop: 2 }}>Required for identity verification. Supported files: Images and PDF.</div>
               </div>
             </div>
 

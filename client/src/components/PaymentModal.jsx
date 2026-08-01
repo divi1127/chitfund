@@ -285,6 +285,7 @@ export function PaymentModal({ member, group, scheme, installment, agentInfo, on
                   {Array.from({ length: BLOCKS }, (_, i) => {
                     const isBlockPaid = i < paidBlocks;
                     const isBlockPending = !isBlockPaid && i < totalSubmittedBlocks;
+                    const isNextAvailable = !isBlockPaid && !isBlockPending && i === totalSubmittedBlocks;
                     const isBlockSelected = selectedBlock === i;
                     let bg, borderColor, textColor, cursor, content;
                     if (isBlockPaid) {
@@ -305,9 +306,9 @@ export function PaymentModal({ member, group, scheme, installment, agentInfo, on
                       textColor = "#fff";
                       cursor = "pointer";
                       content = String(i + 1);
-                    } else if (paymentType === "parts" && !isFullyPaid) {
+                    } else if (paymentType === "parts" && !isFullyPaid && isNextAvailable) {
                       bg = "#fff";
-                      borderColor = "#e2e8f0";
+                      borderColor = "#3b82f6";
                       textColor = "#374151";
                       cursor = "pointer";
                       content = String(i + 1);
@@ -320,20 +321,21 @@ export function PaymentModal({ member, group, scheme, installment, agentInfo, on
                     }
                     return (
                       <button key={i} onClick={() => {
-                        if (!isBlockPaid && !isBlockPending && !isFullyPaid && paymentType === "parts") {
+                        if (isNextAvailable && paymentType === "parts") {
                           setSelectedBlock(selectedBlock === i ? null : i);
                         }
                       }}
-                        disabled={isBlockPaid || isBlockPending || isFullyPaid || paymentType !== "parts"}
+                        disabled={isBlockPaid || isBlockPending || isFullyPaid || paymentType !== "parts" || !isNextAvailable}
                         style={{
                           width: "100%", height: 40, borderRadius: 8,
                           border: `2px solid ${borderColor}`,
                           background: bg,
                           color: textColor,
                           fontWeight: 700, fontSize: 14,
-                          cursor: (isBlockPaid || isBlockPending || paymentType !== "parts") ? "default" : "pointer",
+                          cursor,
                           transition: "all 0.15s",
-                          display: "flex", alignItems: "center", justifyContent: "center"
+                          display: "flex", alignItems: "center", justifyContent: "center",
+                          opacity: (isBlockPaid || isBlockPending || isNextAvailable) ? 1 : 0.4
                         }}>
                         {content}
                       </button>
