@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useData } from "../hooks/useData";
-import { createData, updateData, deleteData } from "../utils/api";
+import { createData, updateData, deleteData, API_BASE } from "../utils/api";
 import { SectionHeader } from "../components/SectionHeader";
 import { Table } from "../components/Table";
 import { Badge } from "../components/Badge";
@@ -130,16 +130,18 @@ export function Members({ toast, setPreview }) {
     try {
       const formData = new FormData();
       formData.append('file', file);
-      const res = await fetch("https://chitfund-cxnp.onrender.com/api/upload", { // You may want to use relative URL if proxied or import VITE_API_BASE
+      const res = await fetch(`${API_BASE}/upload`, {
          method: 'POST',
          headers: { Authorization: `Bearer ${localStorage.getItem('token')}` },
          body: formData
       });
       const data = await res.json();
+      if (!res.ok) throw new Error(data.message || 'Upload failed');
       setForm({ ...form, kycProof: data.url });
       toast.add("KYC Uploaded!");
-    } catch {
-      toast.add("KYC Upload failed", "error");
+    } catch (err) {
+      console.error('Upload Error:', err);
+      toast.add(`KYC Upload failed: ${err.message}`, "error");
     }
   };
 

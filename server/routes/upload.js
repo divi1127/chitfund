@@ -18,10 +18,10 @@ const upload = multer({
   storage,
   limits: { fileSize: 5 * 1024 * 1024 },
   fileFilter: (req, file, cb) => {
-    const allowed = ['.jpg', '.jpeg', '.png', '.gif', '.webp'];
+    const allowed = ['.jpg', '.jpeg', '.png', '.gif', '.webp', '.pdf'];
     const ext = path.extname(file.originalname).toLowerCase();
     if (allowed.includes(ext)) cb(null, true);
-    else cb(new Error('Only image files (jpg, png, gif, webp) are allowed'));
+    else cb(new Error('Only image files and PDFs (jpg, png, gif, webp, pdf) are allowed'));
   }
 });
 
