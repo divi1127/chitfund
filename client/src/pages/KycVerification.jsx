@@ -5,13 +5,14 @@ import { Badge } from "../components/Badge";
 import { Btn } from "../components/Btn";
 import { Input } from "../components/Input";
 import { useAuth } from "../contexts/AuthContext";
+import { API_BASE } from "../utils/api";
 
 export function KycVerification({ dark, toast }) {
   const { user } = useAuth();
   const [kycRecords, setKycRecords] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
-  const [form, setForm] = useState({ memberId: "", memberName: "", aadhaarNumber: "", panNumber: "" });
+  const [form, setForm] = useState({ memberId: "", memberName: "", aadhaarNumber: "", panNumber: "", aadhaarDoc: "", panDoc: "" });
   const [reviewingKyc, setReviewingKyc] = useState(null);
   const [rejectionReason, setRejectionReason] = useState("");
 
@@ -33,6 +34,27 @@ export function KycVerification({ dark, toast }) {
 
   useEffect(() => { fetchKyc(); }, []);
 
+  const handleFileUpload = async (field, e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    try {
+      const formData = new FormData();
+      formData.append('file', file);
+      const res = await fetch(`${API_BASE}/upload`, {
+         method: 'POST',
+         headers: { Authorization: `Bearer ${user.token}` },
+         body: formData
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.message || 'Upload failed');
+      setForm({ ...form, [field]: data.url });
+      toast.add(`Document uploaded successfully!`);
+    } catch (err) {
+      console.error('Upload Error:', err);
+      toast.add(`Upload failed: ${err.message}`, "error");
+    }
+  };
+
   const handleSubmit = async () => {
     if (!form.memberId || !form.memberName) {
       toast.add("Member ID and name are required", "error");
@@ -47,7 +69,7 @@ export function KycVerification({ dark, toast }) {
       if (response.ok) {
         toast.add("KYC submitted successfully!");
         setShowForm(false);
-        setForm({ memberId: "", memberName: "", aadhaarNumber: "", panNumber: "" });
+        setForm({ memberId: "", memberName: "", aadhaarNumber: "", panNumber: "", aadhaarDoc: "", panDoc: "" });
         fetchKyc();
       } else {
         const err = await response.json();
@@ -112,12 +134,25 @@ export function KycVerification({ dark, toast }) {
             <Input label="Aadhaar Number" value={form.aadhaarNumber} onChange={v => setForm({ ...form, aadhaarNumber: v })} dark={dark} placeholder="XXXX-XXXX-XXXX" />
             <Input label="PAN Number" value={form.panNumber} onChange={v => setForm({ ...form, panNumber: v })} dark={dark} placeholder="ABCDE1234F" />
           </div>
-          <div style={{ marginTop: 12, fontSize: 12, color: dark ? "rgba(255,255,255,.5)" : "#6b7280" }}>
-            Document upload will be available in the next update. For now, please enter your document numbers.
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(220px,1fr))", gap: "20px", marginTop: "20px" }}>
+            <div style={{ background: dark ? "rgba(255,255,255,.02)" : "#fff", padding: 16, borderRadius: 8, border: `1px dashed ${dark ? "rgba(255,255,255,.2)" : "#cbd5e1"}` }}>
+              <div style={{ fontSize: 13, fontWeight: 600, color: dark ? "#f3f4f6" : "#333", marginBottom: 8 }}>Aadhaar Document</div>
+              {form.aadhaarDoc ? (
+                <div style={{ padding: "8px 12px", background: "#dcfce7", color: "#166534", borderRadius: 6, fontSize: 12, fontWeight: 600, marginBottom: 8 }}>✓ Uploaded</div>
+              ) : null}
+              <input type="file" accept="image/*,application/pdf" onChange={(e) => handleFileUpload('aadhaarDoc', e)} style={{ fontSize: 12, color: dark ? "rgba(255,255,255,.7)" : "#666" }} />
+            </div>
+            <div style={{ background: dark ? "rgba(255,255,255,.02)" : "#fff", padding: 16, borderRadius: 8, border: `1px dashed ${dark ? "rgba(255,255,255,.2)" : "#cbd5e1"}` }}>
+              <div style={{ fontSize: 13, fontWeight: 600, color: dark ? "#f3f4f6" : "#333", marginBottom: 8 }}>PAN Document</div>
+              {form.panDoc ? (
+                <div style={{ padding: "8px 12px", background: "#dcfce7", color: "#166534", borderRadius: 6, fontSize: 12, fontWeight: 600, marginBottom: 8 }}>✓ Uploaded</div>
+              ) : null}
+              <input type="file" accept="image/*,application/pdf" onChange={(e) => handleFileUpload('panDoc', e)} style={{ fontSize: 12, color: dark ? "rgba(255,255,255,.7)" : "#666" }} />
+            </div>
           </div>
-          <div style={{ display: "flex", gap: 10, marginTop: 16 }}>
+          <div style={{ display: "flex", gap: 10, marginTop: 24 }}>
             <Btn label="Submit KYC" onClick={handleSubmit} primary />
-            <Btn label="Cancel" onClick={() => { setShowForm(false); setForm({ memberId: "", memberName: "", aadhaarNumber: "", panNumber: "" }); }} />
+            <Btn label="Cancel" onClick={() => { setShowForm(false); setForm({ memberId: "", memberName: "", aadhaarNumber: "", panNumber: "", aadhaarDoc: "", panDoc: "" }); }} />
           </div>
         </div>
       )}
@@ -145,6 +180,34 @@ export function KycVerification({ dark, toast }) {
                 <div style={{ fontSize: 14, color: dark ? "#f3f4f6" : "#111" }}>{reviewingKyc.panNumber}</div>
               </div>
             )}
+            
+            <div style={{ display: "flex", gap: 12, marginBottom: 20 }}>
+              {reviewingKyc.aadhaarDoc && (
+                <div style={{ flex: 1, padding: 12, background: dark ? "rgba(255,255,255,.05)" : "#f8fafc", borderRadius: 8, border: `1px solid ${dark ? "rgba(255,255,255,.1)" : "#e2e8f0"}` }}>
+                  <div style={{ fontSize: 12, fontWeight: 600, color: dark ? "rgba(255,255,255,.6)" : "#475569", marginBottom: 6 }}>Aadhaar Document</div>
+                  {reviewingKyc.aadhaarDoc.endsWith(".pdf") ? (
+                    <a href={`${API_BASE.replace('/api', '')}${reviewingKyc.aadhaarDoc}`} target="_blank" rel="noreferrer" style={{ fontSize: 12, color: "#2563eb", textDecoration: "none", fontWeight: 600 }}>View PDF</a>
+                  ) : (
+                    <a href={`${API_BASE.replace('/api', '')}${reviewingKyc.aadhaarDoc}`} target="_blank" rel="noreferrer">
+                      <img src={`${API_BASE.replace('/api', '')}${reviewingKyc.aadhaarDoc}`} alt="Aadhaar" style={{ width: "100%", maxHeight: 80, objectFit: "cover", borderRadius: 4 }} />
+                    </a>
+                  )}
+                </div>
+              )}
+              {reviewingKyc.panDoc && (
+                <div style={{ flex: 1, padding: 12, background: dark ? "rgba(255,255,255,.05)" : "#f8fafc", borderRadius: 8, border: `1px solid ${dark ? "rgba(255,255,255,.1)" : "#e2e8f0"}` }}>
+                  <div style={{ fontSize: 12, fontWeight: 600, color: dark ? "rgba(255,255,255,.6)" : "#475569", marginBottom: 6 }}>PAN Document</div>
+                  {reviewingKyc.panDoc.endsWith(".pdf") ? (
+                    <a href={`${API_BASE.replace('/api', '')}${reviewingKyc.panDoc}`} target="_blank" rel="noreferrer" style={{ fontSize: 12, color: "#2563eb", textDecoration: "none", fontWeight: 600 }}>View PDF</a>
+                  ) : (
+                    <a href={`${API_BASE.replace('/api', '')}${reviewingKyc.panDoc}`} target="_blank" rel="noreferrer">
+                      <img src={`${API_BASE.replace('/api', '')}${reviewingKyc.panDoc}`} alt="PAN" style={{ width: "100%", maxHeight: 80, objectFit: "cover", borderRadius: 4 }} />
+                    </a>
+                  )}
+                </div>
+              )}
+            </div>
+
             <div style={{ fontSize: 12, color: dark ? "rgba(255,255,255,.5)" : "#6b7280", marginBottom: 4 }}>Submitted</div>
             <div style={{ fontSize: 13, color: dark ? "#f3f4f6" : "#111", marginBottom: 16 }}>{new Date(reviewingKyc.submittedAt).toLocaleString()}</div>
 
