@@ -358,10 +358,10 @@ const LandDetailModal = ({ listing, lang, onClose }) => {
   const image   = listing.image;
 
   const infoRows = [
-    { label: lang === 'en' ? 'Type'     : 'வகை',        value: type },
-    { label: lang === 'en' ? 'Area'     : 'பரப்பளவு',   value: area },
-    { label: lang === 'en' ? 'Location' : 'இடம்',        value: location },
-    { label: lang === 'en' ? 'Address'  : 'முகவரி',      value: address },
+    { label: lang === 'en' ? 'Type'     : 'வகை',       value: type },
+    { label: lang === 'en' ? 'Area'     : 'பரப்பளவு',  value: area },
+    { label: lang === 'en' ? 'Location' : 'இடம்',       value: location },
+    { label: lang === 'en' ? 'Address'  : 'முகவரி',     value: address },
   ].filter(r => r.value);
 
   return (
@@ -373,156 +373,195 @@ const LandDetailModal = ({ listing, lang, onClose }) => {
       style={{
         position: 'fixed', inset: 0, zIndex: 9999,
         background: 'rgba(2,6,16,0.92)', backdropFilter: 'blur(8px)',
-        display: 'flex', alignItems: 'flex-end',
-        justifyContent: 'center',
-        padding: 0, cursor: 'pointer',
-        /* On larger screens, centre vertically */
+        display: 'flex', alignItems: 'center', justifyContent: 'center',
+        padding: '16px', cursor: 'pointer',
       }}
     >
+      {/* Responsive styles */}
       <style>{`
-        @media (min-width: 640px) {
-          .land-modal-sheet {
-            align-self: center !important;
-            border-radius: 20px !important;
-            max-height: 92vh !important;
-            margin: 16px !important;
-          }
+        .land-modal-inner {
+          flex-direction: row !important;
         }
-        @media (max-width: 639px) {
-          .land-modal-sheet {
-            border-radius: 22px 22px 0 0 !important;
+        .land-modal-img-col {
+          width: 45% !important;
+          min-height: 420px !important;
+        }
+        .land-modal-detail-col {
+          width: 55% !important;
+        }
+        @media (max-width: 640px) {
+          .land-modal-inner {
+            flex-direction: column !important;
             max-height: 96vh !important;
+            border-radius: 20px !important;
+          }
+          .land-modal-img-col {
+            width: 100% !important;
+            min-height: 200px !important;
+            max-height: 42vw !important;
+          }
+          .land-modal-detail-col {
+            width: 100% !important;
           }
         }
       `}</style>
 
       <motion.div
-        initial={{ opacity: 0, y: 60 }}
-        animate={{ opacity: 1, y: 0 }}
-        exit={{ opacity: 0, y: 60 }}
-        transition={{ duration: 0.28, ease: [0.16, 1, 0.3, 1] }}
-        className="land-modal-sheet"
+        initial={{ opacity: 0, scale: 0.93, y: 24 }}
+        animate={{ opacity: 1, scale: 1, y: 0 }}
+        exit={{ opacity: 0, scale: 0.93, y: 24 }}
+        transition={{ duration: 0.26, ease: [0.16, 1, 0.3, 1] }}
+        className="land-modal-inner"
         onClick={(e) => e.stopPropagation()}
         style={{
           width: '100%',
-          maxWidth: 880,
-          background: 'linear-gradient(160deg, #0f172a 0%, #1e293b 100%)',
-          border: '1px solid rgba(245,158,11,0.2)',
-          display: 'flex', flexDirection: 'column',
-          boxShadow: '0 -20px 80px rgba(0,0,0,0.7)',
-          cursor: 'default',
+          maxWidth: 900,
+          maxHeight: '92vh',
+          background: 'linear-gradient(160deg, #0f172a 0%, #1b2741 100%)',
+          border: '1px solid rgba(245,158,11,0.22)',
+          borderRadius: 22,
+          display: 'flex',
           overflow: 'hidden',
+          boxShadow: '0 32px 100px rgba(0,0,0,0.7)',
+          cursor: 'default',
           position: 'relative',
         }}
       >
-        {/* ── BIG CLOSE BUTTON (top-right, always visible) ── */}
-        <button
-          onClick={onClose}
-          aria-label="Close"
+        {/* ── LEFT: Image column ── */}
+        <div
+          className="land-modal-img-col"
           style={{
-            position: 'absolute', top: 14, right: 14, zIndex: 10,
-            width: 42, height: 42, borderRadius: '50%',
-            background: 'rgba(255,255,255,0.12)',
-            border: '1.5px solid rgba(255,255,255,0.25)',
-            color: '#fff', cursor: 'pointer',
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-            backdropFilter: 'blur(4px)',
-            transition: 'background 0.2s, transform 0.15s',
-            boxShadow: '0 4px 16px rgba(0,0,0,0.4)',
-          }}
-          onMouseEnter={e => {
-            e.currentTarget.style.background = 'rgba(239,68,68,0.85)';
-            e.currentTarget.style.transform  = 'scale(1.08)';
-          }}
-          onMouseLeave={e => {
-            e.currentTarget.style.background = 'rgba(255,255,255,0.12)';
-            e.currentTarget.style.transform  = 'scale(1)';
+            position: 'relative',
+            background: '#060c18',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            overflow: 'hidden',
+            flexShrink: 0,
           }}
         >
-          <X style={{ width: 20, height: 20, strokeWidth: 2.5 }} />
-        </button>
-
-        {/* ── Image (portrait & landscape, no crop) ── */}
-        <div style={{
-          position: 'relative',
-          background: '#060c18',
-          display: 'flex', alignItems: 'center', justifyContent: 'center',
-          minHeight: 200,
-          maxHeight: '48vh',
-          overflow: 'hidden',
-          flexShrink: 0,
-        }}>
           {image ? (
             <img
               src={resolveImg(image)}
               alt={title}
               style={{
-                display: 'block',
-                maxWidth: '100%',
-                maxHeight: '48vh',
-                width: 'auto',
-                height: 'auto',
+                width: '100%',
+                height: '100%',
                 objectFit: 'contain',
-                margin: '0 auto',
+                display: 'block',
               }}
               onError={(e) => {
-                e.target.replaceWith(
-                  Object.assign(document.createElement('span'),
-                    { textContent: '🏠', style: 'font-size:80px;padding:40px;display:block;' })
-                );
+                e.target.style.display = 'none';
+                document.getElementById('land-modal-fallback') &&
+                  (document.getElementById('land-modal-fallback').style.display = 'flex');
               }}
             />
-          ) : (
-            <span style={{ fontSize: 80, padding: 48 }}>{listing.emoji || '🏠'}</span>
-          )}
+          ) : null}
+
+          {/* Fallback */}
+          <div
+            id="land-modal-fallback"
+            style={{
+              display: image ? 'none' : 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              width: '100%',
+              height: '100%',
+              minHeight: 200,
+            }}
+          >
+            <span style={{ fontSize: 72 }}>{listing.emoji || '🏠'}</span>
+          </div>
+
+          {/* Badge chip */}
+          <div style={{
+            position: 'absolute', top: 14, left: 14,
+            background: accent, color: '#0f172a',
+            fontSize: 11, fontWeight: 800,
+            padding: '4px 12px', borderRadius: 100,
+            boxShadow: '0 2px 10px rgba(0,0,0,0.3)',
+          }}>
+            {badge}
+          </div>
 
           {/* Location chip */}
           <div style={{
-            position: 'absolute', bottom: 12, left: 12,
+            position: 'absolute', bottom: 14, left: 14,
             display: 'flex', alignItems: 'center', gap: 6,
-            background: 'rgba(0,0,0,0.7)', backdropFilter: 'blur(6px)',
+            background: 'rgba(0,0,0,0.72)', backdropFilter: 'blur(6px)',
             borderRadius: 100, padding: '5px 12px',
           }}>
             <MapPin style={{ width: 13, height: 13, color: '#fbbf24', flexShrink: 0 }} />
             <span style={{ color: '#fff', fontSize: 12, fontWeight: 600 }}>{location}</span>
           </div>
-
-          {/* Badge */}
-          <div style={{
-            position: 'absolute', top: 12, left: 12,
-            background: accent, color: '#0f172a',
-            fontSize: 11, fontWeight: 800, padding: '4px 12px', borderRadius: 100,
-          }}>
-            {badge}
-          </div>
         </div>
 
-        {/* ── Scrollable details ── */}
-        <div style={{ padding: '20px 20px 24px', overflowY: 'auto', flex: 1 }}>
-
-          {/* Title + price row */}
-          <div style={{ marginBottom: 14 }}>
-            <h2 style={{ margin: '0 0 6px', color: '#fff', fontWeight: 900, fontSize: 'clamp(16px,4vw,22px)', lineHeight: 1.2, paddingRight: 40 }}>
-              {title}
-            </h2>
-            <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: 8 }}>
-              <span style={{ color: '#fbbf24', fontSize: 'clamp(18px,5vw,26px)', fontWeight: 900 }}>{price}</span>
-              {area && <span style={{ color: '#94a3b8', fontSize: 13, fontWeight: 600 }}>· {area}</span>}
-              {type && (
-                <span style={{
-                  color: '#cbd5e1', fontSize: 12,
-                  background: 'rgba(255,255,255,0.07)', border: '1px solid rgba(255,255,255,0.12)',
-                  padding: '3px 10px', borderRadius: 100,
-                }}>
-                  {type}
-                </span>
-              )}
+        {/* ── RIGHT: Details column ── */}
+        <div
+          className="land-modal-detail-col"
+          style={{
+            display: 'flex',
+            flexDirection: 'column',
+            overflowY: 'auto',
+            padding: '22px 22px 22px',
+          }}
+        >
+          {/* Header row: title + close */}
+          <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 14, gap: 10 }}>
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <h2 style={{ margin: '0 0 5px', color: '#fff', fontWeight: 900, fontSize: 'clamp(15px,2.5vw,20px)', lineHeight: 1.2, wordBreak: 'break-word' }}>
+                {title}
+              </h2>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+                <span style={{ color: '#fbbf24', fontSize: 'clamp(16px,3vw,22px)', fontWeight: 900 }}>{price}</span>
+                {area && <span style={{ color: '#64748b', fontSize: 13, fontWeight: 600 }}>· {area}</span>}
+              </div>
             </div>
+
+            {/* ── CLOSE BUTTON ── */}
+            <button
+              onClick={onClose}
+              aria-label="Close"
+              style={{
+                flexShrink: 0,
+                width: 40, height: 40,
+                borderRadius: '50%',
+                background: 'rgba(255,255,255,0.1)',
+                border: '1.5px solid rgba(255,255,255,0.2)',
+                color: '#fff', cursor: 'pointer',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                transition: 'background 0.2s, transform 0.15s',
+                boxShadow: '0 3px 12px rgba(0,0,0,0.4)',
+              }}
+              onMouseEnter={e => {
+                e.currentTarget.style.background = 'rgba(239,68,68,0.9)';
+                e.currentTarget.style.transform = 'scale(1.1)';
+              }}
+              onMouseLeave={e => {
+                e.currentTarget.style.background = 'rgba(255,255,255,0.1)';
+                e.currentTarget.style.transform = 'scale(1)';
+              }}
+            >
+              <X style={{ width: 20, height: 20, strokeWidth: 2.5 }} />
+            </button>
           </div>
+
+          {/* Type badge */}
+          {type && (
+            <span style={{
+              display: 'inline-block', width: 'fit-content',
+              color: '#cbd5e1', fontSize: 12,
+              background: 'rgba(255,255,255,0.07)',
+              border: '1px solid rgba(255,255,255,0.12)',
+              padding: '3px 12px', borderRadius: 100, marginBottom: 14,
+            }}>
+              {type}
+            </span>
+          )}
 
           {/* Description */}
           {desc && (
-            <p style={{ color: '#94a3b8', fontSize: 13, lineHeight: 1.7, margin: '0 0 16px' }}>
+            <p style={{ color: '#94a3b8', fontSize: 13, lineHeight: 1.75, margin: '0 0 16px' }}>
               {desc}
             </p>
           )}
@@ -531,14 +570,14 @@ const LandDetailModal = ({ listing, lang, onClose }) => {
           {infoRows.length > 0 && (
             <div style={{
               display: 'grid',
-              gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))',
+              gridTemplateColumns: 'repeat(auto-fit, minmax(130px, 1fr))',
               gap: 8, marginBottom: 20,
             }}>
               {infoRows.map((r) => (
                 <div key={r.label} style={{
                   background: 'rgba(255,255,255,0.04)',
                   border: '1px solid rgba(255,255,255,0.08)',
-                  borderRadius: 10, padding: '10px 14px',
+                  borderRadius: 10, padding: '10px 12px',
                 }}>
                   <div style={{ color: '#475569', fontSize: 10, fontWeight: 700, letterSpacing: 0.8, textTransform: 'uppercase', marginBottom: 4 }}>
                     {r.label}
@@ -551,16 +590,18 @@ const LandDetailModal = ({ listing, lang, onClose }) => {
             </div>
           )}
 
+          {/* Spacer push buttons to bottom */}
+          <div style={{ flex: 1 }} />
+
           {/* CTA buttons */}
-          <div style={{ display: 'flex', gap: 10, flexDirection: 'column' }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
             <a
               href={`tel:${phone}`}
               style={{
                 display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
                 background: `linear-gradient(90deg, ${accent}, #d97706)`,
-                color: '#0f172a', fontWeight: 800, fontSize: 15,
-                padding: '13px 20px', borderRadius: 12, textDecoration: 'none',
-                letterSpacing: 0.4,
+                color: '#0f172a', fontWeight: 800, fontSize: 14,
+                padding: '12px 20px', borderRadius: 12, textDecoration: 'none',
               }}
             >
               <Phone style={{ width: 16, height: 16 }} />
@@ -570,14 +611,13 @@ const LandDetailModal = ({ listing, lang, onClose }) => {
               onClick={onClose}
               style={{
                 display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
-                background: 'rgba(255,255,255,0.06)',
-                border: '1px solid rgba(255,255,255,0.14)',
-                color: '#94a3b8', fontWeight: 700, fontSize: 14,
-                padding: '11px 20px', borderRadius: 12, cursor: 'pointer',
-                width: '100%',
+                background: 'rgba(255,255,255,0.05)',
+                border: '1px solid rgba(255,255,255,0.13)',
+                color: '#64748b', fontWeight: 700, fontSize: 13,
+                padding: '10px 20px', borderRadius: 12, cursor: 'pointer', width: '100%',
               }}
             >
-              <X style={{ width: 15, height: 15 }} />
+              <X style={{ width: 14, height: 14 }} />
               {lang === 'en' ? 'Close' : 'மூடு'}
             </button>
           </div>
