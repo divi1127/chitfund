@@ -33,7 +33,7 @@ export function Lands({ dark, toast }) {
   const [errors, setErrors] = useState({});
   const [uploading, setUploading] = useState(false);
   const [search, setSearch] = useState("");
-  const [viewLand, setViewLand] = useState(null);
+  const [viewing, setViewing] = useState(null);
 
   const canManage = user?.role === "super_admin" || user?.role === "admin";
 
@@ -320,7 +320,7 @@ export function Lands({ dark, toast }) {
                 )}
 
                 <div style={{ display: "flex", gap: 8, marginTop: 12 }}>
-                  <button onClick={() => setViewLand(land)} style={{
+                  <button onClick={() => setViewing(land)} style={{
                     flex: 1, padding: "8px 0", borderRadius: 8, border: "1px solid #10b981",
                     background: "transparent", color: "#10b981", fontSize: 12, fontWeight: 600, cursor: "pointer",
                   }}>View</button>
@@ -339,78 +339,75 @@ export function Lands({ dark, toast }) {
         </div>
       )}
 
-      {/* ── FULL VIEW MODAL ── */}
-      {viewLand && (
+      {/* ── VIEW POPUP MODAL ── */}
+      {viewing && (
         <div style={{
-          position: "fixed", inset: 0, zIndex: 999,
-          background: "rgba(0,0,0,0.7)", backdropFilter: "blur(4px)",
-          display: "flex", alignItems: "center", justifyContent: "center", padding: 24,
-        }} onClick={() => setViewLand(null)}>
+          position: "fixed", inset: 0, zIndex: 9999,
+          background: "rgba(0,0,0,0.85)", backdropFilter: "blur(4px)",
+          display: "flex", alignItems: "center", justifyContent: "center",
+          padding: 24, paddingTop: 60
+        }}>
           <div style={{
             background: dark ? "#0f172a" : "#fff",
-            borderRadius: 16, overflow: "hidden", maxWidth: 640, width: "100%",
-            boxShadow: "0 10px 40px rgba(0,0,0,0.5)",
-            display: "flex", flexDirection: "column", maxHeight: "90vh",
-          }} onClick={e => e.stopPropagation()}>
-            <div style={{ position: "relative", width: "100%", height: 320, background: "#000" }}>
-              {viewLand.image ? (
-                <img src={resolveImg(viewLand.image)} alt={viewLand.name} style={{ width: "100%", height: "100%", objectFit: "contain" }} />
+            border: "1px solid " + (dark ? "rgba(255,255,255,.1)" : "#e5e7eb"),
+            borderRadius: 16, width: "100%", maxWidth: 800,
+            maxHeight: "90vh", display: "flex", flexDirection: "column",
+            overflow: "hidden", position: "relative",
+            boxShadow: "0 10px 40px rgba(0,0,0,0.3)",
+          }}>
+            <button onClick={() => setViewing(null)} style={{
+              position: "absolute", top: 16, right: 16,
+              background: "rgba(0,0,0,0.5)", border: "none", color: "#fff",
+              width: 32, height: 32, borderRadius: "50%", cursor: "pointer",
+              display: "flex", alignItems: "center", justifyContent: "center",
+              zIndex: 10,
+            }}>✕</button>
+
+            {/* Image Section - Object Fit Contain handles Portait & Landscape */}
+            <div style={{ width: "100%", height: "50vh", background: "#000", display: "flex", alignItems: "center", justifyContent: "center" }}>
+              {viewing.image ? (
+                <img src={resolveImg(viewing.image)} alt={viewing.name} style={{ width: "100%", height: "100%", objectFit: "contain" }} />
               ) : (
-                <div style={{ width: "100%", height: "100%", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 64 }}>🏠</div>
+                <div style={{ color: "rgba(255,255,255,0.4)", fontSize: 48 }}>🏠</div>
               )}
-              <button
-                onClick={() => setViewLand(null)}
-                style={{
-                  position: "absolute", top: 12, right: 12, width: 36, height: 36,
-                  borderRadius: "50%", background: "rgba(0,0,0,0.6)", color: "#fff",
-                  border: "none", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center",
-                  fontSize: 20, fontWeight: "bold",
-                }}
-              >×</button>
-              <div style={{ position: "absolute", bottom: 12, left: 12, display: "flex", gap: 8 }}>
-                <Badge text={viewLand.status} color={viewLand.status === "active" ? "green" : viewLand.status === "sold" ? "red" : "gray"} />
-                <span style={{ background: "#f59e0b", color: "#000", fontSize: 11, fontWeight: 700, padding: "3px 10px", borderRadius: 20 }}>
-                  {viewLand.badge}
-                </span>
-              </div>
             </div>
-            
-            <div style={{ padding: 24, overflowY: "auto" }}>
+
+            {/* Details Section */}
+            <div style={{ padding: 24, overflowY: "auto", flex: 1 }}>
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 12 }}>
                 <div>
-                  <h2 style={{ margin: 0, fontSize: 24, fontWeight: 800, color: dark ? "#f1f5f9" : "#0f172a" }}>{viewLand.name}</h2>
-                  <p style={{ margin: "4px 0 0", color: "#64748b", fontSize: 14 }}>{viewLand.type}</p>
+                  <h3 style={{ margin: 0, fontSize: 22, fontWeight: 800, color: dark ? "#f1f5f9" : "#0f172a" }}>{viewing.name}</h3>
+                  <div style={{ fontSize: 13, color: "#64748b", marginTop: 4 }}>{viewing.type} • {viewing.badge}</div>
                 </div>
                 <div style={{ textAlign: "right" }}>
-                  <div style={{ fontWeight: 800, fontSize: 24, color: "#f59e0b" }}>{amtDisplay(viewLand.amount)}</div>
-                  {viewLand.area && <p style={{ margin: 0, fontSize: 13, color: "#94a3b8" }}>{viewLand.area}</p>}
+                  <div style={{ fontSize: 22, fontWeight: 800, color: "#f59e0b" }}>{amtDisplay(viewing.amount)}</div>
+                  {viewing.area && <div style={{ fontSize: 13, color: "#94a3b8" }}>{viewing.area}</div>}
                 </div>
               </div>
-              
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16, marginBottom: 20 }}>
+
+              <div style={{
+                display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16,
+                background: dark ? "rgba(255,255,255,0.03)" : "#f8fafc", padding: 16, borderRadius: 12, marginBottom: 16
+              }}>
                 <div>
-                  <div style={{ fontSize: 12, color: "#94a3b8", fontWeight: 600 }}>Location</div>
-                  <div style={{ fontSize: 14, color: dark ? "#e2e8f0" : "#333", marginTop: 2 }}>📍 {viewLand.location}</div>
+                  <div style={{ fontSize: 11, fontWeight: 600, color: "#64748b" }}>LOCATION</div>
+                  <div style={{ fontSize: 13, color: dark ? "#e2e8f0" : "#1e293b", marginTop: 2 }}>{viewing.location}</div>
                 </div>
-                {viewLand.address && (
-                  <div>
-                    <div style={{ fontSize: 12, color: "#94a3b8", fontWeight: 600 }}>Full Address</div>
-                    <div style={{ fontSize: 14, color: dark ? "#e2e8f0" : "#333", marginTop: 2 }}>{viewLand.address}</div>
-                  </div>
-                )}
-                {viewLand.phone && (
-                  <div>
-                    <div style={{ fontSize: 12, color: "#94a3b8", fontWeight: 600 }}>Contact</div>
-                    <div style={{ fontSize: 14, color: dark ? "#e2e8f0" : "#333", marginTop: 2 }}>📞 {viewLand.phone}</div>
-                  </div>
-                )}
-              </div>
-              
-              {viewLand.description && (
                 <div>
-                  <div style={{ fontSize: 12, color: "#94a3b8", fontWeight: 600, marginBottom: 4 }}>Description</div>
-                  <div style={{ fontSize: 14, color: dark ? "#cbd5e1" : "#475569", lineHeight: 1.6, whiteSpace: "pre-wrap" }}>
-                    {viewLand.description}
+                  <div style={{ fontSize: 11, fontWeight: 600, color: "#64748b" }}>CONTACT PHONE</div>
+                  <div style={{ fontSize: 13, color: dark ? "#e2e8f0" : "#1e293b", marginTop: 2 }}>{viewing.phone || 'N/A'}</div>
+                </div>
+                <div style={{ gridColumn: "1 / -1" }}>
+                  <div style={{ fontSize: 11, fontWeight: 600, color: "#64748b" }}>FULL ADDRESS</div>
+                  <div style={{ fontSize: 13, color: dark ? "#e2e8f0" : "#1e293b", marginTop: 2 }}>{viewing.address}</div>
+                </div>
+              </div>
+
+              {viewing.description && (
+                <div>
+                  <div style={{ fontSize: 11, fontWeight: 600, color: "#64748b", marginBottom: 6 }}>DESCRIPTION</div>
+                  <div style={{ fontSize: 14, lineHeight: 1.6, color: dark ? "#cbd5e1" : "#334155", whiteSpace: "pre-wrap" }}>
+                    {viewing.description}
                   </div>
                 </div>
               )}
