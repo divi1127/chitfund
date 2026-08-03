@@ -252,10 +252,15 @@ const LandCard = ({ listing, lang, index, onView }) => {
       {/* Property image or placeholder */}
       <div
         className="relative h-52 flex items-center justify-center overflow-hidden"
-        style={{ background: `linear-gradient(135deg, #0d1b2a 0%, #1a2744 50%, #0d1b2a 100%)` }}
+        style={{ position: 'relative', background: `linear-gradient(135deg, #0d1b2a 0%, #1a2744 50%, #0d1b2a 100%)` }}
       >
         {listing.image ? (
-          <img src={resolveImg(listing.image)} alt={title} style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover', opacity: 0.85 }} />
+          <img
+            src={resolveImg(listing.image)}
+            alt={title}
+            style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'contain', background: '#0a0f1c' }}
+            onError={(e) => { e.target.style.display = 'none'; }}
+          />
         ) : (
           <>
             <div className="absolute inset-0 opacity-10"
@@ -399,16 +404,55 @@ const LandDetailModal = ({ listing, lang, onClose }) => {
           </button>
         </div>
 
-        {/* Image — portrait & landscape friendly (contain, no cropping) */}
-        <div style={{ background: '#0a0f1c', display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: 260, maxHeight: '55vh', overflow: 'hidden' }}>
+        {/* Image — portrait & landscape friendly */}
+        <div style={{
+          position: 'relative',
+          background: '#060c18',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          minHeight: 220,
+          maxHeight: '52vh',
+          overflow: 'hidden',
+          flexShrink: 0,
+        }}>
           {image ? (
-            <img src={resolveImg(image)} alt={title} style={{ width: '100%', maxHeight: '55vh', objectFit: 'contain', display: 'block' }} />
-          ) : (
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 60 }}>
-              <span style={{ fontSize: 88, filter: 'drop-shadow(0 12px 24px rgba(0,0,0,0.5))' }}>{listing.emoji || '🏠'}</span>
-            </div>
-          )}
-          <div style={{ position: 'absolute', bottom: 12, left: 12, display: 'flex', alignItems: 'center', gap: 6, background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(4px)', borderRadius: 100, padding: '6px 12px' }}>
+            <img
+              src={resolveImg(image)}
+              alt={title}
+              style={{
+                display: 'block',
+                maxWidth: '100%',
+                maxHeight: '52vh',
+                width: 'auto',
+                height: 'auto',
+                objectFit: 'contain',
+                margin: '0 auto',
+              }}
+              onError={(e) => {
+                e.target.style.display = 'none';
+                e.target.nextSibling && (e.target.nextSibling.style.display = 'flex');
+              }}
+            />
+          ) : null}
+          {/* Fallback emoji shown when no image or image fails */}
+          <div style={{
+            display: image ? 'none' : 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            padding: 60,
+            width: '100%',
+          }}>
+            <span style={{ fontSize: 88, filter: 'drop-shadow(0 12px 24px rgba(0,0,0,0.5))' }}>{listing.emoji || '🏠'}</span>
+          </div>
+
+          {/* Location chip */}
+          <div style={{
+            position: 'absolute', bottom: 12, left: 12,
+            display: 'flex', alignItems: 'center', gap: 6,
+            background: 'rgba(0,0,0,0.65)', backdropFilter: 'blur(4px)',
+            borderRadius: 100, padding: '6px 12px',
+          }}>
             <MapPin className="w-3.5 h-3.5" style={{ color: '#fbbf24' }} />
             <span style={{ color: '#fff', fontSize: 12, fontWeight: 600 }}>{location}</span>
           </div>
