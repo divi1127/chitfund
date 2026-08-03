@@ -1,4 +1,4 @@
-export const API_BASE = import.meta.env.VITE_API_BASE || "https://chitfund-cxnp.onrender.com/api";
+export const API_BASE = import.meta.env.VITE_API_BASE || (window.location.hostname === 'localhost' ? 'http://localhost:5000/api' : 'https://chitfund-cxnp.onrender.com/api');
 
 function getHeaders() {
   const user = JSON.parse(localStorage.getItem("user") || "null");

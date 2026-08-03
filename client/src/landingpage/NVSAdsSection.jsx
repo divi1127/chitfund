@@ -6,6 +6,7 @@ import {
   BadgeCheck, TrendingUp, Landmark,
 } from 'lucide-react';
 import { useLanguage } from '../context/LanguageContext';
+import { API_BASE } from '../utils/api';
 
 /* ─────────────────────────── DATA ─────────────────────────── */
 
@@ -157,7 +158,6 @@ const LAND_LISTINGS = [
 ];
 
 // API base for fetching live land listings
-const API_BASE = import.meta.env.VITE_API_BASE || 'https://chitfund-cxnp.onrender.com/api';
 
 const resolveImg = (url) => {
   if (!url) return "";
