@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   Home, Building2, Car, Gem, Briefcase, MapPin, Phone, CheckCircle2,
@@ -364,7 +365,7 @@ const LandDetailModal = ({ listing, lang, onClose }) => {
     { label: lang === 'en' ? 'Address'  : 'முகவரி',     value: address },
   ].filter(r => r.value);
 
-  return (
+  return createPortal(
     <motion.div
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
@@ -623,7 +624,8 @@ const LandDetailModal = ({ listing, lang, onClose }) => {
           </div>
         </div>
       </motion.div>
-    </motion.div>
+    </motion.div>,
+    document.body
   );
 };
 
