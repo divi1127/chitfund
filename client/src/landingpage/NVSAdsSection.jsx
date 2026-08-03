@@ -159,6 +159,13 @@ const LAND_LISTINGS = [
 // API base for fetching live land listings
 const API_BASE = import.meta.env.VITE_API_BASE || 'https://chitfund-cxnp.onrender.com/api';
 
+const resolveImg = (url) => {
+  if (!url) return "";
+  if (url.startsWith("http") || url.startsWith("data:")) return url;
+  const base = API_BASE.replace(/\/api$/, "");
+  return url.startsWith("/") ? `${base}${url}` : `${base}/${url}`;
+};
+
 const FEATURES = {
   en: [
     { icon: Percent, label: 'Low Interest Rates' },
@@ -248,7 +255,7 @@ const LandCard = ({ listing, lang, index }) => {
         style={{ background: `linear-gradient(135deg, #0d1b2a 0%, #1a2744 50%, #0d1b2a 100%)` }}
       >
         {listing.image ? (
-          <img src={listing.image} alt={title} style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover', opacity: 0.85 }} />
+          <img src={resolveImg(listing.image)} alt={title} style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover', opacity: 0.85 }} />
         ) : (
           <>
             <div className="absolute inset-0 opacity-10"

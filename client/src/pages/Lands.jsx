@@ -5,6 +5,13 @@ import { Btn } from "../components/Btn";
 import { Badge } from "../components/Badge";
 import { API_BASE } from "../utils/api";
 
+const resolveImg = (url) => {
+  if (!url) return "";
+  if (url.startsWith("http") || url.startsWith("data:")) return url;
+  const base = API_BASE.replace(/\/api$/, "");
+  return url.startsWith("/") ? `${base}${url}` : `${base}/${url}`;
+};
+
 const inp = {
   padding: "10px 14px", borderRadius: 8, border: "1px solid #e5e7eb",
   background: "#f8fafc", fontSize: 13, outline: "none", width: "100%", boxSizing: "border-box",
@@ -157,7 +164,7 @@ export function Lands({ dark, toast }) {
           {/* Image upload */}
           <div style={{ display: "flex", gap: 16, alignItems: "center", background: dark ? "rgba(255,255,255,.05)" : "#fff", padding: 14, borderRadius: 10, border: "1px dashed #cbd5e1", marginBottom: 16 }}>
             {form.image ? (
-              <img src={form.image} alt="preview" style={{ width: 80, height: 60, objectFit: "cover", borderRadius: 8, border: "2px solid #e2e8f0" }} />
+              <img src={resolveImg(form.image)} alt="preview" style={{ width: 80, height: 60, objectFit: "contain", borderRadius: 8, border: "2px solid #e2e8f0" }} />
             ) : (
               <div style={{ width: 80, height: 60, borderRadius: 8, background: "#f1f5f9", display: "flex", alignItems: "center", justifyContent: "center", color: "#94a3b8", fontSize: 11 }}>No img</div>
             )}
@@ -166,7 +173,7 @@ export function Lands({ dark, toast }) {
                 {uploading ? "Uploading…" : "Upload Property Image"}
                 <input type="file" accept="image/*" onChange={handleImageUpload} style={{ display: "none" }} disabled={uploading} />
               </label>
-              <div style={{ fontSize: 11, color: "#64748b", marginTop: 2 }}>Recommended: 800×500px landscape photo</div>
+              <div style={{ fontSize: 11, color: "#64748b", marginTop: 2 }}>Landscape or Portrait photos accepted</div>
             </div>
           </div>
 
@@ -276,7 +283,7 @@ export function Lands({ dark, toast }) {
               {/* Property Image */}
               <div style={{ position: "relative", height: 160, background: "linear-gradient(135deg, #0f172a, #1e3a8a)", overflow: "hidden" }}>
                 {land.image ? (
-                  <img src={land.image} alt={land.name} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                  <img src={resolveImg(land.image)} alt={land.name} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
                 ) : (
                   <div style={{ width: "100%", height: "100%", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 48 }}>🏠</div>
                 )}
