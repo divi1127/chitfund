@@ -358,10 +358,10 @@ const LandDetailModal = ({ listing, lang, onClose }) => {
   const image   = listing.image;
 
   const infoRows = [
-    { label: lang === 'en' ? 'Type' : 'வகை', value: type },
-    { label: lang === 'en' ? 'Area' : 'பரப்பளவு', value: area },
-    { label: lang === 'en' ? 'Location' : 'இடம்', value: location },
-    { label: lang === 'en' ? 'Address' : 'முகவரி', value: address },
+    { label: lang === 'en' ? 'Type'     : 'வகை',        value: type },
+    { label: lang === 'en' ? 'Area'     : 'பரப்பளவு',   value: area },
+    { label: lang === 'en' ? 'Location' : 'இடம்',        value: location },
+    { label: lang === 'en' ? 'Address'  : 'முகவரி',      value: address },
   ].filter(r => r.value);
 
   return (
@@ -372,47 +372,83 @@ const LandDetailModal = ({ listing, lang, onClose }) => {
       onClick={onClose}
       style={{
         position: 'fixed', inset: 0, zIndex: 9999,
-        background: 'rgba(4,10,20,0.88)', backdropFilter: 'blur(6px)',
-        display: 'flex', alignItems: 'center', justifyContent: 'center',
-        padding: 16, cursor: 'pointer',
+        background: 'rgba(2,6,16,0.92)', backdropFilter: 'blur(8px)',
+        display: 'flex', alignItems: 'flex-end',
+        justifyContent: 'center',
+        padding: 0, cursor: 'pointer',
+        /* On larger screens, centre vertically */
       }}
     >
+      <style>{`
+        @media (min-width: 640px) {
+          .land-modal-sheet {
+            align-self: center !important;
+            border-radius: 20px !important;
+            max-height: 92vh !important;
+            margin: 16px !important;
+          }
+        }
+        @media (max-width: 639px) {
+          .land-modal-sheet {
+            border-radius: 22px 22px 0 0 !important;
+            max-height: 96vh !important;
+          }
+        }
+      `}</style>
+
       <motion.div
-        initial={{ opacity: 0, scale: 0.92, y: 20 }}
-        animate={{ opacity: 1, scale: 1, y: 0 }}
-        exit={{ opacity: 0, scale: 0.92, y: 20 }}
-        transition={{ duration: 0.25 }}
+        initial={{ opacity: 0, y: 60 }}
+        animate={{ opacity: 1, y: 0 }}
+        exit={{ opacity: 0, y: 60 }}
+        transition={{ duration: 0.28, ease: [0.16, 1, 0.3, 1] }}
+        className="land-modal-sheet"
         onClick={(e) => e.stopPropagation()}
         style={{
-          width: '100%', maxWidth: 860, maxHeight: '92vh',
-          background: 'linear-gradient(135deg, #0f172a 0%, #1e293b 100%)',
-          border: '1px solid rgba(245,158,11,0.25)',
-          borderRadius: 20, overflow: 'hidden',
+          width: '100%',
+          maxWidth: 880,
+          background: 'linear-gradient(160deg, #0f172a 0%, #1e293b 100%)',
+          border: '1px solid rgba(245,158,11,0.2)',
           display: 'flex', flexDirection: 'column',
-          boxShadow: '0 40px 100px rgba(0,0,0,0.6)',
+          boxShadow: '0 -20px 80px rgba(0,0,0,0.7)',
           cursor: 'default',
+          overflow: 'hidden',
+          position: 'relative',
         }}
       >
-        {/* Header */}
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '16px 20px', borderBottom: '1px solid rgba(255,255,255,0.08)' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 10, minWidth: 0 }}>
-            <span style={{ background: accent, color: '#0f172a', fontSize: 11, fontWeight: 800, padding: '4px 12px', borderRadius: 100, flexShrink: 0 }}>{badge}</span>
-            <h3 style={{ margin: 0, color: '#fff', fontWeight: 800, fontSize: 17, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{title}</h3>
-          </div>
-          <button onClick={onClose} style={{ background: 'rgba(255,255,255,0.08)', border: 'none', color: '#fff', width: 34, height: 34, borderRadius: 10, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-            <X className="w-4 h-4" />
-          </button>
-        </div>
+        {/* ── BIG CLOSE BUTTON (top-right, always visible) ── */}
+        <button
+          onClick={onClose}
+          aria-label="Close"
+          style={{
+            position: 'absolute', top: 14, right: 14, zIndex: 10,
+            width: 42, height: 42, borderRadius: '50%',
+            background: 'rgba(255,255,255,0.12)',
+            border: '1.5px solid rgba(255,255,255,0.25)',
+            color: '#fff', cursor: 'pointer',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            backdropFilter: 'blur(4px)',
+            transition: 'background 0.2s, transform 0.15s',
+            boxShadow: '0 4px 16px rgba(0,0,0,0.4)',
+          }}
+          onMouseEnter={e => {
+            e.currentTarget.style.background = 'rgba(239,68,68,0.85)';
+            e.currentTarget.style.transform  = 'scale(1.08)';
+          }}
+          onMouseLeave={e => {
+            e.currentTarget.style.background = 'rgba(255,255,255,0.12)';
+            e.currentTarget.style.transform  = 'scale(1)';
+          }}
+        >
+          <X style={{ width: 20, height: 20, strokeWidth: 2.5 }} />
+        </button>
 
-        {/* Image — portrait & landscape friendly */}
+        {/* ── Image (portrait & landscape, no crop) ── */}
         <div style={{
           position: 'relative',
           background: '#060c18',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          minHeight: 220,
-          maxHeight: '52vh',
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          minHeight: 200,
+          maxHeight: '48vh',
           overflow: 'hidden',
           flexShrink: 0,
         }}>
@@ -423,69 +459,127 @@ const LandDetailModal = ({ listing, lang, onClose }) => {
               style={{
                 display: 'block',
                 maxWidth: '100%',
-                maxHeight: '52vh',
+                maxHeight: '48vh',
                 width: 'auto',
                 height: 'auto',
                 objectFit: 'contain',
                 margin: '0 auto',
               }}
               onError={(e) => {
-                e.target.style.display = 'none';
-                e.target.nextSibling && (e.target.nextSibling.style.display = 'flex');
+                e.target.replaceWith(
+                  Object.assign(document.createElement('span'),
+                    { textContent: '🏠', style: 'font-size:80px;padding:40px;display:block;' })
+                );
               }}
             />
-          ) : null}
-          {/* Fallback emoji shown when no image or image fails */}
-          <div style={{
-            display: image ? 'none' : 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            padding: 60,
-            width: '100%',
-          }}>
-            <span style={{ fontSize: 88, filter: 'drop-shadow(0 12px 24px rgba(0,0,0,0.5))' }}>{listing.emoji || '🏠'}</span>
-          </div>
+          ) : (
+            <span style={{ fontSize: 80, padding: 48 }}>{listing.emoji || '🏠'}</span>
+          )}
 
           {/* Location chip */}
           <div style={{
             position: 'absolute', bottom: 12, left: 12,
             display: 'flex', alignItems: 'center', gap: 6,
-            background: 'rgba(0,0,0,0.65)', backdropFilter: 'blur(4px)',
-            borderRadius: 100, padding: '6px 12px',
+            background: 'rgba(0,0,0,0.7)', backdropFilter: 'blur(6px)',
+            borderRadius: 100, padding: '5px 12px',
           }}>
-            <MapPin className="w-3.5 h-3.5" style={{ color: '#fbbf24' }} />
+            <MapPin style={{ width: 13, height: 13, color: '#fbbf24', flexShrink: 0 }} />
             <span style={{ color: '#fff', fontSize: 12, fontWeight: 600 }}>{location}</span>
+          </div>
+
+          {/* Badge */}
+          <div style={{
+            position: 'absolute', top: 12, left: 12,
+            background: accent, color: '#0f172a',
+            fontSize: 11, fontWeight: 800, padding: '4px 12px', borderRadius: 100,
+          }}>
+            {badge}
           </div>
         </div>
 
-        {/* Details */}
-        <div style={{ padding: 24, overflowY: 'auto' }}>
-          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 10, alignItems: 'center', marginBottom: 18 }}>
-            <span style={{ color: '#fbbf24', fontSize: 28, fontWeight: 900 }}>{price}</span>
-            {area && <span style={{ color: '#94a3b8', fontSize: 14, fontWeight: 600 }}>{area}</span>}
-            {type && <span style={{ color: '#cbd5e1', fontSize: 13, background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.12)', padding: '4px 12px', borderRadius: 100 }}>{type}</span>}
+        {/* ── Scrollable details ── */}
+        <div style={{ padding: '20px 20px 24px', overflowY: 'auto', flex: 1 }}>
+
+          {/* Title + price row */}
+          <div style={{ marginBottom: 14 }}>
+            <h2 style={{ margin: '0 0 6px', color: '#fff', fontWeight: 900, fontSize: 'clamp(16px,4vw,22px)', lineHeight: 1.2, paddingRight: 40 }}>
+              {title}
+            </h2>
+            <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: 8 }}>
+              <span style={{ color: '#fbbf24', fontSize: 'clamp(18px,5vw,26px)', fontWeight: 900 }}>{price}</span>
+              {area && <span style={{ color: '#94a3b8', fontSize: 13, fontWeight: 600 }}>· {area}</span>}
+              {type && (
+                <span style={{
+                  color: '#cbd5e1', fontSize: 12,
+                  background: 'rgba(255,255,255,0.07)', border: '1px solid rgba(255,255,255,0.12)',
+                  padding: '3px 10px', borderRadius: 100,
+                }}>
+                  {type}
+                </span>
+              )}
+            </div>
           </div>
 
-          {desc && <p style={{ color: '#cbd5e1', fontSize: 14, lineHeight: 1.7, margin: '0 0 18px' }}>{desc}</p>}
+          {/* Description */}
+          {desc && (
+            <p style={{ color: '#94a3b8', fontSize: 13, lineHeight: 1.7, margin: '0 0 16px' }}>
+              {desc}
+            </p>
+          )}
 
+          {/* Info grid */}
           {infoRows.length > 0 && (
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 10, marginBottom: 22 }}>
+            <div style={{
+              display: 'grid',
+              gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))',
+              gap: 8, marginBottom: 20,
+            }}>
               {infoRows.map((r) => (
-                <div key={r.label} style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 10, padding: '10px 14px' }}>
-                  <div style={{ color: '#64748b', fontSize: 11, fontWeight: 700, letterSpacing: 0.5, textTransform: 'uppercase', marginBottom: 2 }}>{r.label}</div>
-                  <div style={{ color: '#f1f5f9', fontSize: 13, fontWeight: 600 }}>{r.value}</div>
+                <div key={r.label} style={{
+                  background: 'rgba(255,255,255,0.04)',
+                  border: '1px solid rgba(255,255,255,0.08)',
+                  borderRadius: 10, padding: '10px 14px',
+                }}>
+                  <div style={{ color: '#475569', fontSize: 10, fontWeight: 700, letterSpacing: 0.8, textTransform: 'uppercase', marginBottom: 4 }}>
+                    {r.label}
+                  </div>
+                  <div style={{ color: '#e2e8f0', fontSize: 13, fontWeight: 600, wordBreak: 'break-word' }}>
+                    {r.value}
+                  </div>
                 </div>
               ))}
             </div>
           )}
 
-          <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
-            <a href={`tel:${phone}`} style={{ flex: 1, minWidth: 180, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, background: `linear-gradient(90deg, ${accent}, ${accent}cc)`, color: '#0f172a', fontWeight: 800, fontSize: 14, padding: '12px 20px', borderRadius: 12, textDecoration: 'none' }}>
-              <Phone className="w-4 h-4" /> {phone}
+          {/* CTA buttons */}
+          <div style={{ display: 'flex', gap: 10, flexDirection: 'column' }}>
+            <a
+              href={`tel:${phone}`}
+              style={{
+                display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
+                background: `linear-gradient(90deg, ${accent}, #d97706)`,
+                color: '#0f172a', fontWeight: 800, fontSize: 15,
+                padding: '13px 20px', borderRadius: 12, textDecoration: 'none',
+                letterSpacing: 0.4,
+              }}
+            >
+              <Phone style={{ width: 16, height: 16 }} />
+              {lang === 'en' ? `Call: ${phone}` : `அழைக்க: ${phone}`}
             </a>
-            <a href={`tel:${phone}`} style={{ flex: 1, minWidth: 180, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.15)', color: '#f1f5f9', fontWeight: 700, fontSize: 14, padding: '12px 20px', borderRadius: 12, textDecoration: 'none' }}>
-              {lang === 'en' ? 'Enquire Now' : 'இப்போது விசாரிக்கவும்'}
-            </a>
+            <button
+              onClick={onClose}
+              style={{
+                display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
+                background: 'rgba(255,255,255,0.06)',
+                border: '1px solid rgba(255,255,255,0.14)',
+                color: '#94a3b8', fontWeight: 700, fontSize: 14,
+                padding: '11px 20px', borderRadius: 12, cursor: 'pointer',
+                width: '100%',
+              }}
+            >
+              <X style={{ width: 15, height: 15 }} />
+              {lang === 'en' ? 'Close' : 'மூடு'}
+            </button>
           </div>
         </div>
       </motion.div>
