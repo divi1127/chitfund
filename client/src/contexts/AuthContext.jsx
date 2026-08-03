@@ -4,11 +4,11 @@ const AuthContext = createContext(null);
 
 const ROLE_PERMISSIONS = {
   super_admin: {
-    navItems: ["dashboard", "branches", "schemes", "groups", "agents", "members", "collections", "billing", "auctions", "prizes", "accounting", "reports", "enquiries", "notifications", "kyc", "user-management", "audit-logs", "platform-settings", "invoice-settings", "receipt-settings", "notification-settings", "role-permissions", "backup-restore"],
+    navItems: ["dashboard", "branches", "schemes", "groups", "agents", "members", "collections", "billing", "auctions", "prizes", "accounting", "reports", "enquiries", "notifications", "kyc", "user-management", "audit-logs", "platform-settings", "invoice-settings", "receipt-settings", "notification-settings", "role-permissions", "backup-restore", "lands"],
     permissions: ["create", "edit", "delete", "view", "approve", "reject", "configure", "export"],
   },
   admin: {
-    navItems: ["dashboard", "branches", "schemes", "groups", "agents", "members", "collections", "billing", "auctions", "reports", "notifications", "kyc", "enquiries", "user-management", "audit-logs", "role-permissions"],
+    navItems: ["dashboard", "branches", "schemes", "groups", "agents", "members", "collections", "billing", "auctions", "reports", "notifications", "kyc", "enquiries", "user-management", "audit-logs", "role-permissions", "lands"],
     permissions: ["create", "edit", "view", "approve"],
   },
   agent: {

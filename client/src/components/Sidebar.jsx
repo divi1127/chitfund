@@ -9,7 +9,7 @@ import {
   HiCog6Tooth, HiUser, HiWallet, HiUsers, HiMagnifyingGlass,
   HiShieldCheck, HiClipboardDocumentList, HiLockClosed,
   HiArchiveBoxArrowDown, HiBellAlert, HiReceiptPercent,
-  HiChevronDown,
+  HiChevronDown, HiMap
 } from "react-icons/hi2";
 
 const ICON_MAP = {
@@ -25,6 +25,7 @@ const ICON_MAP = {
   "receipt-settings": HiReceiptPercent,
   "notification-settings": HiBellAlert,
   "role-permissions": HiLockClosed, "backup-restore": HiArchiveBoxArrowDown,
+  lands: HiMap,
 };
 
 function NavItem({ id, label, icon, children, active, collapsed, onNavigate, expanded, onToggle }) {
