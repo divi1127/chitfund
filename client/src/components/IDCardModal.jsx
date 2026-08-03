@@ -86,7 +86,22 @@ export function IDCardModal({ entity, type = "Member", onClose }) {
           @page { size: A4 portrait; margin: 0; }
           body * { visibility: hidden; }
           .printable-card, .printable-card * { visibility: visible; }
-          .printable-card { position: absolute !important; left: 20px !important; top: 20px !important; transform: none !important; margin: 0; padding: 0; box-shadow: none !important; }
+          .printable-card {
+            position: absolute !important;
+            left: 20px !important;
+            top: 20px !important;
+            transform: none !important;
+            margin: 0; padding: 0;
+            box-shadow: none !important;
+            -webkit-print-color-adjust: exact !important;
+            print-color-adjust: exact !important;
+            color-adjust: exact !important;
+          }
+          .printable-card * {
+            -webkit-print-color-adjust: exact !important;
+            print-color-adjust: exact !important;
+            color-adjust: exact !important;
+          }
           .no-print { display: none !important; }
         }
       `}</style>

@@ -25,6 +25,7 @@ import notificationsRouter from './routes/notifications.js';
 import settingsRouter from './routes/settings.js';
 import agentsRouter from './routes/agents.js';
 import commissionsRouter from './routes/commissions.js';
+import landsRouter from './routes/lands.js';
 
 dotenv.config();
 
@@ -69,6 +70,7 @@ app.use('/api/notifications', notificationsRouter);
 app.use('/api/settings', settingsRouter);
 app.use('/api/agents', agentsRouter);
 app.use('/api/commissions', commissionsRouter);
+app.use('/api/lands', landsRouter);
 
 app.get('/api/health', (req, res) => {
   res.json({ status: 'OK', message: 'Chit Fund API is running' });

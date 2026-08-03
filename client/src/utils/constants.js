@@ -56,6 +56,7 @@ export const ROUTES = {
   "notification-settings": "/notification-settings",
   "role-permissions": "/role-permissions",
   "backup-restore": "/backup-restore",
+  lands: "/lands",
 };
 
 export const ROUTE_TO_ID = Object.fromEntries(
@@ -80,6 +81,7 @@ export const NAV_ITEMS = [
   { id: "kyc", label: "KYC Verification", icon: "kyc" },
   { id: "user-management", label: "User Management", icon: "user-management" },
   { id: "audit-logs", label: "Audit Logs", icon: "audit-logs" },
+  { id: "lands", label: "Land & Properties", icon: "lands" },
   {
     id: "settings",
     label: "Settings",

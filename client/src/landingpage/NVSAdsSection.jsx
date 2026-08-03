@@ -156,6 +156,9 @@ const LAND_LISTINGS = [
   },
 ];
 
+// API base for fetching live land listings
+const API_BASE = import.meta.env.VITE_API_BASE || 'https://chitfund-cxnp.onrender.com/api';
+
 const FEATURES = {
   en: [
     { icon: Percent, label: 'Low Interest Rates' },
@@ -211,8 +214,24 @@ const LoanCard = ({ loan, lang, index }) => {
   );
 };
 
-const LandCard = ({ listing, lang, index, isActive }) => {
-  const data = listing[lang];
+const LandCard = ({ listing, lang, index }) => {
+  // Support both API-fetched listings and legacy hardcoded listings
+  const isApi = !listing.en; // API listings have flat fields
+  const title    = isApi ? listing.name        : listing[lang]?.title;
+  const location = isApi ? listing.location    : listing[lang]?.location;
+  const price    = isApi ? (() => {
+    const n = listing.amount;
+    if (n >= 10000000) return '₹' + (n/10000000).toFixed(2) + ' Cr';
+    if (n >= 100000)   return '₹' + (n/100000).toFixed(2) + ' L';
+    return '₹' + Number(n).toLocaleString('en-IN');
+  })() : listing[lang]?.price;
+  const area    = isApi ? listing.area        : listing[lang]?.area;
+  const type    = isApi ? listing.type        : listing[lang]?.type;
+  const desc    = isApi ? listing.description : listing[lang]?.desc;
+  const badge   = isApi ? listing.badge       : listing.badge?.[lang] || listing.badge;
+  const accent  = listing.accent || '#f59e0b';
+  const phone   = isApi ? (listing.phone || '9600924752') : '9600924752';
+
   return (
     <motion.div
       key={index}
@@ -223,34 +242,37 @@ const LandCard = ({ listing, lang, index, isActive }) => {
       className="relative rounded-2xl overflow-hidden border border-white/10 h-full"
       style={{ background: `linear-gradient(135deg, #0f172a, #1e293b)` }}
     >
-      {/* House image placeholder with GPS overlay */}
+      {/* Property image or placeholder */}
       <div
         className="relative h-52 flex items-center justify-center overflow-hidden"
-        style={{
-          background: `linear-gradient(135deg, #0d1b2a 0%, #1a2744 50%, #0d1b2a 100%)`,
-        }}
+        style={{ background: `linear-gradient(135deg, #0d1b2a 0%, #1a2744 50%, #0d1b2a 100%)` }}
       >
-        {/* Animated background pattern */}
-        <div className="absolute inset-0 opacity-10"
-          style={{
-            backgroundImage: 'repeating-linear-gradient(45deg, #f59e0b 0,#f59e0b 1px, transparent 0,transparent 50%)',
-            backgroundSize: '20px 20px',
-          }}
-        />
-        <span className="text-7xl relative z-10 drop-shadow-2xl">{listing.emoji}</span>
+        {listing.image ? (
+          <img src={listing.image} alt={title} style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover', opacity: 0.85 }} />
+        ) : (
+          <>
+            <div className="absolute inset-0 opacity-10"
+              style={{
+                backgroundImage: 'repeating-linear-gradient(45deg, #f59e0b 0,#f59e0b 1px, transparent 0,transparent 50%)',
+                backgroundSize: '20px 20px',
+              }}
+            />
+            <span className="text-7xl relative z-10 drop-shadow-2xl">{listing.emoji || '🏠'}</span>
+          </>
+        )}
 
         {/* Badge */}
         <div
           className="absolute top-3 left-3 px-3 py-1 rounded-full text-xs font-bold text-slate-900"
-          style={{ background: listing.accent }}
+          style={{ background: accent, zIndex: 2 }}
         >
-          {listing.badge[lang]}
+          {badge}
         </div>
 
         {/* Location pin */}
-        <div className="absolute bottom-3 left-3 flex items-center gap-1.5 bg-black/60 backdrop-blur rounded-full px-3 py-1">
+        <div className="absolute bottom-3 left-3 flex items-center gap-1.5 bg-black/60 backdrop-blur rounded-full px-3 py-1" style={{ zIndex: 2 }}>
           <MapPin className="w-3 h-3 text-yellow-400" />
-          <span className="text-white text-xs font-medium">{data.location}</span>
+          <span className="text-white text-xs font-medium">{location}</span>
         </div>
       </div>
 
@@ -258,20 +280,20 @@ const LandCard = ({ listing, lang, index, isActive }) => {
       <div className="p-5">
         <div className="flex items-start justify-between mb-2">
           <div>
-            <h4 className="text-white font-bold text-base">{data.title}</h4>
-            <p className="text-slate-400 text-xs">{data.type}</p>
+            <h4 className="text-white font-bold text-base">{title}</h4>
+            <p className="text-slate-400 text-xs">{type}</p>
           </div>
           <div className="text-right">
-            <p className="text-yellow-400 font-extrabold text-lg leading-none">{data.price}</p>
-            <p className="text-slate-400 text-xs">{data.area}</p>
+            <p className="text-yellow-400 font-extrabold text-lg leading-none">{price}</p>
+            <p className="text-slate-400 text-xs">{area}</p>
           </div>
         </div>
-        <p className="text-slate-300 text-xs leading-relaxed mb-4">{data.desc}</p>
+        {desc && <p className="text-slate-300 text-xs leading-relaxed mb-4">{desc}</p>}
 
         <a
-          href="tel:9600924752"
+          href={`tel:${phone}`}
           className="flex items-center justify-center gap-2 w-full py-2.5 rounded-xl text-sm font-bold text-slate-900 transition-all hover:scale-105 active:scale-95"
-          style={{ background: `linear-gradient(90deg, ${listing.accent}, ${listing.accent}cc)` }}
+          style={{ background: `linear-gradient(90deg, ${accent}, ${accent}cc)` }}
         >
           <Phone className="w-4 h-4" />
           {lang === 'en' ? 'Enquire Now' : 'இப்போது விசாரிக்கவும்'}
@@ -291,6 +313,20 @@ export const NVSAdsSection = () => {
   const scrollRef = useRef(null);
   const [landIndex, setLandIndex] = useState(0);
   const [isPaused, setIsPaused] = useState(false);
+
+  // Live land listings from backend
+  const [liveListings, setLiveListings] = useState([]);
+  const [listingsLoaded, setListingsLoaded] = useState(false);
+
+  useEffect(() => {
+    fetch(`${API_BASE}/lands/public`)
+      .then(r => r.ok ? r.json() : [])
+      .then(data => { setLiveListings(data); setListingsLoaded(true); })
+      .catch(() => setListingsLoaded(true));
+  }, []);
+
+  // Use live listings if available, fallback to static
+  const displayListings = listingsLoaded && liveListings.length > 0 ? liveListings : LAND_LISTINGS;
 
   // Infinite auto-scroll for loan cards
   useEffect(() => {
@@ -313,11 +349,12 @@ export const NVSAdsSection = () => {
 
   // Auto-advance land carousel
   useEffect(() => {
+    if (displayListings.length === 0) return;
     const timer = setInterval(() => {
-      setLandIndex((i) => (i + 1) % LAND_LISTINGS.length);
+      setLandIndex((i) => (i + 1) % displayListings.length);
     }, 4000);
     return () => clearInterval(timer);
-  }, []);
+  }, [displayListings.length]);
 
   const features = FEATURES[lang];
   const docs = DOCUMENTS[lang];
@@ -522,14 +559,14 @@ export const NVSAdsSection = () => {
             whileInView={{ opacity: 1, x: 0 }}
             viewport={{ once: true }}
           >
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
               <h3 style={{ color: '#fbbf24', fontWeight: 800, fontSize: 17, display: 'flex', alignItems: 'center', gap: 8, margin: 0 }}>
                 <MapPin className="w-5 h-5" />
                 {lang === 'en' ? 'Properties for Sale' : 'விற்பனைக்கு சொத்துகள்'}
               </h3>
               <div style={{ display: 'flex', gap: 8 }}>
                 <button
-                  onClick={() => setLandIndex((i) => (i - 1 + LAND_LISTINGS.length) % LAND_LISTINGS.length)}
+                  onClick={() => setLandIndex((i) => (i - 1 + displayListings.length) % displayListings.length)}
                   style={{
                     width: 32, height: 32, borderRadius: 8, border: '1px solid rgba(255,255,255,0.15)',
                     background: 'rgba(255,255,255,0.05)', color: '#fff', cursor: 'pointer',
@@ -539,7 +576,7 @@ export const NVSAdsSection = () => {
                   <ChevronLeft className="w-4 h-4" />
                 </button>
                 <button
-                  onClick={() => setLandIndex((i) => (i + 1) % LAND_LISTINGS.length)}
+                  onClick={() => setLandIndex((i) => (i + 1) % displayListings.length)}
                   style={{
                     width: 32, height: 32, borderRadius: 8, border: '1px solid rgba(255,255,255,0.15)',
                     background: 'rgba(255,255,255,0.05)', color: '#fff', cursor: 'pointer',
@@ -553,18 +590,24 @@ export const NVSAdsSection = () => {
 
             <div style={{ position: 'relative', minHeight: 380 }}>
               <AnimatePresence mode="wait">
-                <LandCard
-                  key={landIndex}
-                  listing={LAND_LISTINGS[landIndex]}
-                  lang={lang}
-                  index={landIndex}
-                  isActive
-                />
+                {displayListings.length > 0 ? (
+                  <LandCard
+                    key={landIndex}
+                    listing={displayListings[landIndex % displayListings.length]}
+                    lang={lang}
+                    index={landIndex}
+                    isActive
+                  />
+                ) : (
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: 300, color: 'rgba(255,255,255,0.3)', fontSize: 14 }}>
+                    No properties listed yet.
+                  </div>
+                )}
               </AnimatePresence>
 
               {/* Dots */}
               <div style={{ display: 'flex', justifyContent: 'center', gap: 8, marginTop: 16 }}>
-                {LAND_LISTINGS.map((_, i) => (
+                {displayListings.map((_, i) => (
                   <button
                     key={i}
                     onClick={() => setLandIndex(i)}

@@ -50,6 +50,7 @@ import { KycVerification } from "./pages/KycVerification";
 import { Invoices } from "./pages/Invoices";
 import { Receipts } from "./pages/Receipts";
 import { Support } from "./pages/Support";
+import { Lands } from "./pages/Lands";
 
 function ProtectedRoute({ children, requiredRole, requiredModule }) {
   const { user, hasModuleAccess } = useAuth();
@@ -487,6 +488,12 @@ function AppLayout() {
             <Route path="/support" element={
               <ProtectedRoute requiredModule="support">
                 <Support dark={dark} toast={{ add }} />
+              </ProtectedRoute>
+            } />
+
+            <Route path="/lands" element={
+              <ProtectedRoute requiredRole={["super_admin", "admin"]}>
+                <Lands dark={dark} toast={{ add }} />
               </ProtectedRoute>
             } />
 
