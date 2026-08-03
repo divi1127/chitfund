@@ -27,11 +27,12 @@ export function IDCardModal({ entity, type = "Member", onClose }) {
     const canvas = await html2canvas(cardRef.current, { scale: 3, useCORS: true });
     const imgData = canvas.toDataURL("image/jpeg", 0.9);
     const pdf = new jsPDF({
-      orientation: isPortrait ? "portrait" : "landscape",
+      orientation: "portrait",
       unit: "in",
-      format: isPortrait ? [2.25, 3.5] : [3.5, 2.25]
+      format: "a4"
     });
-    pdf.addImage(imgData, "JPEG", 0, 0, isPortrait ? 2.25 : 3.5, isPortrait ? 3.5 : 2.25);
+    // A4 is 8.27 x 11.69 inches. We place the card at the top left margin.
+    pdf.addImage(imgData, "JPEG", 0.2, 0.2, isPortrait ? 2.25 : 3.5, isPortrait ? 3.5 : 2.25);
     pdf.save(`ID_${entity.name || "Card"}.pdf`);
   };
 
@@ -82,10 +83,10 @@ export function IDCardModal({ entity, type = "Member", onClose }) {
     }}>
       <style>{`
         @media print {
-          @page { margin: 0; }
+          @page { size: A4 portrait; margin: 0; }
           body * { visibility: hidden; }
           .printable-card, .printable-card * { visibility: visible; }
-          .printable-card { position: absolute !important; left: 50% !important; top: 50% !important; transform: translate(-50%, -50%) scale(1.5) !important; margin: 0; padding: 0; box-shadow: none !important; }
+          .printable-card { position: absolute !important; left: 20px !important; top: 20px !important; transform: none !important; margin: 0; padding: 0; box-shadow: none !important; }
           .no-print { display: none !important; }
         }
       `}</style>
@@ -137,8 +138,8 @@ export function IDCardModal({ entity, type = "Member", onClose }) {
               display: "flex",
               flexDirection: "column",
               alignItems: "center",
-              justifyContent: "center",
-              padding: isPortrait ? "14px 8px 36px" : "10px",
+              justifyContent: isPortrait ? "flex-start" : "center",
+              padding: isPortrait ? "18px 10px 10px" : "10px",
               width:  isPortrait ? "100%" : "32%",
               height: isPortrait ? "30%"  : "100%",
               boxSizing: "border-box",
@@ -159,9 +160,9 @@ export function IDCardModal({ entity, type = "Member", onClose }) {
               borderRadius: "50%",
               border: "3px solid #fff",
               boxShadow: "0 3px 10px rgba(0,0,0,0.18)",
-              top:  isPortrait ? "22%" : "50%",
+              top:  isPortrait ? "30%" : "50%",
               left: isPortrait ? "50%" : "32%",
-              transform: isPortrait ? "translateX(-50%)" : "translate(-50%, -50%)",
+              transform: isPortrait ? "translate(-50%, -50%)" : "translate(-50%, -50%)",
               zIndex: 10,
               overflow: "hidden",
               background: "#e2e8f0",
@@ -172,7 +173,7 @@ export function IDCardModal({ entity, type = "Member", onClose }) {
             {/* ── Body / Details ── */}
             <div style={{
               flex: 1,
-              padding: isPortrait ? "28px 14px 10px" : "12px 12px 10px 30px",
+              padding: isPortrait ? "42px 14px 10px" : "12px 12px 10px 42px",
               display: "flex",
               flexDirection: "column",
               alignItems: isPortrait ? "center" : "flex-start",
