@@ -18,6 +18,7 @@ export function Members({ toast, setPreview }) {
   const { data: members, loading, refresh: reloadMembers } = useData("/members");
   const { data: groups } = useData("/groups");
   const { data: schemes } = useData("/schemes");
+  const { data: agents } = useData("/agents");
   const { data: collections, refresh: reloadCollections } = useData("/collections");
 
   const [search, setSearch] = useState("");
@@ -26,7 +27,7 @@ export function Members({ toast, setPreview }) {
   const [expandedMember, setExpandedMember] = useState(null); // member id with schedule open
   const [payTarget, setPayTarget] = useState(null); // { member, group, scheme, installment }
   const [printingEntity, setPrintingEntity] = useState(null);
-  const [form, setForm] = useState({ name: "", phone: "", email: "", address: "", pan: "", aadhaar: "", groupId: "", photo: "", kycProof: "", dob: "" });
+  const [form, setForm] = useState({ name: "", phone: "", email: "", address: "", pan: "", aadhaar: "", groupId: "", agentId: "", photo: "", kycProof: "", dob: "" });
   const [errors, setErrors] = useState({});
 
   const isSuperAdmin = user?.role === "super_admin";
@@ -112,7 +113,7 @@ export function Members({ toast, setPreview }) {
 
   const resetForm = () => {
     setShowForm(false); setEditingMember(null);
-    setForm({ name: "", phone: "", email: "", address: "", pan: "", aadhaar: "", groupId: "", photo: "", kycProof: "", dob: "" });
+    setForm({ name: "", phone: "", email: "", address: "", pan: "", aadhaar: "", groupId: "", agentId: "", photo: "", kycProof: "", dob: "" });
     setErrors({});
   };
 
@@ -244,6 +245,15 @@ export function Members({ toast, setPreview }) {
                 </select>
               </div>
             )}
+            {(isSuperAdmin || isAdmin) && (
+              <div>
+                <label style={{ fontSize: 12, fontWeight: 600, color: "#374151", display: "block", marginBottom: 4 }}>Assign Agent (Optional)</label>
+                <select style={inp} value={form.agentId} onChange={e => setForm({ ...form, agentId: e.target.value })}>
+                  <option value="">— No agent —</option>
+                  {agents.map(a => <option key={a.agentId} value={a.agentId}>{a.name} ({a.agentId})</option>)}
+                </select>
+              </div>
+            )}
           </div>
           <div style={{ display: "flex", gap: 10, marginTop: 16 }}>
             <Btn label={editingMember ? "Update" : "Add Member"} primary onClick={handleSubmit} />
@@ -275,6 +285,11 @@ export function Members({ toast, setPreview }) {
                   {member.memberId} · {member.phone}
                   {member.dob && <span style={{ marginLeft: 8, color: "#94a3b8" }}>DOB: {new Date(member.dob).toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" })}</span>}
                   {group && <span style={{ marginLeft: 8, color: "#7c3aed", fontWeight: 600 }}>{group.name}</span>}
+                  {member.agentId && (
+                    <span style={{ marginLeft: 8, color: "#0891b2", fontWeight: 600 }}>
+                      Agent: {agents.find(a => a.agentId === member.agentId)?.name || member.agentId}
+                    </span>
+                  )}
                 </div>
               </div>
               {scheme && (
@@ -297,7 +312,7 @@ export function Members({ toast, setPreview }) {
                 )}
                 <IconBtn icon={<HiIdentification size={14} />} onClick={() => setPrintingEntity(member)} color="#0ea5e9" title="Print ID" />
                 <IconBtn icon={<HiBookOpen size={14} />} onClick={() => handleLedger(member)} color="#d97706" title="Ledger" />
-                {canEdit && <IconBtn icon={<HiPencil size={14} />} onClick={() => { setEditingMember(member); setForm({ name: member.name, phone: member.phone, email: member.email || "", address: member.address || "", pan: member.pan || "", aadhaar: member.aadhaar || "", groupId: getMemberGroup(member)?.id || "", photo: member.photo || "", kycProof: member.kycProof || "", dob: member.dob ? member.dob.split("T")[0] : "" }); setShowForm(true); }} color="#2563eb" title="Edit" />}
+                {canEdit && <IconBtn icon={<HiPencil size={14} />} onClick={() => { setEditingMember(member); setForm({ name: member.name, phone: member.phone, email: member.email || "", address: member.address || "", pan: member.pan || "", aadhaar: member.aadhaar || "", groupId: getMemberGroup(member)?.id || "", agentId: member.agentId || "", photo: member.photo || "", kycProof: member.kycProof || "", dob: member.dob ? member.dob.split("T")[0] : "" }); setShowForm(true); }} color="#2563eb" title="Edit" />}
                 {canEdit && <IconBtn icon={<HiTrash size={14} />} onClick={() => handleDelete(member.id)} color="#dc2626" title="Delete" />}
               </div>
             </div>

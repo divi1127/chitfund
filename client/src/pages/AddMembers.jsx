@@ -22,8 +22,8 @@ export function AddMembers({ toast }) {
     address: '',
     scheme: '',
     group: '',
-    agentId: '',
-    role: 'user'
+    role: 'user',
+    agentId: ''
   });
 
   const handleSubmit = async (e) => {
@@ -32,12 +32,14 @@ export function AddMembers({ toast }) {
     try {
       const memberData = {
         ...form,
+        phone: form.mobile,
         status: 'active',
         createdAt: new Date(),
         modules: ['dashboard', 'members', 'schemes', 'groups', 'collections', 'billing', 'auctions', 'accounting', 'profile', 'payments'],
         permissions: ['view']
       };
       delete memberData.password;
+      delete memberData.mobile;
 
       await createData('/members', memberData);
       toast.add('Member added successfully!');
@@ -50,8 +52,8 @@ export function AddMembers({ toast }) {
         address: '',
         scheme: '',
         group: '',
-        agentId: '',
-        role: 'user'
+        role: 'user',
+        agentId: ''
       });
       refresh();
     } catch (error) {
@@ -90,24 +92,12 @@ export function AddMembers({ toast }) {
                 <Input label="Address" value={form.address} onChange={v => setForm({ ...form, address: v })} />
                 <Input label="Chit Scheme" value={form.scheme} onChange={v => setForm({ ...form, scheme: v })} />
                 <Input label="Group" value={form.group} onChange={v => setForm({ ...form, group: v })} />
-                
-                <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-                  <label style={{ fontSize: 13, fontWeight: 600, color: "var(--text-primary)" }}>Agent (Optional)</label>
-                  <select
-                    value={form.agentId || ""}
-                    onChange={e => setForm({ ...form, agentId: e.target.value })}
-                    style={{
-                      padding: "10px 14px", borderRadius: 8, border: "1px solid var(--border-color)",
-                      background: "var(--bg-input, var(--bg-card))", color: "var(--text-primary)",
-                      fontSize: 14, outline: "none", width: "100%", boxSizing: "border-box"
-                    }}
-                  >
-                    <option value="">-- No Agent --</option>
-                    {agents && agents.map(a => (
-                      <option key={a._id || a.agentId} value={a.agentId}>{a.name} ({a.agentId})</option>
-                    ))}
-                  </select>
-                </div>
+                <Input
+                  label="Assign Agent (Optional)"
+                  value={form.agentId}
+                  onChange={v => setForm({ ...form, agentId: v })}
+                  options={agents.map(a => ({ value: a.agentId, label: `${a.name} (${a.agentId})` }))}
+                />
               </div>
 
               <div style={{ padding: 16, background: "var(--bg-card)", borderRadius: 8 }}>
@@ -130,13 +120,12 @@ export function AddMembers({ toast }) {
         {/* Members List */}
         <div style={{ background: "var(--bg-card)", border: "1px solid var(--border-color)", borderRadius: 12, padding: 24 }}>
           <div style={{ fontSize: 16, fontWeight: 600, color: "var(--text-primary)", marginBottom: 16 }}>Existing Members</div>
-          <Table cols={["Member ID", "Name", "Email", "Mobile", "Agent", "Scheme", "Status", "Created"]}
+          <Table cols={["Member ID", "Name", "Email", "Mobile", "Scheme", "Status", "Created"]}
             rows={members.map(member => [
               member.memberId,
               member.name,
               member.email,
               member.mobile,
-              member.agentId ? `${member.agentId}` : '-',
               member.scheme || '-',
               <Badge key={member.id} text={member.status} color={member.status === 'active' ? 'green' : 'red'} />,
               new Date(member.createdAt).toLocaleDateString()

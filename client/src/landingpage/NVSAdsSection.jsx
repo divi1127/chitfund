@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import {
   Home, Building2, Car, Gem, Briefcase, MapPin, Phone, CheckCircle2,
   FileText, Shield, Star, ChevronLeft, ChevronRight, Clock, Percent,
-  BadgeCheck, TrendingUp, Landmark,
+  BadgeCheck, TrendingUp, Landmark, Eye, X,
 } from 'lucide-react';
 import { useLanguage } from '../context/LanguageContext';
 
@@ -221,7 +221,7 @@ const LoanCard = ({ loan, lang, index }) => {
   );
 };
 
-const LandCard = ({ listing, lang, index }) => {
+const LandCard = ({ listing, lang, index, onView }) => {
   // Support both API-fetched listings and legacy hardcoded listings
   const isApi = !listing.en; // API listings have flat fields
   const title    = isApi ? listing.name        : listing[lang]?.title;
@@ -297,15 +297,154 @@ const LandCard = ({ listing, lang, index }) => {
         </div>
         {desc && <p className="text-slate-300 text-xs leading-relaxed mb-4">{desc}</p>}
 
-        <a
-          href={`tel:${phone}`}
-          className="flex items-center justify-center gap-2 w-full py-2.5 rounded-xl text-sm font-bold text-slate-900 transition-all hover:scale-105 active:scale-95"
-          style={{ background: `linear-gradient(90deg, ${accent}, ${accent}cc)` }}
-        >
-          <Phone className="w-4 h-4" />
-          {lang === 'en' ? 'Enquire Now' : 'இப்போது விசாரிக்கவும்'}
-        </a>
+        <div style={{ display: 'flex', gap: 8 }}>
+          <button
+            type="button"
+            onClick={() => onView && onView(listing)}
+            className="flex items-center justify-center gap-2 flex-1 py-2.5 rounded-xl text-sm font-bold text-white border border-white/15 transition-all hover:scale-105 active:scale-95 cursor-pointer"
+            style={{ background: 'rgba(255,255,255,0.06)' }}
+          >
+            <Eye className="w-4 h-4" style={{ color: accent }} />
+            {lang === 'en' ? 'View' : 'பார்க்க'}
+          </button>
+          <a
+            href={`tel:${phone}`}
+            className="flex items-center justify-center gap-2 flex-1 py-2.5 rounded-xl text-sm font-bold text-slate-900 transition-all hover:scale-105 active:scale-95"
+            style={{ background: `linear-gradient(90deg, ${accent}, ${accent}cc)` }}
+          >
+            <Phone className="w-4 h-4" />
+            {lang === 'en' ? 'Enquire Now' : 'இப்போது விசாரிக்கவும்'}
+          </a>
+        </div>
       </div>
+    </motion.div>
+  );
+};
+
+/* ─────────────────────────── LAND DETAIL MODAL ─────────────────────────── */
+
+const LandDetailModal = ({ listing, lang, onClose }) => {
+  useEffect(() => {
+    const onKey = (e) => { if (e.key === 'Escape') onClose(); };
+    window.addEventListener('keydown', onKey);
+    document.body.style.overflow = 'hidden';
+    return () => {
+      window.removeEventListener('keydown', onKey);
+      document.body.style.overflow = '';
+    };
+  }, [onClose]);
+
+  const isApi = !listing.en;
+  const title    = isApi ? listing.name        : listing[lang]?.title;
+  const location = isApi ? listing.location    : listing[lang]?.location;
+  const price    = isApi ? (() => {
+    const n = listing.amount;
+    if (n >= 10000000) return '₹' + (n/10000000).toFixed(2) + ' Cr';
+    if (n >= 100000)   return '₹' + (n/100000).toFixed(2) + ' L';
+    return '₹' + Number(n).toLocaleString('en-IN');
+  })() : listing[lang]?.price;
+  const area    = isApi ? listing.area        : listing[lang]?.area;
+  const type    = isApi ? listing.type        : listing[lang]?.type;
+  const desc    = isApi ? listing.description : listing[lang]?.desc;
+  const address = isApi ? listing.address     : null;
+  const badge   = isApi ? listing.badge       : listing.badge?.[lang] || listing.badge;
+  const accent  = listing.accent || '#f59e0b';
+  const phone   = isApi ? (listing.phone || '9600924752') : '9600924752';
+  const image   = listing.image;
+
+  const infoRows = [
+    { label: lang === 'en' ? 'Type' : 'வகை', value: type },
+    { label: lang === 'en' ? 'Area' : 'பரப்பளவு', value: area },
+    { label: lang === 'en' ? 'Location' : 'இடம்', value: location },
+    { label: lang === 'en' ? 'Address' : 'முகவரி', value: address },
+  ].filter(r => r.value);
+
+  return (
+    <motion.div
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+      onClick={onClose}
+      style={{
+        position: 'fixed', inset: 0, zIndex: 9999,
+        background: 'rgba(4,10,20,0.88)', backdropFilter: 'blur(6px)',
+        display: 'flex', alignItems: 'center', justifyContent: 'center',
+        padding: 16, cursor: 'pointer',
+      }}
+    >
+      <motion.div
+        initial={{ opacity: 0, scale: 0.92, y: 20 }}
+        animate={{ opacity: 1, scale: 1, y: 0 }}
+        exit={{ opacity: 0, scale: 0.92, y: 20 }}
+        transition={{ duration: 0.25 }}
+        onClick={(e) => e.stopPropagation()}
+        style={{
+          width: '100%', maxWidth: 860, maxHeight: '92vh',
+          background: 'linear-gradient(135deg, #0f172a 0%, #1e293b 100%)',
+          border: '1px solid rgba(245,158,11,0.25)',
+          borderRadius: 20, overflow: 'hidden',
+          display: 'flex', flexDirection: 'column',
+          boxShadow: '0 40px 100px rgba(0,0,0,0.6)',
+          cursor: 'default',
+        }}
+      >
+        {/* Header */}
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '16px 20px', borderBottom: '1px solid rgba(255,255,255,0.08)' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10, minWidth: 0 }}>
+            <span style={{ background: accent, color: '#0f172a', fontSize: 11, fontWeight: 800, padding: '4px 12px', borderRadius: 100, flexShrink: 0 }}>{badge}</span>
+            <h3 style={{ margin: 0, color: '#fff', fontWeight: 800, fontSize: 17, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{title}</h3>
+          </div>
+          <button onClick={onClose} style={{ background: 'rgba(255,255,255,0.08)', border: 'none', color: '#fff', width: 34, height: 34, borderRadius: 10, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+            <X className="w-4 h-4" />
+          </button>
+        </div>
+
+        {/* Image — portrait & landscape friendly (contain, no cropping) */}
+        <div style={{ background: '#0a0f1c', display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: 260, maxHeight: '55vh', overflow: 'hidden' }}>
+          {image ? (
+            <img src={resolveImg(image)} alt={title} style={{ width: '100%', maxHeight: '55vh', objectFit: 'contain', display: 'block' }} />
+          ) : (
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 60 }}>
+              <span style={{ fontSize: 88, filter: 'drop-shadow(0 12px 24px rgba(0,0,0,0.5))' }}>{listing.emoji || '🏠'}</span>
+            </div>
+          )}
+          <div style={{ position: 'absolute', bottom: 12, left: 12, display: 'flex', alignItems: 'center', gap: 6, background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(4px)', borderRadius: 100, padding: '6px 12px' }}>
+            <MapPin className="w-3.5 h-3.5" style={{ color: '#fbbf24' }} />
+            <span style={{ color: '#fff', fontSize: 12, fontWeight: 600 }}>{location}</span>
+          </div>
+        </div>
+
+        {/* Details */}
+        <div style={{ padding: 24, overflowY: 'auto' }}>
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 10, alignItems: 'center', marginBottom: 18 }}>
+            <span style={{ color: '#fbbf24', fontSize: 28, fontWeight: 900 }}>{price}</span>
+            {area && <span style={{ color: '#94a3b8', fontSize: 14, fontWeight: 600 }}>{area}</span>}
+            {type && <span style={{ color: '#cbd5e1', fontSize: 13, background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.12)', padding: '4px 12px', borderRadius: 100 }}>{type}</span>}
+          </div>
+
+          {desc && <p style={{ color: '#cbd5e1', fontSize: 14, lineHeight: 1.7, margin: '0 0 18px' }}>{desc}</p>}
+
+          {infoRows.length > 0 && (
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 10, marginBottom: 22 }}>
+              {infoRows.map((r) => (
+                <div key={r.label} style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 10, padding: '10px 14px' }}>
+                  <div style={{ color: '#64748b', fontSize: 11, fontWeight: 700, letterSpacing: 0.5, textTransform: 'uppercase', marginBottom: 2 }}>{r.label}</div>
+                  <div style={{ color: '#f1f5f9', fontSize: 13, fontWeight: 600 }}>{r.value}</div>
+                </div>
+              ))}
+            </div>
+          )}
+
+          <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
+            <a href={`tel:${phone}`} style={{ flex: 1, minWidth: 180, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, background: `linear-gradient(90deg, ${accent}, ${accent}cc)`, color: '#0f172a', fontWeight: 800, fontSize: 14, padding: '12px 20px', borderRadius: 12, textDecoration: 'none' }}>
+              <Phone className="w-4 h-4" /> {phone}
+            </a>
+            <a href={`tel:${phone}`} style={{ flex: 1, minWidth: 180, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.15)', color: '#f1f5f9', fontWeight: 700, fontSize: 14, padding: '12px 20px', borderRadius: 12, textDecoration: 'none' }}>
+              {lang === 'en' ? 'Enquire Now' : 'இப்போது விசாரிக்கவும்'}
+            </a>
+          </div>
+        </div>
+      </motion.div>
     </motion.div>
   );
 };
@@ -320,6 +459,9 @@ export const NVSAdsSection = () => {
   const scrollRef = useRef(null);
   const [landIndex, setLandIndex] = useState(0);
   const [isPaused, setIsPaused] = useState(false);
+
+  // Land detail modal
+  const [viewListing, setViewListing] = useState(null);
 
   // Live land listings from backend
   const [liveListings, setLiveListings] = useState([]);
@@ -604,6 +746,7 @@ export const NVSAdsSection = () => {
                     lang={lang}
                     index={landIndex}
                     isActive
+                    onView={setViewListing}
                   />
                 ) : (
                   <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: 300, color: 'rgba(255,255,255,0.3)', fontSize: 14 }}>
@@ -690,6 +833,17 @@ export const NVSAdsSection = () => {
         </motion.div>
 
       </div>
+
+      {/* ── Land detail modal ── */}
+      <AnimatePresence>
+        {viewListing && (
+          <LandDetailModal
+            listing={viewListing}
+            lang={lang}
+            onClose={() => setViewListing(null)}
+          />
+        )}
+      </AnimatePresence>
     </section>
   );
 };
