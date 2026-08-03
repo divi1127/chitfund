@@ -138,53 +138,54 @@ export function IDCardModal({ entity, type = "Member", onClose }) {
               display: "flex",
               flexDirection: "column",
               alignItems: "center",
-              justifyContent: isPortrait ? "flex-start" : "center",
-              padding: isPortrait ? "18px 10px 10px" : "10px",
-              width:  isPortrait ? "100%" : "32%",
-              height: isPortrait ? "30%"  : "100%",
+              justifyContent: "center",
+              padding: isPortrait ? "14px 10px 16px" : "16px 10px",
+              width:  isPortrait ? "100%" : "34%",
+              height: isPortrait ? "auto" : "100%",
               boxSizing: "border-box",
-              gap: 3,
+              gap: 10,
+              flexShrink: 0,
             }}>
-              <div style={{ fontWeight: 900, fontSize: isPortrait ? 12 : 10, letterSpacing: 0.5, textTransform: "uppercase", textAlign: "center", lineHeight: 1.2 }}>
+              {/* Company name */}
+              <div style={{ fontWeight: 900, fontSize: isPortrait ? 11 : 9.5, letterSpacing: 0.6, textTransform: "uppercase", textAlign: "center", lineHeight: 1.3 }}>
                 {COMPANY.name}
               </div>
-              {!isPortrait && (
-                <div style={{ fontSize: 8, opacity: 0.75, textAlign: "center", marginTop: 2 }}>CHIT FUND</div>
-              )}
-            </div>
+              <div style={{ fontSize: 7.5, opacity: 0.8, textAlign: "center", letterSpacing: 1 }}>CHIT FUND</div>
 
-            {/* ── Photo circle (floated at join of strip + body) ── */}
-            <div style={{
-              position: "absolute",
-              width: 66, height: 66,
-              borderRadius: "50%",
-              border: "3px solid #fff",
-              boxShadow: "0 3px 10px rgba(0,0,0,0.18)",
-              top:  isPortrait ? "30%" : "50%",
-              left: isPortrait ? "50%" : "32%",
-              transform: isPortrait ? "translate(-50%, -50%)" : "translate(-50%, -50%)",
-              zIndex: 10,
-              overflow: "hidden",
-              background: "#e2e8f0",
-            }}>
-              <img src={photoUrl} alt="Photo" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+              {/* Photo inside strip */}
+              <div style={{
+                width: isPortrait ? 62 : 58,
+                height: isPortrait ? 62 : 58,
+                borderRadius: "50%",
+                border: "3px solid rgba(255,255,255,0.9)",
+                boxShadow: "0 3px 12px rgba(0,0,0,0.25)",
+                overflow: "hidden",
+                background: "#e2e8f0",
+                flexShrink: 0,
+              }}>
+                <img src={photoUrl} alt="Photo" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+              </div>
+
+              {/* Member name below photo (inside strip) */}
+              <div style={{ fontWeight: 800, fontSize: 10, color: "#fff", textAlign: "center", lineHeight: 1.2, wordBreak: "break-word", maxWidth: "90%" }}>
+                {name}
+              </div>
             </div>
 
             {/* ── Body / Details ── */}
             <div style={{
               flex: 1,
-              padding: isPortrait ? "42px 14px 10px" : "12px 12px 10px 42px",
+              padding: isPortrait ? "14px 14px 10px" : "14px 12px 10px 14px",
               display: "flex",
               flexDirection: "column",
-              alignItems: isPortrait ? "center" : "flex-start",
-              textAlign: isPortrait ? "center" : "left",
+              alignItems: "flex-start",
+              textAlign: "left",
               boxSizing: "border-box",
               overflow: "hidden",
             }}>
 
-              {/* Name + badge */}
-              <div style={{ fontWeight: 800, fontSize: isPortrait ? 14 : 13, color: "#0f172a", marginBottom: 3, lineHeight: 1.2 }}>{name}</div>
-              <div style={{ fontSize: 8, fontWeight: 800, color: badgeClr, background: badgeBg, padding: "2px 8px", borderRadius: 4, marginBottom: 8, letterSpacing: 0.6 }}>
+              {/* Badge */}
+              <div style={{ fontSize: 7.5, fontWeight: 800, color: badgeClr, background: badgeBg, padding: "2px 8px", borderRadius: 4, marginBottom: 10, letterSpacing: 0.6 }}>
                 {badgeTxt}
               </div>
 
