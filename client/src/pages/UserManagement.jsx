@@ -312,8 +312,6 @@ export function UserManagement({ dark, toast }) {
             ...printingUser,
             agentId: printingUser.userId,
             memberId: printingUser.userId,
-            phone: printingUser.phone || "-",
-            aadhaar: "-",
           }}
           type={printingUser.role === "agent" ? "Agent" : "Member"}
           onClose={() => setPrintingUser(null)}

@@ -1,12 +1,39 @@
 import { useState } from "react";
 import { Btn } from "./Btn";
 import { COMPANY } from "../utils/constants";
+import html2canvas from "html2canvas";
+import jsPDF from "jspdf";
+import { useRef } from "react";
 
 export function IDCardModal({ entity, type = "Member", onClose }) {
   const [layout, setLayout] = useState("portrait");
   const isPortrait = layout === "portrait";
 
+  const cardRef = useRef(null);
+
   const handlePrint = () => window.print();
+
+  const handleDownloadJPG = async () => {
+    if (!cardRef.current) return;
+    const canvas = await html2canvas(cardRef.current, { scale: 3, useCORS: true });
+    const link = document.createElement("a");
+    link.download = `ID_${entity.name || "Card"}.jpg`;
+    link.href = canvas.toDataURL("image/jpeg", 0.9);
+    link.click();
+  };
+
+  const handleDownloadPDF = async () => {
+    if (!cardRef.current) return;
+    const canvas = await html2canvas(cardRef.current, { scale: 3, useCORS: true });
+    const imgData = canvas.toDataURL("image/jpeg", 0.9);
+    const pdf = new jsPDF({
+      orientation: isPortrait ? "portrait" : "landscape",
+      unit: "in",
+      format: isPortrait ? [2.25, 3.5] : [3.5, 2.25]
+    });
+    pdf.addImage(imgData, "JPEG", 0, 0, isPortrait ? 2.25 : 3.5, isPortrait ? 3.5 : 2.25);
+    pdf.save(`ID_${entity.name || "Card"}.pdf`);
+  };
 
   const defaultAvatar =
     "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIxMjAiIGhlaWdodD0iMTIwIiB2aWV3Qm94PSIwIDAgMTIwIDEyMCI+CiAgPHJlY3Qgd2lkdGg9IjEyMCIgaGVpZ2h0PSIxMjAiIGZpbGw9IiNlMmU4ZjAiLz4KICA8Y2lyY2xlIGN4PSI2MCIgY3k9IjQ1IiByPSIyMiIgZmlsbD0iI2NhY2VjYyIvPgogIDxwYXRoIGQ9Ik0zMCwxMjAgQTMwLDMwIDAgMCwxIDkwLDEyMCIgZmlsbD0iI2NhY2VjYyIgb3BhY2l0eT0iMC44Ii8+Cjwvc3ZnPg==";
@@ -19,7 +46,8 @@ export function IDCardModal({ entity, type = "Member", onClose }) {
   const phone = entity.phone || "—";
   const email = entity.email || null;
   const address = entity.address || null;
-  const aadhaar = entity.aadhaar ? entity.aadhaar.replace(/(\d{4})(\d{4})(\d{4})/, "$1 $2 $3") : "—";
+  const rawAadhaar = entity.aadhaar && entity.aadhaar.length ? entity.aadhaar.replace(/\D/g, '') : "";
+  const aadhaar = rawAadhaar.length === 12 ? rawAadhaar.replace(/(\d{4})(\d{4})(\d{4})/, "$1 $2 $3") : (entity.aadhaar || "—");
   const pan = entity.pan || null;
   const dob = entity.dob
     ? new Date(entity.dob).toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" })
@@ -32,9 +60,9 @@ export function IDCardModal({ entity, type = "Member", onClose }) {
   // Colors per type
   const themeGrad = isAgent
     ? "linear-gradient(135deg, #065f46 0%, #059669 100%)"
-    : "linear-gradient(135deg, #1e3a8a 0%, #2563eb 100%)";
-  const badgeBg   = isAgent ? "#dcfce7" : "#dbeafe";
-  const badgeClr  = isAgent ? "#166534" : "#1e40af";
+    : "linear-gradient(135deg, #1e3a8a 0%, #ca8a04 100%)"; // Blue and Gold
+  const badgeBg   = isAgent ? "#dcfce7" : "#fef3c7"; // Light gold
+  const badgeClr  = isAgent ? "#166534" : "#92400e"; // Dark gold
   const badgeTxt  = isAgent ? "AUTHORIZED AGENT" : "VERIFIED MEMBER";
 
   // ── Reusable mini row ──
@@ -54,9 +82,10 @@ export function IDCardModal({ entity, type = "Member", onClose }) {
     }}>
       <style>{`
         @media print {
+          @page { margin: 0; }
           body * { visibility: hidden; }
           .printable-card, .printable-card * { visibility: visible; }
-          .printable-card { position: absolute; left: 30px; top: 30px; margin: 0; padding: 0; box-shadow: none !important; }
+          .printable-card { position: absolute !important; left: 50% !important; top: 50% !important; transform: translate(-50%, -50%) scale(1.5) !important; margin: 0; padding: 0; box-shadow: none !important; }
           .no-print { display: none !important; }
         }
       `}</style>
@@ -87,7 +116,7 @@ export function IDCardModal({ entity, type = "Member", onClose }) {
           </div>
 
           {/* ════════ ACTUAL CARD ════════ */}
-          <div className="printable-card" style={{
+          <div ref={cardRef} className="printable-card" style={{
             width:  isPortrait ? "2.25in" : "3.5in",
             height: isPortrait ? "3.5in"  : "2.25in",
             background: "#fff",
@@ -190,8 +219,10 @@ export function IDCardModal({ entity, type = "Member", onClose }) {
         </div>
 
         {/* ── Footer buttons ── */}
-        <div className="no-print" style={{ padding: "14px 20px", borderTop: "1px solid #e2e8f0", display: "flex", justifyContent: "flex-end", gap: 10, background: "#f8fafc" }}>
+        <div className="no-print" style={{ padding: "14px 20px", borderTop: "1px solid #e2e8f0", display: "flex", justifyContent: "flex-end", gap: 10, background: "#f8fafc", flexWrap: "wrap" }}>
           <Btn label="Cancel" onClick={onClose} />
+          <Btn label="JPG" onClick={handleDownloadJPG} />
+          <Btn label="PDF" onClick={handleDownloadPDF} />
           <Btn label="🖨 Print ID Card" primary onClick={handlePrint} />
         </div>
       </div>
