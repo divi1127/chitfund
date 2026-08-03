@@ -5,16 +5,16 @@ import { Calculator, TrendingUp, Shield, ArrowRight, CheckCircle2 } from 'lucide
 const fmt = (v) => '₹' + v.toLocaleString('en-IN');
 
 export const InvestmentPlanner = () => {
+  const MONTHS = 10;
   const [monthly, setMonthly] = useState(20000);
-  const [months, setMonths] = useState(30);
   const [form, setForm] = useState({ name: '', phone: '', email: '' });
   const [loading, setLoading] = useState(false);
   const [done, setDone] = useState(false);
 
-  const principal = monthly * months;
-  const dividends = Math.round(principal * 0.098 * (months / 12) * 0.5);
+  const principal = monthly * MONTHS;
+  const dividends = Math.round(principal * 0.098 * (MONTHS / 12) * 0.5);
   const maturity = principal + dividends;
-  const netMonthly = Math.round((principal - dividends) / months);
+  const netMonthly = Math.round((principal - dividends) / MONTHS);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -28,7 +28,7 @@ export const InvestmentPlanner = () => {
           phone: form.phone,
           email: form.email,
           plan: 'Custom',
-          message: `Planner signup — ${fmt(monthly)}/mo for ${months} months. Principal: ${fmt(principal)}, Est. Dividends: ${fmt(dividends)}, Maturity: ${fmt(maturity)}`
+          message: `Planner signup — ${fmt(monthly)}/mo for ${MONTHS} months. Principal: ${fmt(principal)}, Est. Dividends: ${fmt(dividends)}, Maturity: ${fmt(maturity)}`
         }),
       });
       if (res.ok) {
@@ -41,8 +41,7 @@ export const InvestmentPlanner = () => {
     }
   };
 
-  const pctMonthly = ((monthly - 5000) / (150000 - 5000)) * 100;
-  const pctMonths = ((months - 20) / (50 - 20)) * 100;
+  const pctMonthly = ((monthly - 2500) / (100000 - 2500)) * 100;
 
   return (
     <section id="planner" className="section-padding bg-section-alt">
@@ -71,27 +70,23 @@ export const InvestmentPlanner = () => {
                   <span className="text-xl font-extrabold text-gradient-gold">{fmt(monthly)}</span>
                 </div>
                 <input
-                  type="range" min="5000" max="150000" step="5000" value={monthly}
+                  type="range" min="2500" max="100000" step="2500" value={monthly}
                   onChange={(e) => setMonthly(Number(e.target.value))}
                   style={{ background: `linear-gradient(to right, #D4AF37 ${pctMonthly}%, #E2E8F0 0%)` }}
                 />
                 <div className="flex justify-between text-xs text-text-secondary mt-1.5">
-                  <span>₹5,000</span><span>₹1,50,000</span>
+                  <span>₹2,500</span><span>₹1,00,000</span>
                 </div>
               </div>
 
               <div>
                 <div className="flex justify-between items-baseline mb-3">
                   <label className="text-sm font-semibold text-text-secondary">Plan Duration</label>
-                  <span className="text-xl font-extrabold text-primary-blue">{months} Months</span>
+                  <span className="text-xl font-extrabold text-primary-blue">10 Months</span>
                 </div>
-                <input
-                  type="range" min="20" max="50" step="5" value={months}
-                  onChange={(e) => setMonths(Number(e.target.value))}
-                  style={{ background: `linear-gradient(to right, #1565C0 ${pctMonths}%, #E2E8F0 0%)` }}
-                />
+                <div className="h-2 rounded-full bg-gradient-to-r from-primary-blue to-dark-blue" />
                 <div className="flex justify-between text-xs text-text-secondary mt-1.5">
-                  <span>20 Months</span><span>50 Months</span>
+                  <span>Fixed for all chit schemes</span>
                 </div>
               </div>
             </div>
@@ -121,7 +116,7 @@ export const InvestmentPlanner = () => {
                   </div>
                   <h4 className="text-lg font-bold text-text-primary mb-2">Plan Saved!</h4>
                   <p className="text-sm text-text-secondary mb-6 max-w-[240px] leading-relaxed">
-                    Your {months}-month plan at {fmt(monthly)}/mo has been recorded. An advisor will contact you.
+                    Your 10-month plan at {fmt(monthly)}/mo has been recorded. An advisor will contact you.
                   </p>
                   <button onClick={() => setDone(false)} className="text-sm font-bold text-premium-gold hover:text-primary-blue transition-colors cursor-pointer">
                     Reset planner
