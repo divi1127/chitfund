@@ -6,9 +6,9 @@ import { AnimatePresence, motion } from 'framer-motion';
 import { useLanguage } from '../context/LanguageContext';
 
 const NAV_LINKS = [
-  { name: 'Home',     id: 'home'     },
   { name: 'Plans',    id: 'plans'    },
   { name: 'Features', id: 'features' },
+  { name: 'Loan & Properties', id: 'nvs-ads', transKey: 'nav_loans' },
   { name: 'FAQ',      id: 'faq'      },
   { name: 'Contact',  id: 'contact'  },
 ];
@@ -17,7 +17,7 @@ export const Navbar = ({ onNavigate }) => {
   const { language, toggleLanguage, t } = useLanguage();
   const [isOpen, setIsOpen]         = useState(false);
   const [isScrolled, setIsScrolled] = useState(false);
-  const [activeId, setActiveId]     = useState('home');
+  const [activeId, setActiveId]     = useState('');
 
   const handleScroll = useCallback(() => {
     setIsScrolled(window.scrollY > 24);
@@ -100,7 +100,7 @@ export const Navbar = ({ onNavigate }) => {
                   onMouseEnter={e => { if (!isActive) e.currentTarget.style.color = '#1E293B'; }}
                   onMouseLeave={e => { if (!isActive) e.currentTarget.style.color = '#64748B'; }}
                 >
-                  {t(`nav_${link.id}`)}
+                  {t(link.transKey || `nav_${link.id}`)}
                   <span
                     style={{
                       position: 'absolute', bottom: 0, left: '50%', transform: 'translateX(-50%)',
@@ -215,7 +215,7 @@ export const Navbar = ({ onNavigate }) => {
                         transition: 'background 0.15s, color 0.15s',
                       }}
                     >
-                      {t(`nav_${link.id}`)}
+                      {t(link.transKey || `nav_${link.id}`)}
                     </button>
                   );
                 })}
